@@ -540,7 +540,7 @@ export default function Dashboard() {
       </div>
 
       {/* ===== STATS ROW ===== */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 mb-4">
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0B0E1F] to-[#171B34] p-3.5 text-white shadow-lg">
           <div className="absolute inset-0 opacity-[0.08] bg-grid-pattern" />
           <div className="relative">
@@ -763,10 +763,19 @@ export default function Dashboard() {
                       </div>
 
                       {/* Elapsed Timer */}
-                      <div className={`mt-0.5 text-[10px] font-bold ${isCompleted ? 'text-green-600' : 'text-blue-500'}`}>
-                        {isCompleted ? `✅ ${elapsedDisplay}` : `⏱ ${elapsedDisplay}`}
-                      </div>
-
+                    <div className={`mt-0.5 text-[10px] font-bold flex items-center justify-center gap-1 ${isCompleted ? 'text-green-600' : 'text-blue-500'}`}>
+  {isCompleted ? (
+    <>
+      <CheckCircle className="h-3 w-3" />
+      <span>{elapsedDisplay}</span>
+    </>
+  ) : (
+    <>
+      <Clock className="h-3 w-3 animate-pulse" />
+      <span>{elapsedDisplay}</span>
+    </>
+  )}
+</div>
                       {/* Pass/Fail */}
                       {participant.passFail && (
                         <div className={`mt-0.5 text-[10px] font-bold ${participant.passFail === 'Pass' ? 'text-emerald-600' : 'text-red-500'}`}>
@@ -814,8 +823,8 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <h3 className="text-base font-bold text-white">{selectedParticipant.displayName}</h3>
-                  <p className="text-xs text-white/70">{selectedParticipant.empId}</p>
-                  <p className="text-[10px] text-white/50">{selectedParticipant.role} · {selectedParticipant.language || '—'}</p>
+                  <p className="text-base font-bold text-white/70">{selectedParticipant.empId}</p>
+                  <p className="text-base font-bold text-white/70">{selectedParticipant.role} · {selectedParticipant.language || '—'}</p>
                 </div>
                 <button onClick={() => { setShowPopup(false); setSelectedParticipant(null); }} className="flex h-7 w-7 items-center justify-center rounded-full text-white/70 transition hover:bg-white/10 hover:text-white">
                   <X className="h-4 w-4" />
@@ -825,27 +834,14 @@ export default function Dashboard() {
 
             <div className="p-4">
               <div className="mb-4 rounded-xl border border-gray-100 bg-gray-50 p-3 text-xs space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Slot</span>
-                  <span className="font-medium text-gray-700">{rooms.find(r => r.id === selectedParticipant.octonormId)?.name || '—'}</span>
-                </div>
                 <div className="flex items-center justify-between border-t border-gray-100 pt-1.5">
-                  <span className="text-gray-400">Duration</span>
-                  <span className="font-medium text-gray-700">{Math.floor(selectedParticipant.completionDuration / 60)} minutes</span>
-                </div>
-                <div className="flex items-center justify-between border-t border-gray-100 pt-1.5">
-                  <span className="text-gray-400">Start Time</span>
+                  <span className="text-gray-400">Time Slot</span>
                   <span className="font-medium text-gray-700">{selectedParticipant.timeSlotTime || '—'}</span>
                 </div>
-                <div className="flex items-center justify-between border-t border-gray-100 pt-1.5">
-                  <span className="text-gray-400">End Time</span>
-                  <span className="font-medium text-gray-700">
-                    {calculateEndTime(selectedParticipant.timeSlotTime, selectedParticipant.completionDuration)}
-                  </span>
-                </div>
+               
                 <div className="flex items-center justify-between border-t border-gray-100 pt-1.5">
                   <span className="text-gray-400">Trainer</span>
-                  <span className="px-2 py-0.5 rounded text-[9px] font-semibold bg-gray-200 text-gray-700">
+                  <span className="font-medium text-gray-700">
                     {selectedParticipant.trainer}
                   </span>
                 </div>
@@ -872,13 +868,6 @@ export default function Dashboard() {
                   </div>
                 )}
               </div>
-
-              <button
-                onClick={() => { setShowPopup(false); setSelectedParticipant(null); }}
-                className="w-full rounded-xl bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-200"
-              >
-                Close
-              </button>
             </div>
           </div>
         </div>
