@@ -82,9 +82,9 @@ export default function Dashboard() {
     const match = name.match(/(\d+)\s*min/);
     if (match) {
       const minutes = parseInt(match[1]);
-      return minutes * 60; // convert to seconds
+      return minutes * 60;
     }
-    return 300; // default 5 minutes
+    return 300;
   };
 
   // ---- Helper: Calculate end time from start time + completion duration ----
@@ -137,17 +137,16 @@ export default function Dashboard() {
       id: i + 1,
       name,
       languages: trainerLangs[i],
-      availability: i < 6 ? 'available' : 'busy', // first 6 available
+      availability: i < 6 ? 'available' : 'busy',
       assignedCount: Math.floor(Math.random() * 8) + 2,
     }));
 
     // ---- 10 Rooms (Slots) ----
     const roomNames = Array.from({ length: 10 }, (_, i) => `Slot ${i + 1}`);
-    // Assign each room to a unique trainer (one-to-one mapping)
     const rooms = roomNames.map((name, i) => ({
       id: i + 1,
       name,
-      trainerId: i + 1, // each room gets a distinct trainer
+      trainerId: i + 1,
     }));
 
     const roles = ['Sales', 'Service', 'Finance', 'CRM', 'Parts'];
@@ -157,14 +156,12 @@ export default function Dashboard() {
     const dealerships = ['Dealer 1', 'Dealer 2', 'Dealer 3', 'Dealer 4'];
 
     const pList = [];
-    const numParticipants = indianNames.length; // 50
+    const numParticipants = indianNames.length;
     for (let i = 0; i < numParticipants; i++) {
       const name = indianNames[i];
       const completionDuration = parseDurationFromName(name);
       
-      // Assign to room in round-robin fashion (i % 10) so each room gets 5 participants
       const roomId = (i % rooms.length) + 1;
-      // Trainer for this participant is the trainer assigned to that room
       const trainerId = rooms.find(r => r.id === roomId)?.trainerId || 1;
       const trainer = trainers.find(t => t.id === trainerId)?.name || 'Unknown';
 
@@ -194,10 +191,10 @@ export default function Dashboard() {
       });
     }
 
-    // Sort by room then by id (to group participants by room)
+    // Sort by room then by id
     pList.sort((a, b) => a.octonormId - b.octonormId || parseInt(a.id) - parseInt(b.id));
 
-    // Compute time slots (based on order within each room)
+    // Compute time slots
     const roomMap = {};
     pList.forEach(p => {
       if (!roomMap[p.octonormId]) roomMap[p.octonormId] = [];
@@ -274,14 +271,6 @@ export default function Dashboard() {
     }, 1000);
     return () => clearInterval(interval);
   }, [loading]);
-
-  // ---- Helpers ----
-  const trainerColors = {};
-  trainers.forEach((t, i) => {
-    const colors = ['red-500', 'green-500', 'purple-500', 'pink-500', 'indigo-500', 'teal-500', 'orange-500',
-      'gray-500', 'rose-500', 'sky-500'];
-    trainerColors[t.name] = { bg: `bg-${colors[i % colors.length]}` };
-  });
 
   // ---- Computed stats ----
   const stats = useMemo(() => {
@@ -407,17 +396,22 @@ export default function Dashboard() {
     timeLabels.push(`${String(h12).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${ampm}`);
   }
 
-  // ---- Sub-components ----
+  // ---- Trainer Legend Component ----
   const TrainerLegend = () => {
-    const unique = [...new Set(participants.map(p => p.trainer))];
     return (
-      <div className="flex flex-wrap items-center gap-2">
-        {unique.map(t => (
-          <div key={t} className="flex items-center gap-1">
-            <span className={`h-2.5 w-2.5 rounded-full ${trainerColors[t]?.bg || 'bg-gray-400'}`} />
-            <span className="text-[10px] font-medium text-gray-700">{t}</span>
-          </div>
-        ))}
+      <div className="flex flex-wrap items-center gap-3">
+        {trainers.map(t => {
+          const isAvailable = t.availability === 'available';
+          return (
+            <div key={t.id} className="flex items-center gap-1.5">
+              <span className={`h-2.5 w-2.5 rounded-full ${isAvailable ? 'bg-emerald-500' : 'bg-red-500'}`} />
+              <span className="text-[10px] font-medium text-gray-700">{t.name}</span>
+              <span className={`text-[8px] font-medium ${isAvailable ? 'text-emerald-600' : 'text-red-500'}`}>
+                {isAvailable ? '●' : '●'}
+              </span>
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -667,7 +661,7 @@ export default function Dashboard() {
             <span className="text-[9px] text-gray-400">Live</span>
           </div>
           <div className="space-y-1.5">
-            {trainers.slice(0, 10).map(t => {
+            {trainers.map(t => {
               const isAvailable = t.availability === 'available';
               return (
                 <div key={t.id} className="flex items-center justify-between py-1 border-b border-gray-50 last:border-0">
@@ -698,15 +692,26 @@ export default function Dashboard() {
             Time
           </div>
 
-          {/* Header — Trainer names in each column */}
-          {rooms.map(room => {
-            const trainer = trainers.find(t => t.id === room.trainerId);
-            return (
-              <div key={room.id} className="rounded-t-lg bg-gray-700 py-1.5 px-2 text-center flex flex-col items-center leading-tight">
-                <span className="text-white font-bold text-[12px]">{trainer?.name || '—'}</span>
-              </div>
-            );
-          })}
+{/* Header — Trainer names with availability status (green dot = available, red dot = busy) */}
+{rooms.map(room => {
+  const trainer = trainers.find(t => t.id === room.trainerId);
+  const isAvailable = trainer?.availability === 'available';
+  const statusColor = isAvailable ? 'bg-emerald-400' : 'bg-red-400';
+  const statusText = isAvailable ? 'Available' : 'Busy';
+  return (
+    <div key={room.id} className="rounded-t-lg bg-gray-700 py-1.5 px-2 text-center flex flex-col items-center leading-tight">
+      {/* Trainer name on its own line */}
+      <span className="text-white font-bold text-[12px]">{trainer?.name || '—'}</span>
+      {/* Dot + Status text on the same line */}
+      <div className="flex items-center gap-1.5 mt-0.5">
+        <span className={`h-2 w-2 rounded-full ${statusColor} ${isAvailable ? 'animate-pulse' : ''}`} />
+        <span className={`text-[8px] font-medium ${isAvailable ? 'text-emerald-300' : 'text-red-300'}`}>
+          {statusText}
+        </span>
+      </div>
+    </div>
+  );
+})}
 
           {/* Rows */}
           {Array.from({ length: Math.min(maxRows, 8) }).map((_, rowIdx) => (
@@ -801,14 +806,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ===== TRAINER LEGEND ===== */}
-      <div className="mt-2 rounded-xl border border-gray-200 bg-white px-4 py-2 shadow-sm">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-semibold text-gray-400">TRAINERS:</span>
-          <TrainerLegend />
-        </div>
-      </div>
-
       {/* ===== POPUP MODAL ===== */}
       {showPopup && selectedParticipant && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn">
@@ -848,7 +845,7 @@ export default function Dashboard() {
                 </div>
                 <div className="flex items-center justify-between border-t border-gray-100 pt-1.5">
                   <span className="text-gray-400">Trainer</span>
-                  <span className={`px-2 py-0.5 rounded text-[9px] font-semibold ${trainerColors[selectedParticipant.trainer]?.bg || 'bg-gray-400'} text-white`}>
+                  <span className="px-2 py-0.5 rounded text-[9px] font-semibold bg-gray-200 text-gray-700">
                     {selectedParticipant.trainer}
                   </span>
                 </div>
