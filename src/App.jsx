@@ -22,17 +22,51 @@ const colorPalette = [
   { from: '#6B7280', to: '#4B5563' },
 ];
 
-// ---- Real Indian names for participants ----
+// ---- Participant names with STATIC durations (1-10 minutes cycle) ----
+// Each name includes the duration in minutes (e.g., "Aarav Sharma - 1 min")
 const indianNames = [
-  'Aarav Sharma', 'Priya Patel', 'Rahul Singh', 'Ananya Reddy', 'Vikram Kumar',
-  'Sneha Gupta', 'Arjun Mehta', 'Kavya Nair', 'Rohan Joshi', 'Ishita Malhotra',
-  'Aditya Verma', 'Neha Agarwal', 'Karan Kapoor', 'Sara Khan', 'Aryan Singh',
-  'Diya Sharma', 'Kabir Singh', 'Maya Patel', 'Veer Singh', 'Anika Reddy',
-  'Shaurya Mehta', 'Aisha Gupta', 'Dhruv Nair', 'Anjali Singh', 'Reyansh Kumar',
-  'Aanya Sharma', 'Ishaan Patel', 'Sia Reddy', 'Aarav Singh', 'Myra Gupta',
-  'Vivaan Mehta', 'Aadhya Nair', 'Anvi Singh', 'Aarush Kumar', 'Ira Reddy',
-  'Arjun Singh', 'Aanya Patel', 'Kiaan Mehta', 'Naira Gupta', 'Aayush Singh',
-  'Anaya Reddy', 'Pranav Kumar',
+  'Aarav Sharma - 1 min',
+  'Priya Patel - 2 min',
+  'Rahul Singh - 3 min',
+  'Ananya Reddy - 4 min',
+  'Vikram Kumar - 5 min',
+  'Sneha Gupta - 6 min',
+  'Arjun Mehta - 7 min',
+  'Kavya Nair - 8 min',
+  'Rohan Joshi - 9 min',
+  'Ishita Malhotra - 10 min',
+  'Aditya Verma - 1 min',
+  'Neha Agarwal - 2 min',
+  'Karan Kapoor - 3 min',
+  'Sara Khan - 4 min',
+  'Aryan Singh - 5 min',
+  'Diya Sharma - 6 min',
+  'Kabir Singh - 7 min',
+  'Maya Patel - 8 min',
+  'Veer Singh - 9 min',
+  'Anika Reddy - 10 min',
+  'Shaurya Mehta - 1 min',
+  'Aisha Gupta - 2 min',
+  'Dhruv Nair - 3 min',
+  'Anjali Singh - 4 min',
+  'Reyansh Kumar - 5 min',
+  'Aanya Sharma - 6 min',
+  'Ishaan Patel - 7 min',
+  'Sia Reddy - 8 min',
+  'Aarav Singh - 9 min',
+  'Myra Gupta - 10 min',
+  'Vivaan Mehta - 1 min',
+  'Aadhya Nair - 2 min',
+  'Anvi Singh - 3 min',
+  'Aarush Kumar - 4 min',
+  'Ira Reddy - 5 min',
+  'Arjun Singh - 6 min',
+  'Aanya Patel - 7 min',
+  'Kiaan Mehta - 8 min',
+  'Naira Gupta - 9 min',
+  'Aayush Singh - 10 min',
+  'Anaya Reddy - 1 min',
+  'Pranav Kumar - 2 min',
 ];
 
 export default function Dashboard() {
@@ -40,7 +74,6 @@ export default function Dashboard() {
   const [participants, setParticipants] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [trainers, setTrainers] = useState([]);
-  const [rounds, setRounds] = useState([]);
   const [timeSlots, setTimeSlots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -71,39 +104,55 @@ export default function Dashboard() {
   // Alerts
   const [showAlerts, setShowAlerts] = useState(false);
   const [liveAlerts, setLiveAlerts] = useState([
-    { id: 1, type: 'warning', message: 'Rahul Singh is 5 mins overdue for Round 2', time: '2 min ago' },
+    { id: 1, type: 'warning', message: 'Rahul Singh is overdue', time: '2 min ago' },
     { id: 2, type: 'info', message: 'Trainer Priya has 2 participants waiting', time: '5 min ago' },
-    { id: 3, type: 'success', message: 'Ananya completed all rounds', time: '8 min ago' },
+    { id: 3, type: 'success', message: 'Ananya completed in 8:30', time: '8 min ago' },
     { id: 4, type: 'danger', message: 'Slot 3 has no trainer assigned', time: '12 min ago' },
   ]);
 
-  // ---- Helper: Calculate end time from start time + 1 minute ----
-  const calculateEndTime = (startTimeStr) => {
-    if (!startTimeStr) return '—';
+  // ---- Helper: Parse duration from name (e.g., "Aarav Sharma - 1 min" → 60 seconds) ----
+  const parseDurationFromName = (name) => {
+    const match = name.match(/(\d+)\s*min/);
+    if (match) {
+      const minutes = parseInt(match[1]);
+      return minutes * 60; // convert to seconds
+    }
+    return 300; // default 5 minutes
+  };
+
+  // ---- Helper: Calculate end time from start time + completion duration ----
+  const calculateEndTime = (startTimeStr, durationSeconds) => {
+    if (!startTimeStr || !durationSeconds) return '—';
     try {
-      // Parse time like "09:00 AM"
       const parts = startTimeStr.match(/(\d{2}):(\d{2})\s(AM|PM)/);
       if (!parts) return '—';
       let hours = parseInt(parts[1]);
       const minutes = parseInt(parts[2]);
       const ampm = parts[3];
 
-      // Convert to 24-hour
       if (ampm === 'PM' && hours !== 12) hours += 12;
       if (ampm === 'AM' && hours === 12) hours = 0;
 
-      // Add 1 minute
-      const totalMinutes = hours * 60 + minutes + 1;
+      const totalMinutes = hours * 60 + minutes + Math.floor(durationSeconds / 60);
+      const extraSeconds = durationSeconds % 60;
       let newHours = Math.floor(totalMinutes / 60) % 24;
       const newMinutes = totalMinutes % 60;
 
-      // Convert back to 12-hour format
       const newAmpm = newHours >= 12 ? 'PM' : 'AM';
       const h12 = newHours % 12 || 12;
-      return `${String(h12).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')} ${newAmpm}`;
+      const secStr = String(extraSeconds).padStart(2, '0');
+      return `${String(h12).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}:${secStr} ${newAmpm}`;
     } catch {
       return '—';
     }
+  };
+
+  // ---- Format elapsed time as MM:SS ----
+  const formatElapsedTime = (seconds) => {
+    if (seconds === undefined || seconds === null) return '00:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
   // ---- Static data generation ----
@@ -118,7 +167,6 @@ export default function Dashboard() {
       assignedCount: Math.floor(Math.random() * 8) + 2,
     }));
 
-    // Simple slots
     const roomNames = Array.from({ length: 10 }, (_, i) => `Slot ${i + 1}`);
     const rooms = roomNames.map((name, i) => ({
       id: i + 1,
@@ -133,21 +181,24 @@ export default function Dashboard() {
     const dealerships = ['Dealer 1', 'Dealer 2', 'Dealer 3', 'Dealer 4'];
 
     const pList = [];
-    const numParticipants = 42;
+    const numParticipants = indianNames.length; // 42
     for (let i = 0; i < numParticipants; i++) {
       const tIdx = i % trainers.length;
       const roomId = rooms[i % rooms.length].id;
-      const nameIdx = i % indianNames.length;
-      const name = indianNames[nameIdx];
-      const timer = 60;
-
+      const name = indianNames[i];
+      
+      // Parse duration from name (static, no random)
+      const completionDuration = parseDurationFromName(name);
+      
       pList.push({
         id: String(i + 1001),
-        name: name,
+        name: name, // full name with duration (e.g., "Aarav Sharma - 1 min")
+        displayName: name.replace(/\s*-\s*\d+\s*min\s*$/, '').trim(), // clean name without duration
         empId: `MS${String(100 + i).padStart(3, '0')}`,
         role: roles[i % roles.length],
         language: languages[i % languages.length],
-        timer,
+        elapsedTime: 0, // starts at 0, counts up
+        completionDuration: completionDuration, // static, pre-defined from name
         trainer: trainers[tIdx].name,
         trainerId: trainers[tIdx].id,
         octonormId: roomId,
@@ -157,10 +208,11 @@ export default function Dashboard() {
         region: regions[i % regions.length],
         dealership: dealerships[i % dealerships.length],
         dealerCode: `D${String(100 + i).slice(0, 3)}`,
-        status: timer > 0 ? 'in-progress' : 'completed',
-        passFail: timer === 0 ? (Math.random() > 0.25 ? 'Pass' : 'Fail') : null,
+        status: 'in-progress', // 'in-progress' or 'completed'
+        passFail: null,
         resetCount: Math.floor(Math.random() * 2),
         delayed: false,
+        isTimerComplete: false,
       });
     }
 
@@ -191,12 +243,8 @@ export default function Dashboard() {
       p.timeSlotTime = (idx !== -1 && idx < timeLabels.length) ? timeLabels[idx] : null;
     });
 
-    const roundsData = [
-      { id: 1, name: 'Round 1', time_minutes: 10, hold_area: 1 },
-      { id: 2, name: 'Round 2', time_minutes: 10, hold_area: 0 },
-    ];
 
-    return { participants: pList, trainers, rooms, rounds: roundsData, timeSlots: timeLabels.map(t => ({ time: t })) };
+    return { participants: pList, trainers, rooms, timeSlots: timeLabels.map(t => ({ time: t })) };
   };
 
   // ---- Load mock data ----
@@ -207,7 +255,6 @@ export default function Dashboard() {
         setParticipants(data.participants);
         setTrainers(data.trainers);
         setRooms(data.rooms);
-        setRounds(data.rounds);
         setTimeSlots(data.timeSlots);
         setLoading(false);
       } catch (err) {
@@ -217,22 +264,45 @@ export default function Dashboard() {
     }, 600);
   }, []);
 
-  // ---- Timer: countdown from 60 to 0 ----
+  // ---- Timer: count up from 0 to completion duration ----
   useEffect(() => {
     if (loading) return;
     const interval = setInterval(() => {
       setParticipants(prev =>
         prev.map(p => {
-          if (p.timer > 0) {
-            const newTimer = p.timer - 1;
+          // Skip if already completed
+          if (p.status === 'completed' || p.isTimerComplete) return p;
+          
+          const newElapsed = p.elapsedTime + 1;
+          
+          // Check if elapsed time reached completion duration
+          if (newElapsed >= p.completionDuration) {
+            // Static Pass/Fail based on duration (even = Pass, odd = Fail) or keep random
+            // Let's keep it simple with random (70% Pass, 30% Fail)
+            const passFail = Math.random() > 0.3 ? 'Pass' : 'Fail';
+            
+            // Add alert for completion
+            const alertMsg = `${p.displayName} completed in ${formatElapsedTime(p.completionDuration)}`;
+            setLiveAlerts(prev => [{
+              id: Date.now(),
+              type: 'success',
+              message: alertMsg,
+              time: 'Just now',
+            }, ...prev.slice(0, 4)]);
+            
             return {
               ...p,
-              timer: newTimer,
-              status: newTimer === 0 ? 'completed' : 'in-progress',
-              passFail: newTimer === 0 ? (Math.random() > 0.25 ? 'Pass' : 'Fail') : p.passFail,
+              elapsedTime: p.completionDuration,
+              status: 'completed',
+              passFail: passFail,
+              isTimerComplete: true,
             };
           }
-          return p;
+          
+          return {
+            ...p,
+            elapsedTime: newElapsed,
+          };
         })
       );
     }, 1000);
@@ -240,13 +310,6 @@ export default function Dashboard() {
   }, [loading]);
 
   // ---- Helpers ----
-  const formatTime = (seconds) => {
-    if (!seconds || seconds <= 0) return 'End';
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-  };
-
   const trainerColors = {};
   trainers.forEach((t, i) => {
     const colors = ['red-500', 'green-500', 'purple-500', 'pink-500', 'indigo-500', 'teal-500', 'orange-500',
@@ -264,6 +327,11 @@ export default function Dashboard() {
     const passCount = participants.filter(p => p.passFail === 'Pass').length;
     const failCount = participants.filter(p => p.passFail === 'Fail').length;
     const passRate = (passCount + failCount) > 0 ? Math.round((passCount / (passCount + failCount)) * 100) : 0;
+
+    const completedParticipants = participants.filter(p => p.status === 'completed');
+    const avgTime = completedParticipants.length > 0 ?
+      Math.round(completedParticipants.reduce((sum, p) => sum + p.completionDuration, 0) / completedParticipants.length) :
+      0;
 
     const trainerStats = trainers.map(t => {
       const assigned = participants.filter(p => p.trainerId === t.id);
@@ -286,10 +354,10 @@ export default function Dashboard() {
       passCount,
       failCount,
       passRate,
+      avgTime,
       trainerStats,
-      totalRounds: rounds.length,
     };
-  }, [participants, trainers, rounds]);
+  }, [participants, trainers]);
 
   // ---- Filtering ----
   const filteredParticipants = useMemo(() => {
@@ -321,9 +389,8 @@ export default function Dashboard() {
           '✅ Done! I\'ve updated the status.',
           '📊 Here\'s the report you requested.',
           '⏳ Please wait while I fetch that data.',
-          '💡 Tip: You can use the "Select Multiple" mode to bulk update.',
-          '👤 Trainer Priya is available right now.',
-          '📈 Current pass rate is 78%.',
+          `📈 Current pass rate is ${stats.passRate}%.`,
+          `👤 ${trainers[0]?.name} is available right now.`,
         ];
         replyText = responses[Math.floor(Math.random() * responses.length)];
       } else {
@@ -375,13 +442,6 @@ export default function Dashboard() {
   }
 
   // ---- Sub-components ----
-  const LegendDot = ({ color, label }) => (
-    <span className="flex items-center gap-1.5">
-      <span className={`h-2.5 w-2.5 rounded-full ${color}`} />
-      <span className="text-[10px] font-medium text-gray-700">{label}</span>
-    </span>
-  );
-
   const TrainerLegend = () => {
     const unique = [...new Set(participants.map(p => p.trainer))];
     return (
@@ -594,19 +654,8 @@ export default function Dashboard() {
               <Hourglass className="h-3.5 w-3.5" />
             </div>
           </div>
-          <p className="mt-1.5 text-2xl font-extrabold leading-none">01:00</p>
+          <p className="mt-1.5 text-2xl font-extrabold leading-none">{formatElapsedTime(stats.avgTime)}</p>
           <p className="mt-0.5 text-[9px] font-medium text-white/70">Per participant</p>
-        </div>
-
-        <div className="relative overflow-hidden rounded-2xl p-3.5 text-white shadow-lg" style={{ background: 'linear-gradient(135deg, #6366F1, #4F46E5)' }}>
-          <div className="flex items-start justify-between">
-            <p className="text-[9px] font-bold tracking-wider uppercase">Rounds</p>
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20">
-              <Target className="h-3.5 w-3.5" />
-            </div>
-          </div>
-          <p className="mt-1.5 text-2xl font-extrabold leading-none">{stats.totalRounds}</p>
-          <p className="mt-0.5 text-[9px] font-medium text-white/70">Total configured</p>
         </div>
       </div>
 
@@ -675,11 +724,11 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ===== GRID VIEW – Static, no drag ===== */}
+      {/* ===== GRID VIEW ===== */}
       <div className="overflow-x-auto">
         <div className="grid grid-cols-[70px_repeat(10,1fr)] gap-1 min-w-[800px]">
           {/* Header — Time column */}
-          <div className="rounded-t-lg bg-gray-700 py-1.5 px-2 text-center text-[10px] font-bold text-white">
+          <div className="rounded-t-lg bg-gray-700 py-1.5 px-2 text-center text-[12px] font-bold text-white">
             Time
           </div>
 
@@ -688,8 +737,7 @@ export default function Dashboard() {
             const trainer = trainers.find(t => t.id === room.trainerId);
             return (
               <div key={room.id} className="rounded-t-lg bg-gray-700 py-1.5 px-2 text-center flex flex-col items-center leading-tight">
-                <span className="text-white font-bold text-[10px]">{trainer?.name || '—'}</span>
-                <span className="text-[8px] text-gray-400">{room.name}</span>
+                <span className="text-white font-bold text-[12px]">{trainer?.name || '—'}</span>
               </div>
             );
           })}
@@ -697,7 +745,7 @@ export default function Dashboard() {
           {/* Rows */}
           {Array.from({ length: Math.min(maxRows, 8) }).map((_, rowIdx) => (
             <div key={`row-${rowIdx}`} className="contents">
-              <div className="bg-gray-100 border border-gray-200 min-h-[72px] flex items-center justify-center text-[10px] font-semibold text-gray-500">
+              <div className="bg-gray-100 border border-gray-200 min-h-[72px] flex items-center justify-center text-[10px] font-bold text-gray-800">
                 {timeLabels[rowIdx] || ''}
               </div>
               {rooms.map(room => {
@@ -713,8 +761,8 @@ export default function Dashboard() {
                   );
                 }
 
-                // Calculate end time from start time + 1 minute
-                const endTime = calculateEndTime(participant.timeSlotTime);
+                const isCompleted = participant.status === 'completed';
+                const elapsedDisplay = isCompleted ? formatElapsedTime(participant.completionDuration) : formatElapsedTime(participant.elapsedTime);
 
                 return (
                   <div
@@ -727,47 +775,54 @@ export default function Dashboard() {
                         group relative flex flex-col items-center rounded-lg bg-white p-1 
                         transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md 
                         cursor-pointer border-2 
-                        ${participant.timer > 0 ? 'border-red-500' : 'border-green-500'}
+                        ${isCompleted ? 'border-green-500' : 'border-red-500'}
                       `}
                     >
-                      {/* Participant info */}
+                      {/* Participant info - displayName without duration suffix */}
                       <div className="flex flex-col items-center w-full">
                         <div className="text-[10px] font-bold text-gray-800 truncate w-full text-center">
-                          {participant.name}
+                          {participant.displayName}
                         </div>
-                        <div className="text-[8px] font-medium text-gray-500 truncate w-full text-center">
+                        <div className="text-[10px] font-bold text-gray-800 truncate w-full text-center">
                           {participant.empId}
                         </div>
-                        <div className="text-[8px] font-medium text-gray-500 truncate w-full text-center">
+                        <div className="text-[10px] font-bold text-gray-800  truncate w-full text-center">
                           {participant.role} · {participant.language || '—'}
                         </div>
                       </div>
 
-                      {/* Start & End Time */}
-                      <div className="mt-0.5 flex items-center gap-1 text-[8px] text-gray-500">
+                      {/* Duration badge */}
+                      {/* <div className="mt-0.5 text-[8px] font-semibold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
+                        {Math.floor(participant.completionDuration / 60)} min
+                      </div> */}
+
+                      {/* Start Time → End Time */}
+                      {/* <div className="mt-0.5 flex items-center gap-1 text-[8px] text-gray-500">
                         <span className="font-medium">{participant.timeSlotTime || '—'}</span>
                         <span className="text-gray-300">→</span>
-                        <span className="font-medium">{endTime}</span>
+                        <span className="font-medium">
+                          {calculateEndTime(participant.timeSlotTime, participant.completionDuration)}
+                        </span>
+                      </div> */}
+
+                      {/* Elapsed Timer */}
+                      <div className={`mt-0.5 text-[10px] font-bold ${isCompleted ? 'text-green-600' : 'text-blue-500'}`}>
+                        {isCompleted ? `✅ ${elapsedDisplay}` : `⏱ ${elapsedDisplay}`}
                       </div>
 
-                      {/* Timer */}
-                      <div className={`mt-0.5 text-[10px] font-bold ${participant.timer > 0 ? 'text-blue-500' : 'text-green-600'}`}>
-                        {participant.timer > 0 ? formatTime(participant.timer) : 'End'}
-                      </div>
-
-                      {/* Pass/Fail (only when completed) */}
+                      {/* Pass/Fail */}
                       {participant.passFail && (
-                        <div className={`mt-0.5 text-[9px] font-bold ${participant.passFail === 'Pass' ? 'text-emerald-600' : 'text-red-500'}`}>
+                        <div className={`mt-0.5 text-[10px] font-bold ${participant.passFail === 'Pass' ? 'text-emerald-600' : 'text-red-500'}`}>
                           {participant.passFail}
                         </div>
                       )}
 
                       {/* Status badges */}
                       <div className="absolute top-0.5 right-0.5 flex gap-0.5">
-                        {participant.timer > 0 && (
+                        {!isCompleted && (
                           <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" title="Timer active" />
                         )}
-                        {participant.status === 'completed' && (
+                        {isCompleted && (
                           <span className="h-2 w-2 rounded-full bg-emerald-500" title="Completed" />
                         )}
                       </div>
@@ -780,12 +835,12 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ===== LEGEND (Simplified) ===== */}
+      {/* ===== LEGEND ===== */}
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 shadow-sm">
         <div className="flex flex-wrap items-center gap-3 text-[10px]">
           <span className="font-semibold text-gray-400">LEGEND:</span>
-          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full border-2 border-red-500" /> In Progress (Red border)</span>
-          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full border-2 border-green-500" /> Completed (Green border)</span>
+          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full border-2 border-red-500" /> In Progress</span>
+          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full border-2 border-green-500" /> Completed</span>
           <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" /> Timer active</span>
           <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500" /> Completed</span>
         </div>
@@ -802,14 +857,14 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ===== POPUP MODAL (Simplified) ===== */}
+      {/* ===== POPUP MODAL ===== */}
       {showPopup && selectedParticipant && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn">
           <div className="mx-4 w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl animate-slideUp">
             <div className="px-5 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <h3 className="text-base font-bold text-white">{selectedParticipant.name}</h3>
+                  <h3 className="text-base font-bold text-white">{selectedParticipant.displayName}</h3>
                   <p className="text-xs text-white/70">{selectedParticipant.empId}</p>
                   <p className="text-[10px] text-white/50">{selectedParticipant.role} · {selectedParticipant.language || '—'}</p>
                 </div>
@@ -826,12 +881,18 @@ export default function Dashboard() {
                   <span className="font-medium text-gray-700">{rooms.find(r => r.id === selectedParticipant.octonormId)?.name || '—'}</span>
                 </div>
                 <div className="flex items-center justify-between border-t border-gray-100 pt-1.5">
+                  <span className="text-gray-400">Duration</span>
+                  <span className="font-medium text-gray-700">{Math.floor(selectedParticipant.completionDuration / 60)} minutes</span>
+                </div>
+                <div className="flex items-center justify-between border-t border-gray-100 pt-1.5">
                   <span className="text-gray-400">Start Time</span>
                   <span className="font-medium text-gray-700">{selectedParticipant.timeSlotTime || '—'}</span>
                 </div>
                 <div className="flex items-center justify-between border-t border-gray-100 pt-1.5">
                   <span className="text-gray-400">End Time</span>
-                  <span className="font-medium text-gray-700">{calculateEndTime(selectedParticipant.timeSlotTime)}</span>
+                  <span className="font-medium text-gray-700">
+                    {calculateEndTime(selectedParticipant.timeSlotTime, selectedParticipant.completionDuration)}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between border-t border-gray-100 pt-1.5">
                   <span className="text-gray-400">Trainer</span>
@@ -840,9 +901,17 @@ export default function Dashboard() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between border-t border-gray-100 pt-1.5">
-                  <span className="text-gray-400">Timer</span>
-                  <span className={`font-bold ${selectedParticipant.timer > 0 ? 'text-blue-500' : 'text-green-600'}`}>
-                    {selectedParticipant.timer > 0 ? formatTime(selectedParticipant.timer) : 'End'}
+                  <span className="text-gray-400">Status</span>
+                  <span className={`font-bold ${selectedParticipant.status === 'completed' ? 'text-green-600' : 'text-blue-500'}`}>
+                    {selectedParticipant.status === 'completed' ? '✅ Completed' : '⏱ In Progress'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between border-t border-gray-100 pt-1.5">
+                  <span className="text-gray-400">Time Taken</span>
+                  <span className={`font-bold ${selectedParticipant.status === 'completed' ? 'text-green-600' : 'text-blue-500'}`}>
+                    {selectedParticipant.status === 'completed' 
+                      ? formatElapsedTime(selectedParticipant.completionDuration) 
+                      : formatElapsedTime(selectedParticipant.elapsedTime)}
                   </span>
                 </div>
                 {selectedParticipant.passFail && (
