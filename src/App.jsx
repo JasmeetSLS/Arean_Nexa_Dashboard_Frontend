@@ -22,51 +22,18 @@ const colorPalette = [
   { from: '#6B7280', to: '#4B5563' },
 ];
 
-// ---- Participant names with STATIC durations (1-10 minutes cycle) ----
-// Each name includes the duration in minutes (e.g., "Aarav Sharma - 1 min")
+// ---- 50 Participants with STATIC durations (1-10 minutes cycle) ----
 const indianNames = [
-  'Aarav Sharma - 1 min',
-  'Priya Patel - 2 min',
-  'Rahul Singh - 3 min',
-  'Ananya Reddy - 4 min',
-  'Vikram Kumar - 5 min',
-  'Sneha Gupta - 6 min',
-  'Arjun Mehta - 7 min',
-  'Kavya Nair - 8 min',
-  'Rohan Joshi - 9 min',
-  'Ishita Malhotra - 10 min',
-  'Aditya Verma - 1 min',
-  'Neha Agarwal - 2 min',
-  'Karan Kapoor - 3 min',
-  'Sara Khan - 4 min',
-  'Aryan Singh - 5 min',
-  'Diya Sharma - 6 min',
-  'Kabir Singh - 7 min',
-  'Maya Patel - 8 min',
-  'Veer Singh - 9 min',
-  'Anika Reddy - 10 min',
-  'Shaurya Mehta - 1 min',
-  'Aisha Gupta - 2 min',
-  'Dhruv Nair - 3 min',
-  'Anjali Singh - 4 min',
-  'Reyansh Kumar - 5 min',
-  'Aanya Sharma - 6 min',
-  'Ishaan Patel - 7 min',
-  'Sia Reddy - 8 min',
-  'Aarav Singh - 9 min',
-  'Myra Gupta - 10 min',
-  'Vivaan Mehta - 1 min',
-  'Aadhya Nair - 2 min',
-  'Anvi Singh - 3 min',
-  'Aarush Kumar - 4 min',
-  'Ira Reddy - 5 min',
-  'Arjun Singh - 6 min',
-  'Aanya Patel - 7 min',
-  'Kiaan Mehta - 8 min',
-  'Naira Gupta - 9 min',
-  'Aayush Singh - 10 min',
-  'Anaya Reddy - 1 min',
-  'Pranav Kumar - 2 min',
+  'Aarav Sharma - 1 min', 'Priya Patel - 2 min', 'Rahul Singh - 3 min', 'Ananya Reddy - 4 min', 'Vikram Kumar - 5 min',
+  'Sneha Gupta - 6 min', 'Arjun Mehta - 7 min', 'Kavya Nair - 8 min', 'Rohan Joshi - 9 min', 'Ishita Malhotra - 10 min',
+  'Aditya Verma - 1 min', 'Neha Agarwal - 2 min', 'Karan Kapoor - 3 min', 'Sara Khan - 4 min', 'Aryan Singh - 5 min',
+  'Diya Sharma - 6 min', 'Kabir Singh - 7 min', 'Maya Patel - 8 min', 'Veer Singh - 9 min', 'Anika Reddy - 10 min',
+  'Shaurya Mehta - 1 min', 'Aisha Gupta - 2 min', 'Dhruv Nair - 3 min', 'Anjali Singh - 4 min', 'Reyansh Kumar - 5 min',
+  'Aanya Sharma - 6 min', 'Ishaan Patel - 7 min', 'Sia Reddy - 8 min', 'Aarav Singh - 9 min', 'Myra Gupta - 10 min',
+  'Vivaan Mehta - 1 min', 'Aadhya Nair - 2 min', 'Anvi Singh - 3 min', 'Aarush Kumar - 4 min', 'Ira Reddy - 5 min',
+  'Arjun Singh - 6 min', 'Aanya Patel - 7 min', 'Kiaan Mehta - 8 min', 'Naira Gupta - 9 min', 'Aayush Singh - 10 min',
+  'Anaya Reddy - 1 min', 'Pranav Kumar - 2 min', 'Ishaan Gupta - 3 min', 'Riya Singh - 4 min', 'Kunal Sharma - 5 min',
+  'Pooja Patel - 6 min', 'Rohit Nair - 7 min', 'Shreya Reddy - 8 min', 'Amit Kumar - 9 min', 'Sonal Mehta - 10 min',
 ];
 
 export default function Dashboard() {
@@ -157,21 +124,30 @@ export default function Dashboard() {
 
   // ---- Static data generation ----
   const generateMockData = () => {
-    const trainerNames = ['Priya Sharma', 'Rahul Verma', 'Anjali Nair', 'Vikram Singh', 'Neha Patel'];
-    const trainerLangs = ['English, Hindi', 'English, Tamil', 'English, Malayalam', 'Hindi, English', 'English, Telugu'];
+    // ---- 10 Trainers ----
+    const trainerNames = [
+      'Priya Sharma', 'Rahul Verma', 'Anjali Nair', 'Vikram Singh', 'Neha Patel',
+      'Rajesh Kumar', 'Sneha Reddy', 'Amit Joshi', 'Kavya Menon', 'Suresh Pillai'
+    ];
+    const trainerLangs = [
+      'English, Hindi', 'English, Tamil', 'English, Malayalam', 'Hindi, English', 'English, Telugu',
+      'English, Kannada', 'Hindi, Tamil', 'English, Malayalam', 'Hindi, English', 'English, Telugu'
+    ];
     const trainers = trainerNames.map((name, i) => ({
       id: i + 1,
       name,
       languages: trainerLangs[i],
-      availability: i < 3 ? 'available' : 'busy',
+      availability: i < 6 ? 'available' : 'busy', // first 6 available
       assignedCount: Math.floor(Math.random() * 8) + 2,
     }));
 
+    // ---- 10 Rooms (Slots) ----
     const roomNames = Array.from({ length: 10 }, (_, i) => `Slot ${i + 1}`);
+    // Assign each room to a unique trainer (one-to-one mapping)
     const rooms = roomNames.map((name, i) => ({
       id: i + 1,
       name,
-      trainerId: (i % trainers.length) + 1,
+      trainerId: i + 1, // each room gets a distinct trainer
     }));
 
     const roles = ['Sales', 'Service', 'Finance', 'CRM', 'Parts'];
@@ -181,26 +157,28 @@ export default function Dashboard() {
     const dealerships = ['Dealer 1', 'Dealer 2', 'Dealer 3', 'Dealer 4'];
 
     const pList = [];
-    const numParticipants = indianNames.length; // 42
+    const numParticipants = indianNames.length; // 50
     for (let i = 0; i < numParticipants; i++) {
-      const tIdx = i % trainers.length;
-      const roomId = rooms[i % rooms.length].id;
       const name = indianNames[i];
-      
-      // Parse duration from name (static, no random)
       const completionDuration = parseDurationFromName(name);
       
+      // Assign to room in round-robin fashion (i % 10) so each room gets 5 participants
+      const roomId = (i % rooms.length) + 1;
+      // Trainer for this participant is the trainer assigned to that room
+      const trainerId = rooms.find(r => r.id === roomId)?.trainerId || 1;
+      const trainer = trainers.find(t => t.id === trainerId)?.name || 'Unknown';
+
       pList.push({
         id: String(i + 1001),
-        name: name, // full name with duration (e.g., "Aarav Sharma - 1 min")
-        displayName: name.replace(/\s*-\s*\d+\s*min\s*$/, '').trim(), // clean name without duration
+        name: name,
+        displayName: name.replace(/\s*-\s*\d+\s*min\s*$/, '').trim(),
         empId: `MS${String(100 + i).padStart(3, '0')}`,
         role: roles[i % roles.length],
         language: languages[i % languages.length],
-        elapsedTime: 0, // starts at 0, counts up
-        completionDuration: completionDuration, // static, pre-defined from name
-        trainer: trainers[tIdx].name,
-        trainerId: trainers[tIdx].id,
+        elapsedTime: 0,
+        completionDuration,
+        trainer,
+        trainerId,
         octonormId: roomId,
         dbId: i + 1001,
         timeSlotTime: null,
@@ -208,7 +186,7 @@ export default function Dashboard() {
         region: regions[i % regions.length],
         dealership: dealerships[i % dealerships.length],
         dealerCode: `D${String(100 + i).slice(0, 3)}`,
-        status: 'in-progress', // 'in-progress' or 'completed'
+        status: 'in-progress',
         passFail: null,
         resetCount: Math.floor(Math.random() * 2),
         delayed: false,
@@ -216,10 +194,10 @@ export default function Dashboard() {
       });
     }
 
-    // Sort by room then by id
+    // Sort by room then by id (to group participants by room)
     pList.sort((a, b) => a.octonormId - b.octonormId || parseInt(a.id) - parseInt(b.id));
 
-    // Compute time slots
+    // Compute time slots (based on order within each room)
     const roomMap = {};
     pList.forEach(p => {
       if (!roomMap[p.octonormId]) roomMap[p.octonormId] = [];
@@ -242,7 +220,6 @@ export default function Dashboard() {
       const idx = roomP.findIndex(pp => pp.id === p.id);
       p.timeSlotTime = (idx !== -1 && idx < timeLabels.length) ? timeLabels[idx] : null;
     });
-
 
     return { participants: pList, trainers, rooms, timeSlots: timeLabels.map(t => ({ time: t })) };
   };
@@ -270,39 +247,28 @@ export default function Dashboard() {
     const interval = setInterval(() => {
       setParticipants(prev =>
         prev.map(p => {
-          // Skip if already completed
           if (p.status === 'completed' || p.isTimerComplete) return p;
           
           const newElapsed = p.elapsedTime + 1;
-          
-          // Check if elapsed time reached completion duration
           if (newElapsed >= p.completionDuration) {
-            // Static Pass/Fail based on duration (even = Pass, odd = Fail) or keep random
-            // Let's keep it simple with random (70% Pass, 30% Fail)
             const passFail = Math.random() > 0.3 ? 'Pass' : 'Fail';
-            
-            // Add alert for completion
             const alertMsg = `${p.displayName} completed in ${formatElapsedTime(p.completionDuration)}`;
-            setLiveAlerts(prev => [{
+            setLiveAlerts(prevAlerts => [{
               id: Date.now(),
               type: 'success',
               message: alertMsg,
               time: 'Just now',
-            }, ...prev.slice(0, 4)]);
+            }, ...prevAlerts.slice(0, 4)]);
             
             return {
               ...p,
               elapsedTime: p.completionDuration,
               status: 'completed',
-              passFail: passFail,
+              passFail,
               isTimerComplete: true,
             };
           }
-          
-          return {
-            ...p,
-            elapsedTime: newElapsed,
-          };
+          return { ...p, elapsedTime: newElapsed };
         })
       );
     }, 1000);
@@ -701,7 +667,7 @@ export default function Dashboard() {
             <span className="text-[9px] text-gray-400">Live</span>
           </div>
           <div className="space-y-1.5">
-            {trainers.slice(0, 5).map(t => {
+            {trainers.slice(0, 10).map(t => {
               const isAvailable = t.availability === 'available';
               return (
                 <div key={t.id} className="flex items-center justify-between py-1 border-b border-gray-50 last:border-0">
@@ -778,7 +744,7 @@ export default function Dashboard() {
                         ${isCompleted ? 'border-green-500' : 'border-red-500'}
                       `}
                     >
-                      {/* Participant info - displayName without duration suffix */}
+                      {/* Participant info */}
                       <div className="flex flex-col items-center w-full">
                         <div className="text-[10px] font-bold text-gray-800 truncate w-full text-center">
                           {participant.displayName}
@@ -786,24 +752,10 @@ export default function Dashboard() {
                         <div className="text-[10px] font-bold text-gray-800 truncate w-full text-center">
                           {participant.empId}
                         </div>
-                        <div className="text-[10px] font-bold text-gray-800  truncate w-full text-center">
+                        <div className="text-[10px] font-bold text-gray-800 truncate w-full text-center">
                           {participant.role} · {participant.language || '—'}
                         </div>
                       </div>
-
-                      {/* Duration badge */}
-                      {/* <div className="mt-0.5 text-[8px] font-semibold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
-                        {Math.floor(participant.completionDuration / 60)} min
-                      </div> */}
-
-                      {/* Start Time → End Time */}
-                      {/* <div className="mt-0.5 flex items-center gap-1 text-[8px] text-gray-500">
-                        <span className="font-medium">{participant.timeSlotTime || '—'}</span>
-                        <span className="text-gray-300">→</span>
-                        <span className="font-medium">
-                          {calculateEndTime(participant.timeSlotTime, participant.completionDuration)}
-                        </span>
-                      </div> */}
 
                       {/* Elapsed Timer */}
                       <div className={`mt-0.5 text-[10px] font-bold ${isCompleted ? 'text-green-600' : 'text-blue-500'}`}>
