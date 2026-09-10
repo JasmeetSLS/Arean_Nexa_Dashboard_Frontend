@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   Clock, Users, CheckCircle, AlertCircle, X, 
   RefreshCw, Play, Award, Hourglass, Bell, Filter, LogOut,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, Search
 } from 'lucide-react';
 
 // ---- Color palette (10 distinct colours) ----
@@ -53,78 +53,28 @@ const indianNames = Array.from({ length: 90 }, (_, i) => {
 
 // ---- Trainer Master Data (MALE trainers with explicit photo URLs) ----
 const TRAINER_MASTER = [
-  {
-    id: 1,
-    name: 'Rahul Verma',
-    languages: 'English, Hindi',
-    availability: 'available',
-    photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Rahul_verma_wiki.jpg/250px-Rahul_verma_wiki.jpg?utm_source=en.wikipedia.org&utm_campaign=parser&utm_content=thumbnail',
-  },
-  {
-    id: 2,
-    name: 'Vikram Singh',
-    languages: 'English, Tamil',
-    availability: 'available',
-    photoUrl: 'https://media.licdn.com/dms/image/v2/D4E03AQGBJ-u9FO7SDA/profile-displayphoto-scale_200_200/B4EZgeP3iDGYAY-/0/1752854136331?e=2147483647&v=beta&t=DH1Q_5WUzu_T2VO9ky2EEbnLAAWT74DbTTBVkrkfum4',
-  },
-  {
-    id: 3,
-    name: 'Arjun Mehta',
-    languages: 'English, Malayalam',
-    availability: 'available',
-    photoUrl: 'https://media.licdn.com/dms/image/v2/D5603AQEWSRRRd0ymOw/profile-displayphoto-shrink_200_200/B56ZVAw_njGsAY-/0/1740548340841?e=2147483647&v=beta&t=1u_cL9n2iPj_VUYZqW_esz2l7odF42gldGEv5tyBXc0',
-  },
-  {
-    id: 4,
-    name: 'Karan Kapoor',
-    languages: 'Hindi, English',
-    availability: 'available',
-    photoUrl: 'https://media.licdn.com/dms/image/v2/D4D03AQHw3ZFBJGCC7g/profile-displayphoto-shrink_200_200/B4DZZhQyZ.HIAY-/0/1745388520436?e=2147483647&v=beta&t=UUKJlDlfnoZlzkfsYECuwBVx29G9fAkYpWFNhibgtRs',
-  },
-  {
-    id: 5,
-    name: 'Aditya Sharma',
-    languages: 'English, Telugu',
-    availability: 'available',
-    photoUrl: 'https://eye7.b-cdn.net/wp-content/uploads/dr-aditya-sharma.jpg',
-  },
-  {
-    id: 6,
-    name: 'Rajesh Kumar',
-    languages: 'English, Kannada',
-    availability: 'available',
-    photoUrl: 'https://upeswebsitecdn-prod-hphqfhc0b8h2ffhf.a02.azurefd.net/drupal-data/2026-03/Rajesh%20Kumar_0.png'  },
-  {
-    id: 7,
-    name: 'Amit Joshi',
-    languages: 'Hindi, Tamil',
-    availability: 'busy',
-    photoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQg3w-SyH9nJjOgmANT0XKlpxZYEJvdBQP5-d8u9uQLU3k65dGe6UXxH0q2&s=10',
-  },
-  {
-    id: 8,
-    name: 'Suresh Pillai',
-    languages: 'English, Malayalam',
-    availability: 'busy',
-    photoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQkAvZr_rGNrJ1ucQegB0ev5KgBS8YWX-JRz2cRE90O3HkiWynVAI5-E9Xz&s=10',
-  },
-  {
-    id: 9,
-    name: 'Rohan Nair',
-    languages: 'Hindi, English',
-    availability: 'busy',
-    photoUrl: 'https://media.licdn.com/dms/image/v2/D4E03AQGu0AuoKkz-lw/profile-displayphoto-scale_200_200/B4EZ7bHaldKEAg-/0/1781792617044?e=2147483647&v=beta&t=sEVddkb8T5r4C_0NaeIzD1Z_S8XwPmhMG3HEyNI3OGI',
-  },
-  {
-    id: 10,
-    name: 'Nikhil Reddy',
-    languages: 'English, Telugu',
-    availability: 'busy',
-    photoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSAeF1DJYpjcjp9mrt09BYE-r4EQkrhf8LgIHIzgRijahj1mng2xiIXIk5F&s=10',
-  },
+  { id: 1, name: 'Rahul Verma', languages: 'English, Hindi', availability: 'available',
+    photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Rahul_verma_wiki.jpg/250px-Rahul_verma_wiki.jpg?utm_source=en.wikipedia.org&utm_campaign=parser&utm_content=thumbnail' },
+  { id: 2, name: 'Vikram Singh', languages: 'English, Tamil', availability: 'available',
+    photoUrl: 'https://media.licdn.com/dms/image/v2/D4E03AQGBJ-u9FO7SDA/profile-displayphoto-scale_200_200/B4EZgeP3iDGYAY-/0/1752854136331?e=2147483647&v=beta&t=DH1Q_5WUzu_T2VO9ky2EEbnLAAWT74DbTTBVkrkfum4' },
+  { id: 3, name: 'Arjun Mehta', languages: 'English, Malayalam', availability: 'available',
+    photoUrl: 'https://media.licdn.com/dms/image/v2/D5603AQEWSRRRd0ymOw/profile-displayphoto-shrink_200_200/B56ZVAw_njGsAY-/0/1740548340841?e=2147483647&v=beta&t=1u_cL9n2iPj_VUYZqW_esz2l7odF42gldGEv5tyBXc0' },
+  { id: 4, name: 'Karan Kapoor', languages: 'Hindi, English', availability: 'available',
+    photoUrl: 'https://media.licdn.com/dms/image/v2/D4D03AQHw3ZFBJGCC7g/profile-displayphoto-shrink_200_200/B4DZZhQyZ.HIAY-/0/1745388520436?e=2147483647&v=beta&t=UUKJlDlfnoZlzkfsYECuwBVx29G9fAkYpWFNhibgtRs' },
+  { id: 5, name: 'Aditya Sharma', languages: 'English, Telugu', availability: 'available',
+    photoUrl: 'https://eye7.b-cdn.net/wp-content/uploads/dr-aditya-sharma.jpg' },
+  { id: 6, name: 'Rajesh Kumar', languages: 'English, Kannada', availability: 'available',
+    photoUrl: 'https://upeswebsitecdn-prod-hphqfhc0b8h2ffhf.a02.azurefd.net/drupal-data/2026-03/Rajesh%20Kumar_0.png' },
+  { id: 7, name: 'Amit Joshi', languages: 'Hindi, Tamil', availability: 'busy',
+    photoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQg3w-SyH9nJjOgmANT0XKlpxZYEJvdBQP5-d8u9uQLU3k65dGe6UXxH0q2&s=10' },
+  { id: 8, name: 'Suresh Pillai', languages: 'English, Malayalam', availability: 'busy',
+    photoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQkAvZr_rGNrJ1ucQegB0ev5KgBS8YWX-JRz2cRE90O3HkiWynVAI5-E9Xz&s=10' },
+  { id: 9, name: 'Rohan Nair', languages: 'Hindi, English', availability: 'busy',
+    photoUrl: 'https://media.licdn.com/dms/image/v2/D4E03AQGu0AuoKkz-lw/profile-displayphoto-scale_200_200/B4EZ7bHaldKEAg-/0/1781792617044?e=2147483647&v=beta&t=sEVddkb8T5r4C_0NaeIzD1Z_S8XwPmhMG3HEyNI3OGI' },
+  { id: 10, name: 'Nikhil Reddy', languages: 'English, Telugu', availability: 'busy',
+    photoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSAeF1DJYpjcjp9mrt09BYE-r4EQkrhf8LgIHIzgRijahj1mng2xiIXIk5F&s=10' },
 ];
 
-// Fallback image if a trainer photo fails to load
 const FALLBACK_TRAINER_PHOTO = 'https://i.pravatar.cc/150?img=12';
 
 export default function Dashboard() {
@@ -138,6 +88,10 @@ export default function Dashboard() {
     agency: '', region: '', dealership: '', dealerCode: '',
   });
 
+  // ---- Search state ----
+  const [searchTrainer, setSearchTrainer] = useState('');
+  const [searchParticipant, setSearchParticipant] = useState('');
+
   const [selectedParticipant, setSelectedParticipant] = useState(null);
   const [showParticipantJourney, setShowParticipantJourney] = useState(false);
   const [selectedTrainer, setSelectedTrainer] = useState(null);
@@ -147,38 +101,14 @@ export default function Dashboard() {
 
   const [showAlerts, setShowAlerts] = useState(false);
   const [liveAlerts, setLiveAlerts] = useState([
-    {
-      id: 1,
-      type: 'danger',
-      title: 'Trainer Rahul is Offline',
-      subtitle: 'Slot 3 · Sales · North region',
-      time: '2 min ago',
-      photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Rahul_verma_wiki.jpg/250px-Rahul_verma_wiki.jpg',
-    },
-    {
-      id: 2,
-      type: 'danger',
-      title: 'Trainer Vikram is Offline',
-      subtitle: 'Slot 5 · Service · South region',
-      time: '8 min ago',
-      photoUrl: 'https://media.licdn.com/dms/image/v2/D4E03AQGBJ-u9FO7SDA/profile-displayphoto-scale_200_200/B4EZgeP3iDGYAY-/0/1752854136331?e=2147483647&v=beta&t=DH1Q_5WUzu_T2VO9ky2EEbnLAAWT74DbTTBVkrkfum4',
-    },
-    {
-      id: 3,
-      type: 'danger',
-      title: 'Trainer Arjun missed slot start',
-      subtitle: 'Slot 7 · Finance · East region',
-      time: '15 min ago',
-      photoUrl: 'https://media.licdn.com/dms/image/v2/D5603AQEWSRRRd0ymOw/profile-displayphoto-shrink_200_200/B56ZVAw_njGsAY-/0/1740548340841?e=2147483647&v=beta&t=1u_cL9n2iPj_VUYZqW_esz2l7odF42gldGEv5tyBXc0',
-    },
-    {
-      id: 4,
-      type: 'danger',
-      title: 'Trainer Karan not assigned',
-      subtitle: 'Slot 2 · CRM · West region',
-      time: '22 min ago',
-      photoUrl: 'https://media.licdn.com/dms/image/v2/D4D03AQHw3ZFBJGCC7g/profile-displayphoto-shrink_200_200/B4DZZhQyZ.HIAY-/0/1745388520436?e=2147483647&v=beta&t=UUKJlDlfnoZlzkfsYECuwBVx29G9fAkYpWFNhibgtRs',
-    },
+    { id: 1, type: 'danger', title: 'Trainer Rahul is Offline', subtitle: 'Slot 3 · Sales · North region', time: '2 min ago',
+      photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Rahul_verma_wiki.jpg/250px-Rahul_verma_wiki.jpg' },
+    { id: 2, type: 'danger', title: 'Trainer Vikram is Offline', subtitle: 'Slot 5 · Service · South region', time: '8 min ago',
+      photoUrl: 'https://media.licdn.com/dms/image/v2/D4E03AQGBJ-u9FO7SDA/profile-displayphoto-scale_200_200/B4EZgeP3iDGYAY-/0/1752854136331?e=2147483647&v=beta&t=DH1Q_5WUzu_T2VO9ky2EEbnLAAWT74DbTTBVkrkfum4' },
+    { id: 3, type: 'danger', title: 'Trainer Arjun missed slot start', subtitle: 'Slot 7 · Finance · East region', time: '15 min ago',
+      photoUrl: 'https://media.licdn.com/dms/image/v2/D5603AQEWSRRRd0ymOw/profile-displayphoto-shrink_200_200/B56ZVAw_njGsAY-/0/1740548340841?e=2147483647&v=beta&t=1u_cL9n2iPj_VUYZqW_esz2l7odF42gldGEv5tyBXc0' },
+    { id: 4, type: 'danger', title: 'Trainer Karan not assigned', subtitle: 'Slot 2 · CRM · West region', time: '22 min ago',
+      photoUrl: 'https://media.licdn.com/dms/image/v2/D4D03AQHw3ZFBJGCC7g/profile-displayphoto-shrink_200_200/B4DZZhQyZ.HIAY-/0/1745388520436?e=2147483647&v=beta&t=UUKJlDlfnoZlzkfsYECuwBVx29G9fAkYpWFNhibgtRs' },
   ]);
 
   const parseDurationFromName = (name) => {
@@ -195,10 +125,7 @@ export default function Dashboard() {
   };
 
   const generateMockData = () => {
-    const trainers = TRAINER_MASTER.map(t => ({
-      ...t,
-      assignedCount: 9,
-    }));
+    const trainers = TRAINER_MASTER.map(t => ({ ...t, assignedCount: 9 }));
 
     const roomNames = Array.from({ length: 10 }, (_, i) => `Slot ${i + 1}`);
     const rooms = roomNames.map((name, i) => ({ id: i + 1, name, trainerId: i + 1 }));
@@ -331,6 +258,62 @@ export default function Dashboard() {
     return map;
   })();
 
+  // ---- Reorder rooms: matches come first, others follow ----
+  const orderedRooms = useMemo(() => {
+    const qTrainer = searchTrainer.trim().toLowerCase();
+    const qParticipant = searchParticipant.trim().toLowerCase();
+
+    if (!qTrainer && !qParticipant) return rooms;
+
+    const scored = rooms.map((room, idx) => {
+      const trainer = trainers.find(t => t.id === room.trainerId);
+      let score = 0;
+
+      if (qTrainer && trainer?.name.toLowerCase().includes(qTrainer)) {
+        score += 100;
+      }
+
+      if (qParticipant) {
+        const roomParticipants = filteredParticipants.filter(p => p.octonormId === room.id);
+        const hasMatch = roomParticipants.some(p =>
+          p.displayName.toLowerCase().includes(qParticipant)
+        );
+        if (hasMatch) score += 50;
+      }
+
+      return { room, score, idx };
+    });
+
+    return scored
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return a.idx - b.idx;
+      })
+      .map(item => item.room);
+  }, [rooms, trainers, filteredParticipants, searchTrainer, searchParticipant]);
+
+  // ---- Set of matching trainer IDs (for dimming entire columns) ----
+  const matchingTrainerIds = useMemo(() => {
+    if (!searchTrainer.trim()) return null;
+    const q = searchTrainer.trim().toLowerCase();
+    return new Set(
+      trainers.filter(t => t.name.toLowerCase().includes(q)).map(t => t.id)
+    );
+  }, [trainers, searchTrainer]);
+
+  // ---- Pagination ----
+  const displayedRooms = orderedRooms.slice(trainerPage * 5, (trainerPage + 1) * 5);
+  const totalPages = Math.ceil(orderedRooms.length / 5);
+
+  useEffect(() => {
+    setTrainerPage(0);
+  }, [searchTrainer, searchParticipant]);
+
+  const participantMatchesSearch = (participant) => {
+    if (!searchParticipant.trim()) return true;
+    return participant.displayName.toLowerCase().includes(searchParticipant.trim().toLowerCase());
+  };
+
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center bg-[#F3F4F6]">
@@ -352,9 +335,6 @@ export default function Dashboard() {
       </div>
     );
   }
-
-  const displayedRooms = rooms.slice(trainerPage * 5, (trainerPage + 1) * 5);
-  const totalPages = Math.ceil(rooms.length / 5);
 
   return (
     <div className="h-screen flex flex-col bg-[#F3F4F6] font-sans">
@@ -624,6 +604,72 @@ export default function Dashboard() {
             </div>
           </div>
 
+          {/* ===== SEARCH INPUTS ===== */}
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search trainer..."
+                value={searchTrainer}
+                onChange={(e) => setSearchTrainer(e.target.value)}
+                className="pl-8 pr-7 py-1.5 text-[11px] font-medium border border-gray-300 rounded-md bg-white w-52 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
+              />
+              {searchTrainer && (
+                <button
+                  onClick={() => setSearchTrainer('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search participant..."
+                value={searchParticipant}
+                onChange={(e) => setSearchParticipant(e.target.value)}
+                className="pl-8 pr-7 py-1.5 text-[11px] font-medium border border-gray-300 rounded-md bg-white w-52 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
+              />
+              {searchParticipant && (
+                <button
+                  onClick={() => setSearchParticipant('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+
+            <span className="text-[10px] text-gray-500 font-medium ml-1">
+              {searchTrainer && (
+                <>Trainer hits: <b className="text-purple-600">
+                  {trainers.filter(t => t.name.toLowerCase().includes(searchTrainer.trim().toLowerCase())).length}
+                </b></>
+              )}
+              {searchParticipant && (
+                <>
+                  {searchTrainer && <span className="mx-1.5">·</span>}
+                  Participant hits: <b className="text-emerald-600">
+                    {filteredParticipants.filter(participantMatchesSearch).length}
+                  </b>
+                </>
+              )}
+            </span>
+
+            {(searchTrainer || searchParticipant) && (
+              <button
+                onClick={() => { setSearchTrainer(''); setSearchParticipant(''); }}
+                className="ml-auto text-[10px] font-bold text-indigo-500 hover:text-indigo-700 transition"
+              >
+                Clear search
+              </button>
+            )}
+          </div>
+
           <div className="flex items-start gap-1">
             <div className="shrink-0 h-[60px] flex items-center">
               <button
@@ -647,10 +693,13 @@ export default function Dashboard() {
                   const isAvailable = (trainer?.availability === 'available');
                   const dotColor = isAvailable ? 'bg-emerald-400' : 'bg-amber-400';
 
+                  const isTrainerMatch = matchingTrainerIds ? matchingTrainerIds.has(trainer?.id) : false;
+                  const trainerDimmed = matchingTrainerIds && !isTrainerMatch;
+
                   return (
                     <div
                       key={room.id}
-                      className="bg-[#1A202C] text-white p-2 border-r border-gray-700 last:border-r-0 cursor-pointer hover:bg-[#2D3748] transition-colors"
+                      className={`bg-[#1A202C] text-white p-2 border-r border-gray-700 last:border-r-0 cursor-pointer hover:bg-[#2D3748] transition-all ${isTrainerMatch && searchTrainer.trim() ? 'ring-2 ring-purple-400 ring-inset' : ''} ${trainerDimmed ? 'opacity-25' : ''}`}
                       onClick={() => { setSelectedTrainer(trainer); setShowTrainerJourney(true); }}
                     >
                       <div className="flex items-center gap-1.5 mb-0.5">
@@ -681,13 +730,19 @@ export default function Dashboard() {
                     {displayedRooms.map(room => {
                       const participant = roomsData[room.id]?.find(p => p.timeSlotTime === timeLabel) || null;
 
+                      // Column dim from trainer search
+                      const trainerDimmed = matchingTrainerIds && !matchingTrainerIds.has(room.trainerId);
+
                       if (!participant) {
                         return (
-                          <div key={`${room.id}-${rowIdx}`} className="border border-gray-200 bg-white p-2 flex items-center justify-center min-h-[52px]">
+                          <div key={`${room.id}-${rowIdx}`} className={`border border-gray-200 bg-white p-2 flex items-center justify-center min-h-[52px] ${trainerDimmed ? 'opacity-25' : ''}`}>
                             <span className="text-gray-300 text-[11px]">—</span>
                           </div>
                         );
                       }
+
+                      const matchesParticipant = participantMatchesSearch(participant);
+                      const dimmed = searchParticipant.trim() && !matchesParticipant;
 
                       let statusText = 'IN PROGRESS';
                       let statusColor = 'text-purple-600';
@@ -702,7 +757,7 @@ export default function Dashboard() {
                       return (
                         <div
                           key={`${room.id}-${rowIdx}`}
-                          className={`border border-gray-200 bg-white p-2 flex flex-col justify-center min-h-[52px] border-l-4 ${borderColor} hover:bg-gray-50 transition-colors cursor-pointer`}
+                          className={`border border-gray-200 bg-white p-2 flex flex-col justify-center min-h-[52px] border-l-4 ${borderColor} hover:bg-gray-50 transition-all cursor-pointer ${(dimmed || trainerDimmed) ? 'opacity-25' : ''} ${matchesParticipant && searchParticipant.trim() ? 'ring-2 ring-emerald-400 ring-inset' : ''}`}
                           onClick={() => { setSelectedParticipant(participant); setShowParticipantJourney(true); }}
                         >
                           <div className="text-[11px] font-bold text-gray-800 leading-tight">{participant.displayName}</div>
@@ -909,7 +964,6 @@ export default function Dashboard() {
             className="absolute top-16 right-4 w-full max-w-md max-h-[80vh] overflow-hidden rounded-2xl bg-white shadow-2xl border border-gray-200 flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
             <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-bold text-gray-900">Notifications</h2>
@@ -930,7 +984,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* List */}
             <div className="p-2 overflow-y-auto flex-1">
               {liveAlerts.length === 0 ? (
                 <div className="text-center text-gray-500 text-xs py-10">No new notifications</div>
