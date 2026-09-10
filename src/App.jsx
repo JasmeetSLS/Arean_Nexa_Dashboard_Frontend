@@ -444,7 +444,10 @@ const [liveAlerts, setLiveAlerts] = useState([
               ))}
             </select>
           </div>
-          <div className="ml-auto text-[11px] font-bold text-indigo-400 pb-1">Last sync 12:51</div>
+        <div className="ml-auto text-[11px] font-bold text-indigo-400 pb-1">
+  <span className="inline-block w-2 h-2 rounded-full bg-indigo-500 animate-pulse mr-1.5 align-middle"></span>
+  Last sync 4:51 PM
+</div>
         </div>
       </div>
 
