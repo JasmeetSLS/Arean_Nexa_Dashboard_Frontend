@@ -458,7 +458,7 @@ const [liveAlerts, setLiveAlerts] = useState([
         <section className="px-3">
           <div className="flex justify-between items-end mb-1.5">
             <h2 className="text-xs font-black text-indigo-900 uppercase">TODAY'S LIVE DATA</h2>
-            <span className="text-[11px] text-gray-400 font-medium">Live snapshot · 04 Sep 2026</span>
+            <span className="text-[11px] text-gray-400 font-medium">Live snapshot · 10 Sep 2026</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
             <div className="bg-gray-900 text-white p-3 shadow-sm border border-gray-800">
