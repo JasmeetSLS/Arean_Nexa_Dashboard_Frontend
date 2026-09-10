@@ -52,9 +52,6 @@ const indianNames = Array.from({ length: 90 }, (_, i) => {
 });
 
 // ---- Trainer Master Data (MALE trainers with explicit photo URLs) ----
-// Replace each photoUrl with your own trainer image URL.
-// Example: photoUrl: 'https://yourdomain.com/trainers/rahul.jpg'
-// Or local: photoUrl: '/trainers/rahul.jpg'
 const TRAINER_MASTER = [
   {
     id: 1,
@@ -149,40 +146,40 @@ export default function Dashboard() {
   const [trainerPage, setTrainerPage] = useState(0);
 
   const [showAlerts, setShowAlerts] = useState(false);
-const [liveAlerts, setLiveAlerts] = useState([
-  {
-    id: 1,
-    type: 'danger',
-    title: 'Trainer Rahul is Offline',
-    subtitle: 'Slot 3 · Sales · North region',
-    time: '2 min ago',
-    photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Rahul_verma_wiki.jpg/250px-Rahul_verma_wiki.jpg',
-  },
-  {
-    id: 2,
-    type: 'danger',
-    title: 'Trainer Vikram is Offline',
-    subtitle: 'Slot 5 · Service · South region',
-    time: '8 min ago',
-    photoUrl: 'https://media.licdn.com/dms/image/v2/D4E03AQGBJ-u9FO7SDA/profile-displayphoto-scale_200_200/B4EZgeP3iDGYAY-/0/1752854136331?e=2147483647&v=beta&t=DH1Q_5WUzu_T2VO9ky2EEbnLAAWT74DbTTBVkrkfum4',
-  },
-  {
-    id: 3,
-    type: 'danger',
-    title: 'Trainer Arjun missed slot start',
-    subtitle: 'Slot 7 · Finance · East region',
-    time: '15 min ago',
-    photoUrl: 'https://media.licdn.com/dms/image/v2/D5603AQEWSRRRd0ymOw/profile-displayphoto-shrink_200_200/B56ZVAw_njGsAY-/0/1740548340841?e=2147483647&v=beta&t=1u_cL9n2iPj_VUYZqW_esz2l7odF42gldGEv5tyBXc0',
-  },
-  {
-    id: 4,
-    type: 'danger',
-    title: 'Trainer Karan not assigned',
-    subtitle: 'Slot 2 · CRM · West region',
-    time: '22 min ago',
-    photoUrl: 'https://media.licdn.com/dms/image/v2/D4D03AQHw3ZFBJGCC7g/profile-displayphoto-shrink_200_200/B4DZZhQyZ.HIAY-/0/1745388520436?e=2147483647&v=beta&t=UUKJlDlfnoZlzkfsYECuwBVx29G9fAkYpWFNhibgtRs',
-  },
-]);
+  const [liveAlerts, setLiveAlerts] = useState([
+    {
+      id: 1,
+      type: 'danger',
+      title: 'Trainer Rahul is Offline',
+      subtitle: 'Slot 3 · Sales · North region',
+      time: '2 min ago',
+      photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Rahul_verma_wiki.jpg/250px-Rahul_verma_wiki.jpg',
+    },
+    {
+      id: 2,
+      type: 'danger',
+      title: 'Trainer Vikram is Offline',
+      subtitle: 'Slot 5 · Service · South region',
+      time: '8 min ago',
+      photoUrl: 'https://media.licdn.com/dms/image/v2/D4E03AQGBJ-u9FO7SDA/profile-displayphoto-scale_200_200/B4EZgeP3iDGYAY-/0/1752854136331?e=2147483647&v=beta&t=DH1Q_5WUzu_T2VO9ky2EEbnLAAWT74DbTTBVkrkfum4',
+    },
+    {
+      id: 3,
+      type: 'danger',
+      title: 'Trainer Arjun missed slot start',
+      subtitle: 'Slot 7 · Finance · East region',
+      time: '15 min ago',
+      photoUrl: 'https://media.licdn.com/dms/image/v2/D5603AQEWSRRRd0ymOw/profile-displayphoto-shrink_200_200/B56ZVAw_njGsAY-/0/1740548340841?e=2147483647&v=beta&t=1u_cL9n2iPj_VUYZqW_esz2l7odF42gldGEv5tyBXc0',
+    },
+    {
+      id: 4,
+      type: 'danger',
+      title: 'Trainer Karan not assigned',
+      subtitle: 'Slot 2 · CRM · West region',
+      time: '22 min ago',
+      photoUrl: 'https://media.licdn.com/dms/image/v2/D4D03AQHw3ZFBJGCC7g/profile-displayphoto-shrink_200_200/B4DZZhQyZ.HIAY-/0/1745388520436?e=2147483647&v=beta&t=UUKJlDlfnoZlzkfsYECuwBVx29G9fAkYpWFNhibgtRs',
+    },
+  ]);
 
   const parseDurationFromName = (name) => {
     const match = name.match(/(\d+)\s*min/);
@@ -198,7 +195,6 @@ const [liveAlerts, setLiveAlerts] = useState([
   };
 
   const generateMockData = () => {
-    // Use explicit TRAINER_MASTER data with photoUrl + assignedCount
     const trainers = TRAINER_MASTER.map(t => ({
       ...t,
       assignedCount: 9,
@@ -444,10 +440,10 @@ const [liveAlerts, setLiveAlerts] = useState([
               ))}
             </select>
           </div>
-        <div className="ml-auto text-[11px] font-bold text-indigo-400 pb-1">
-  <span className="inline-block w-2 h-2 rounded-full bg-indigo-500 animate-pulse mr-1.5 align-middle"></span>
-  Last sync 4:51 PM
-</div>
+          <div className="ml-auto text-[11px] font-bold text-indigo-400 pb-1">
+            <span className="inline-block w-2 h-2 rounded-full bg-indigo-500 animate-pulse mr-1.5 align-middle"></span>
+            Last sync 4:51 PM
+          </div>
         </div>
       </div>
 
@@ -480,14 +476,14 @@ const [liveAlerts, setLiveAlerts] = useState([
             <div className="bg-rose-500 text-white p-3 shadow-sm">
               <p className="text-[10px] font-bold uppercase tracking-wider text-white mb-1">Absentees</p>
               <p className="text-lg font-extrabold leading-tight">34</p>
-              <p className="text-[10px] text-whitefont-medium mt-0.5">18.5% of schedule</p>
+              <p className="text-[10px] text-white font-medium mt-0.5">18.5% of schedule</p>
             </div>
             <div className="bg-orange-500 text-white p-3 shadow-sm">
               <p className="text-[10px] font-bold uppercase tracking-wider text-white mb-1">Delayed</p>
               <p className="text-lg font-extrabold leading-tight">17</p>
-              <p className="text-[10px] text-whitefont-medium mt-0.5">9 follow-ups</p>
+              <p className="text-[10px] text-white font-medium mt-0.5">9 follow-ups</p>
             </div>
-            <div className="bg-purple-600 text-white p-3  shadow-sm">
+            <div className="bg-purple-600 text-white p-3 shadow-sm">
               <p className="text-[10px] font-bold uppercase tracking-wider text-white mb-1">Pass Rate</p>
               <p className="text-lg font-extrabold leading-tight">{stats.passRate}%</p>
               <p className="text-[10px] text-white font-medium mt-0.5">+4 pts today</p>
@@ -542,7 +538,6 @@ const [liveAlerts, setLiveAlerts] = useState([
             {stats.trainerStats.slice(0, 5).map(t => (
               <div key={t.id} className="bg-white shadow-sm border border-gray-100 p-3 hover:shadow-md transition cursor-pointer"
                 onClick={() => { setSelectedTrainer(t); setShowTrainerJourney(true); }}>
-                {/* Photo + Name */}
                 <div className="flex items-center gap-2 mb-1.5">
                   <img
                     src={t.photoUrl}
@@ -554,7 +549,7 @@ const [liveAlerts, setLiveAlerts] = useState([
                   <h3 className="font-bold text-black text-[11px] tracking-wide truncate">{t.name.toUpperCase()}</h3>
                 </div>
                 <p className="text-[11px] font-semibold text-black">{t.completed} completed</p>
-                <p className="text-[11px] text-blackfont-medium mt-0.5">{t.passRate}% pass · {formatElapsedTime(t.avgTime)}</p>
+                <p className="text-[11px] text-black font-medium mt-0.5">{t.passRate}% pass · {formatElapsedTime(t.avgTime)}</p>
               </div>
             ))}
           </div>
@@ -570,7 +565,7 @@ const [liveAlerts, setLiveAlerts] = useState([
             <div className="bg-white shadow-sm border-2 border-gray-900 p-3">
               <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Total Scheduled</p>
               <p className="text-sm font-extrabold text-gray-800 leading-tight">{stats.total}</p>
-              <p className="text-[10px] text-blackfont-medium mt-0.5">100% registered</p>
+              <p className="text-[10px] text-black font-medium mt-0.5">100% registered</p>
             </div>
             <div className="bg-white shadow-sm border-2 border-sky-500 p-3">
               <p className="text-[10px] font-bold uppercase tracking-wider text-sky-600 mb-1">Total Attempted</p>
@@ -629,9 +624,7 @@ const [liveAlerts, setLiveAlerts] = useState([
             </div>
           </div>
 
-          {/* Flex container: Prev btn | Grid | Next btn — buttons TOP-ALIGNED */}
           <div className="flex items-start gap-1">
-            {/* Prev Button */}
             <div className="shrink-0 h-[60px] flex items-center">
               <button
                 onClick={() => setTrainerPage(p => Math.max(0, p - 1))}
@@ -643,10 +636,8 @@ const [liveAlerts, setLiveAlerts] = useState([
               </button>
             </div>
 
-            {/* Grid */}
             <div className="flex-1 overflow-x-auto bg-white shadow-sm border border-gray-200">
               <div className="grid grid-cols-[85px_repeat(5,1fr)] min-w-[820px]">
-                {/* Header Row */}
                 <div className="bg-[#1A202C] text-white p-2 flex items-center justify-center text-[11px] font-bold tracking-wider border-r border-gray-700">
                   TIME
                 </div>
@@ -662,7 +653,6 @@ const [liveAlerts, setLiveAlerts] = useState([
                       className="bg-[#1A202C] text-white p-2 border-r border-gray-700 last:border-r-0 cursor-pointer hover:bg-[#2D3748] transition-colors"
                       onClick={() => { setSelectedTrainer(trainer); setShowTrainerJourney(true); }}
                     >
-                      {/* Photo (left) + Name (right) + status dot */}
                       <div className="flex items-center gap-1.5 mb-0.5">
                         <img
                           src={trainer?.photoUrl}
@@ -674,7 +664,6 @@ const [liveAlerts, setLiveAlerts] = useState([
                         <span className="text-[11px] font-bold truncate flex-1">{trainer?.name}</span>
                         <span className={`h-2 w-2 rounded-full shrink-0 ${dotColor}`} />
                       </div>
-                      {/* Metrics */}
                       <div className="text-[10px] text-gray-300 font-medium">
                         <p>{tStat?.completed || 0} / {tStat?.assigned || 0} completed · {tStat?.passRate || 0}% pass</p>
                         <p>{formatElapsedTime(tStat?.avgTime || 0)} avg / participant</p>
@@ -683,7 +672,6 @@ const [liveAlerts, setLiveAlerts] = useState([
                   );
                 })}
 
-                {/* Body Rows */}
                 {TIME_SLOTS.map((timeLabel, rowIdx) => (
                   <React.Fragment key={`row-${rowIdx}`}>
                     <div className="bg-gray-100 border border-gray-200 flex items-center justify-center text-[11px] font-bold text-gray-800 py-2">
@@ -730,7 +718,6 @@ const [liveAlerts, setLiveAlerts] = useState([
               </div>
             </div>
 
-            {/* Next Button */}
             <div className="shrink-0 h-[60px] flex items-center">
               <button
                 onClick={() => setTrainerPage(p => Math.min(totalPages - 1, p + 1))}
@@ -781,8 +768,8 @@ const [liveAlerts, setLiveAlerts] = useState([
 
       {/* ===== TRAINER JOURNEY POPUP ===== */}
       {showTrainerJourney && selectedTrainer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div className="mx-4 w-full max-w-lg overflow-hidden  bg-white shadow-2xl animate-slideUp">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-lg overflow-hidden bg-white shadow-2xl">
             <div className="px-5 py-2.5 bg-gradient-to-r from-purple-700 to-indigo-800 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <img
@@ -861,13 +848,13 @@ const [liveAlerts, setLiveAlerts] = useState([
 
       {/* ===== PARTICIPANT JOURNEY POPUP ===== */}
       {showParticipantJourney && selectedParticipant && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div className="mx-4 w-full max-w-lg overflow-hidden bg-white shadow-2xl animate-slideUp">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-lg overflow-hidden bg-white shadow-2xl">
             <div className="px-5 py-2.5 bg-gradient-to-r from-teal-500 to-emerald-600 flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-bold text-teal-100 uppercase tracking-wider">PARTICIPANT JOURNEY</p>
                 <h2 className="text-lg font-bold text-white mt-0.5">{selectedParticipant.displayName}</h2>
-                 <p className="text-[11px] text-teal-100 font-medium">{selectedParticipant.empId} · {selectedParticipant.role}</p>
+                <p className="text-[11px] text-teal-100 font-medium">{selectedParticipant.empId} · {selectedParticipant.role}</p>
               </div>
               <div className="flex flex-col items-end">
                 <button onClick={() => { setShowParticipantJourney(false); setSelectedParticipant(null); }} className="text-white/70 hover:text-white transition">
@@ -915,84 +902,73 @@ const [liveAlerts, setLiveAlerts] = useState([
         </div>
       )}
 
-{/* ===== ALERTS MODAL (TOP-RIGHT) ===== */}
-{showAlerts && (
-  <div className="fixed inset-0 z-50 animate-fadeIn" onClick={() => setShowAlerts(false)}>
-    <div
-      className="absolute top-16 right-4 w-full max-w-md max-h-[80vh] overflow-hidden rounded-2xl bg-white shadow-2xl border border-gray-200 animate-slideUp flex flex-col"
-      onClick={(e) => e.stopPropagation()}
-    >
-      {/* Header */}
-      <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
-          <h2 className="text-base font-bold text-gray-900">Notifications</h2>
-          <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-            {liveAlerts.length}
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <button className="text-[11px] font-bold text-blue-600 hover:text-blue-800 transition">
-            Mark all read
-          </button>
-          <button
-            onClick={() => setShowAlerts(false)}
-            className="text-gray-400 hover:text-gray-700 transition"
+      {/* ===== ALERTS MODAL (TOP-RIGHT) ===== */}
+      {showAlerts && (
+        <div className="fixed inset-0 z-50" onClick={() => setShowAlerts(false)}>
+          <div
+            className="absolute top-16 right-4 w-full max-w-md max-h-[80vh] overflow-hidden rounded-2xl bg-white shadow-2xl border border-gray-200 flex flex-col"
+            onClick={(e) => e.stopPropagation()}
           >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* List */}
-      <div className="p-2 overflow-y-auto flex-1">
-        {liveAlerts.length === 0 ? (
-          <div className="text-center text-gray-500 text-xs py-10">No new notifications</div>
-        ) : (
-          liveAlerts.map(alert => (
-            <div
-              key={alert.id}
-              className="flex items-start gap-3 px-3 py-3 rounded-lg hover:bg-gray-50 transition cursor-pointer"
-            >
-              {/* Avatar on the LEFT */}
-              <div className="relative shrink-0">
-                <img
-                  src={alert.photoUrl}
-                  alt={alert.title}
-                  className="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-sm"
-                  onError={(e) => { e.target.src = FALLBACK_TRAINER_PHOTO; }}
-                />
-                <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-red-500 border-2 border-white" />
+            {/* Header */}
+            <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-gray-900">Notifications</h2>
+                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                  {liveAlerts.length}
+                </span>
               </div>
-
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-gray-900 leading-snug truncate">
-                  {alert.title}
-                </p>
-                <p className="text-[11px] text-gray-500 font-medium mt-0.5 truncate">
-                  {alert.subtitle}
-                </p>
-                <p className="text-[10px] text-gray-400 font-medium mt-1">
-                  {alert.time}
-                </p>
+              <div className="flex items-center gap-3">
+                <button className="text-[11px] font-bold text-blue-600 hover:text-blue-800 transition">
+                  Mark all read
+                </button>
+                <button
+                  onClick={() => setShowAlerts(false)}
+                  className="text-gray-400 hover:text-gray-700 transition"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
             </div>
-          ))
-        )}
-      </div>
-    </div>
-  </div>
-)}
 
-      {/* ===== CSS Animations ===== */}
-      <style>{`
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.1); } }
-        .animate-fadeIn { animation: fadeIn 0.25s ease-out; }
-        .animate-slideUp { animation: slideUp 0.3s ease-out; }
-        .animate-pulse { animation: pulse 1.5s ease-in-out infinite; }
-      `}</style>
+            {/* List */}
+            <div className="p-2 overflow-y-auto flex-1">
+              {liveAlerts.length === 0 ? (
+                <div className="text-center text-gray-500 text-xs py-10">No new notifications</div>
+              ) : (
+                liveAlerts.map(alert => (
+                  <div
+                    key={alert.id}
+                    className="flex items-start gap-3 px-3 py-3 rounded-lg hover:bg-gray-50 transition cursor-pointer"
+                  >
+                    <div className="relative shrink-0">
+                      <img
+                        src={alert.photoUrl}
+                        alt={alert.title}
+                        className="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-sm"
+                        onError={(e) => { e.target.src = FALLBACK_TRAINER_PHOTO; }}
+                      />
+                      <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-red-500 border-2 border-white" />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-gray-900 leading-snug truncate">
+                        {alert.title}
+                      </p>
+                      <p className="text-[11px] text-gray-500 font-medium mt-0.5 truncate">
+                        {alert.subtitle}
+                      </p>
+                      <p className="text-[10px] text-gray-400 font-medium mt-1">
+                        {alert.time}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
