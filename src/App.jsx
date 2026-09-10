@@ -51,6 +51,85 @@ const indianNames = Array.from({ length: 90 }, (_, i) => {
   return `${first} ${last} - ${mins} min`;
 });
 
+// ---- Trainer Master Data (MALE trainers with explicit photo URLs) ----
+// Replace each photoUrl with your own trainer image URL.
+// Example: photoUrl: 'https://yourdomain.com/trainers/rahul.jpg'
+// Or local: photoUrl: '/trainers/rahul.jpg'
+const TRAINER_MASTER = [
+  {
+    id: 1,
+    name: 'Rahul Verma',
+    languages: 'English, Hindi',
+    availability: 'available',
+    photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Rahul_verma_wiki.jpg/250px-Rahul_verma_wiki.jpg?utm_source=en.wikipedia.org&utm_campaign=parser&utm_content=thumbnail',
+  },
+  {
+    id: 2,
+    name: 'Vikram Singh',
+    languages: 'English, Tamil',
+    availability: 'available',
+    photoUrl: 'https://media.licdn.com/dms/image/v2/D4E03AQGBJ-u9FO7SDA/profile-displayphoto-scale_200_200/B4EZgeP3iDGYAY-/0/1752854136331?e=2147483647&v=beta&t=DH1Q_5WUzu_T2VO9ky2EEbnLAAWT74DbTTBVkrkfum4',
+  },
+  {
+    id: 3,
+    name: 'Arjun Mehta',
+    languages: 'English, Malayalam',
+    availability: 'available',
+    photoUrl: 'https://media.licdn.com/dms/image/v2/D5603AQEWSRRRd0ymOw/profile-displayphoto-shrink_200_200/B56ZVAw_njGsAY-/0/1740548340841?e=2147483647&v=beta&t=1u_cL9n2iPj_VUYZqW_esz2l7odF42gldGEv5tyBXc0',
+  },
+  {
+    id: 4,
+    name: 'Karan Kapoor',
+    languages: 'Hindi, English',
+    availability: 'available',
+    photoUrl: 'https://media.licdn.com/dms/image/v2/D4D03AQHw3ZFBJGCC7g/profile-displayphoto-shrink_200_200/B4DZZhQyZ.HIAY-/0/1745388520436?e=2147483647&v=beta&t=UUKJlDlfnoZlzkfsYECuwBVx29G9fAkYpWFNhibgtRs',
+  },
+  {
+    id: 5,
+    name: 'Aditya Sharma',
+    languages: 'English, Telugu',
+    availability: 'available',
+    photoUrl: 'https://eye7.b-cdn.net/wp-content/uploads/dr-aditya-sharma.jpg',
+  },
+  {
+    id: 6,
+    name: 'Rajesh Kumar',
+    languages: 'English, Kannada',
+    availability: 'available',
+    photoUrl: 'https://upeswebsitecdn-prod-hphqfhc0b8h2ffhf.a02.azurefd.net/drupal-data/2026-03/Rajesh%20Kumar_0.png'  },
+  {
+    id: 7,
+    name: 'Amit Joshi',
+    languages: 'Hindi, Tamil',
+    availability: 'busy',
+    photoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQg3w-SyH9nJjOgmANT0XKlpxZYEJvdBQP5-d8u9uQLU3k65dGe6UXxH0q2&s=10',
+  },
+  {
+    id: 8,
+    name: 'Suresh Pillai',
+    languages: 'English, Malayalam',
+    availability: 'busy',
+    photoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQkAvZr_rGNrJ1ucQegB0ev5KgBS8YWX-JRz2cRE90O3HkiWynVAI5-E9Xz&s=10',
+  },
+  {
+    id: 9,
+    name: 'Rohan Nair',
+    languages: 'Hindi, English',
+    availability: 'busy',
+    photoUrl: 'https://media.licdn.com/dms/image/v2/D4E03AQGu0AuoKkz-lw/profile-displayphoto-scale_200_200/B4EZ7bHaldKEAg-/0/1781792617044?e=2147483647&v=beta&t=sEVddkb8T5r4C_0NaeIzD1Z_S8XwPmhMG3HEyNI3OGI',
+  },
+  {
+    id: 10,
+    name: 'Nikhil Reddy',
+    languages: 'English, Telugu',
+    availability: 'busy',
+    photoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSAeF1DJYpjcjp9mrt09BYE-r4EQkrhf8LgIHIzgRijahj1mng2xiIXIk5F&s=10',
+  },
+];
+
+// Fallback image if a trainer photo fails to load
+const FALLBACK_TRAINER_PHOTO = 'https://i.pravatar.cc/150?img=12';
+
 export default function Dashboard() {
   const [participants, setParticipants] = useState([]);
   const [rooms, setRooms] = useState([]);
@@ -72,7 +151,7 @@ export default function Dashboard() {
   const [showAlerts, setShowAlerts] = useState(false);
   const [liveAlerts, setLiveAlerts] = useState([
     { id: 1, type: 'warning', message: 'Rahul Singh is overdue', time: '2 min ago' },
-    { id: 2, type: 'info', message: 'Trainer Priya has 2 participants waiting', time: '5 min ago' },
+    { id: 2, type: 'info', message: 'Trainer Rahul has 2 participants waiting', time: '5 min ago' },
     { id: 3, type: 'success', message: 'Ananya completed in 8:30', time: '8 min ago' },
     { id: 4, type: 'danger', message: 'Slot 3 has no trainer assigned', time: '12 min ago' },
   ]);
@@ -91,17 +170,10 @@ export default function Dashboard() {
   };
 
   const generateMockData = () => {
-    const trainerNames = [
-      'Priya Sharma', 'Rahul Verma', 'Anjali Nair', 'Vikram Singh', 'Neha Patel',
-      'Rajesh Kumar', 'Sneha Reddy', 'Amit Joshi', 'Kavya Menon', 'Suresh Pillai'
-    ];
-    const trainerLangs = [
-      'English, Hindi', 'English, Tamil', 'English, Malayalam', 'Hindi, English', 'English, Telugu',
-      'English, Kannada', 'Hindi, Tamil', 'English, Malayalam', 'Hindi, English', 'English, Telugu'
-    ];
-    const trainers = trainerNames.map((name, i) => ({
-      id: i + 1, name, languages: trainerLangs[i],
-      availability: i < 6 ? 'available' : 'busy', assignedCount: 9,
+    // Use explicit TRAINER_MASTER data with photoUrl + assignedCount
+    const trainers = TRAINER_MASTER.map(t => ({
+      ...t,
+      assignedCount: 9,
     }));
 
     const roomNames = Array.from({ length: 10 }, (_, i) => `Slot ${i + 1}`);
@@ -269,26 +341,26 @@ export default function Dashboard() {
           <h1 className="text-base font-black text-indigo-900 tracking-tight flex items-center gap-2">
             SKILL CONTEST <span className="text-purple-500 font-light">/</span> COMMAND CENTER
           </h1>
-          <p className="text-[10px] text-indigo-500 font-medium">Portal progress monitor</p>
+          <p className="text-[11px] text-indigo-500 font-medium">Portal progress monitor</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-200">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-[10px] font-bold text-gray-700">LIVE · 04 Sep 2026 · 12:52 IST</span>
+            <span className="text-[11px] font-bold text-gray-700">LIVE · 04 Sep 2026 · 12:52 IST</span>
           </div>
           <button
             onClick={() => setShowAlerts(true)}
             className="relative flex items-center justify-center h-8 w-8 bg-white border border-gray-200 text-gray-600 rounded-full shadow-sm hover:shadow-md transition-all"
           >
-            <Bell className="h-3.5 w-3.5" />
+            <Bell className="h-4 w-4" />
             {liveAlerts.length > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white animate-pulse">
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white animate-pulse">
                 {liveAlerts.length}
               </span>
             )}
           </button>
-          <button className="flex items-center gap-1 px-3 py-1.5 bg-white border border-gray-200 text-gray-600 rounded-full text-[10px] font-semibold shadow-sm hover:shadow-md transition-all">
-            <LogOut className="h-3 w-3" />
+          <button className="flex items-center gap-1 px-3 py-1.5 bg-white border border-gray-200 text-gray-600 rounded-full text-[11px] font-semibold shadow-sm hover:shadow-md transition-all">
+            <LogOut className="h-3.5 w-3.5" />
             <span>Logout</span>
           </button>
         </div>
@@ -298,16 +370,16 @@ export default function Dashboard() {
       <div className="shrink-0 bg-white px-4 py-1.5 border-b border-gray-200 shadow-sm z-10">
         <div className="flex flex-wrap items-end gap-2">
           <div className="flex flex-col gap-0.5">
-            <label className="text-[9px] font-bold text-indigo-900 uppercase">Date / Month</label>
-            <select className="border border-gray-300 rounded px-2 py-0.5 text-[10px] bg-white w-24"><option>All</option></select>
+            <label className="text-[10px] font-bold text-indigo-900 uppercase">Date / Month</label>
+            <select className="border border-gray-300 rounded px-2 py-1 text-[11px] bg-white w-26"><option>All</option></select>
           </div>
           <div className="flex flex-col gap-0.5">
-            <label className="text-[9px] font-bold text-indigo-900 uppercase">Zone</label>
-            <select className="border border-gray-300 rounded px-2 py-0.5 text-[10px] bg-white w-20"><option>All</option></select>
+            <label className="text-[10px] font-bold text-indigo-900 uppercase">Zone</label>
+            <select className="border border-gray-300 rounded px-2 py-1 text-[11px] bg-white w-22"><option>All</option></select>
           </div>
           <div className="flex flex-col gap-0.5">
-            <label className="text-[9px] font-bold text-indigo-900 uppercase">Region</label>
-            <select className="border border-gray-300 rounded px-2 py-0.5 text-[10px] bg-white w-24"
+            <label className="text-[10px] font-bold text-indigo-900 uppercase">Region</label>
+            <select className="border border-gray-300 rounded px-2 py-1 text-[11px] bg-white w-26"
               value={filters.region} onChange={e => setFilters({ ...filters, region: e.target.value })}>
               <option value="">All</option>
               <option value="North">North</option>
@@ -317,16 +389,16 @@ export default function Dashboard() {
             </select>
           </div>
           <div className="flex flex-col gap-0.5">
-            <label className="text-[9px] font-bold text-indigo-900 uppercase">Trainer</label>
-            <select className="border border-gray-300 rounded px-2 py-0.5 text-[10px] bg-white w-28"><option>All</option></select>
+            <label className="text-[10px] font-bold text-indigo-900 uppercase">Trainer</label>
+            <select className="border border-gray-300 rounded px-2 py-1 text-[11px] bg-white w-30"><option>All</option></select>
           </div>
           <div className="flex flex-col gap-0.5">
-            <label className="text-[9px] font-bold text-indigo-900 uppercase">Role</label>
-            <select className="border border-gray-300 rounded px-2 py-0.5 text-[10px] bg-white w-20"><option>All</option></select>
+            <label className="text-[10px] font-bold text-indigo-900 uppercase">Role</label>
+            <select className="border border-gray-300 rounded px-2 py-1 text-[11px] bg-white w-22"><option>All</option></select>
           </div>
           <div className="flex flex-col gap-0.5">
-            <label className="text-[9px] font-bold text-indigo-900 uppercase">Agency</label>
-            <select className="border border-gray-300 rounded px-2 py-0.5 text-[10px] bg-white w-24"
+            <label className="text-[10px] font-bold text-indigo-900 uppercase">Agency</label>
+            <select className="border border-gray-300 rounded px-2 py-1 text-[11px] bg-white w-26"
               value={filters.agency} onChange={e => setFilters({ ...filters, agency: e.target.value })}>
               <option value="">All</option>
               <option value="Agency A">Agency A</option>
@@ -335,8 +407,8 @@ export default function Dashboard() {
             </select>
           </div>
           <div className="flex flex-col gap-0.5">
-            <label className="text-[9px] font-bold text-indigo-900 uppercase">Dealer</label>
-            <select className="border border-gray-300 rounded px-2 py-0.5 text-[10px] bg-white w-24"
+            <label className="text-[10px] font-bold text-indigo-900 uppercase">Dealer</label>
+            <select className="border border-gray-300 rounded px-2 py-1 text-[11px] bg-white w-26"
               value={filters.dealerCode} onChange={e => setFilters({ ...filters, dealerCode: e.target.value })}>
               <option value="">All</option>
               {Array.from(new Set(participants.map(p => p.dealerCode))).map(code => (
@@ -344,7 +416,7 @@ export default function Dashboard() {
               ))}
             </select>
           </div>
-          <div className="ml-auto text-[10px] font-bold text-indigo-400 pb-0.5">Last sync 12:51</div>
+          <div className="ml-auto text-[11px] font-bold text-indigo-400 pb-1">Last sync 12:51</div>
         </div>
       </div>
 
@@ -355,49 +427,49 @@ export default function Dashboard() {
         <section className="px-3">
           <div className="flex justify-between items-end mb-1.5">
             <h2 className="text-xs font-black text-indigo-900 uppercase">TODAY'S LIVE DATA</h2>
-            <span className="text-[10px] text-gray-400 font-medium">Live snapshot · 04 Sep 2026</span>
+            <span className="text-[11px] text-gray-400 font-medium">Live snapshot · 04 Sep 2026</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
-            <div className="bg-gray-900 text-white p-2 rounded-lg shadow-sm border border-gray-800">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">Scheduled</p>
-              <p className="text-lg font-extrabold">{stats.total}</p>
-              <p className="text-[9px] text-gray-400 font-medium">Daily plan</p>
+            <div className="bg-gray-900 text-white p-3 shadow-sm border border-gray-800">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-white mb-1">Scheduled</p>
+              <p className="text-lg font-extrabold leading-tight">{stats.total}</p>
+              <p className="text-[10px] text-white font-medium mt-0.5">Daily plan</p>
             </div>
-            <div className="bg-sky-500 text-white p-2 rounded-lg shadow-sm">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-sky-100 mb-0.5">Attempted</p>
+            <div className="bg-sky-500 text-white p-3 shadow-sm">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-white mb-1">Attempted</p>
               <div className="flex items-baseline gap-1">
-                <p className="text-lg font-extrabold">{stats.completed + stats.inProgress}</p>
-                <p className="text-[10px] font-semibold text-sky-200">/ {stats.total}</p>
+                <p className="text-lg font-extrabold leading-tight">{stats.completed + stats.inProgress}</p>
+                <p className="text-[11px] font-semibold text-white">/ {stats.total}</p>
               </div>
-              <div className="flex justify-between text-[9px] text-sky-100 font-medium">
+              <div className="flex justify-between text-[10px] text-white font-medium mt-0.5">
                 <span>{stats.inProgress} in prog</span>
                 <span>{stats.completed} comp</span>
               </div>
             </div>
-            <div className="bg-rose-500 text-white p-2 rounded-lg shadow-sm">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-rose-100 mb-0.5">Absentees</p>
-              <p className="text-lg font-extrabold">34</p>
-              <p className="text-[9px] text-rose-100 font-medium">18.5% of schedule</p>
+            <div className="bg-rose-500 text-white p-3 shadow-sm">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-white mb-1">Absentees</p>
+              <p className="text-lg font-extrabold leading-tight">34</p>
+              <p className="text-[10px] text-whitefont-medium mt-0.5">18.5% of schedule</p>
             </div>
-            <div className="bg-orange-500 text-white p-2 rounded-lg shadow-sm">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-orange-100 mb-0.5">Delayed</p>
-              <p className="text-lg font-extrabold">17</p>
-              <p className="text-[9px] text-orange-100 font-medium">9 follow-ups</p>
+            <div className="bg-orange-500 text-white p-3 shadow-sm">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-white mb-1">Delayed</p>
+              <p className="text-lg font-extrabold leading-tight">17</p>
+              <p className="text-[10px] text-whitefont-medium mt-0.5">9 follow-ups</p>
             </div>
-            <div className="bg-purple-600 text-white p-2 rounded-lg shadow-sm">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-purple-200 mb-0.5">Pass Rate</p>
-              <p className="text-lg font-extrabold">{stats.passRate}%</p>
-              <p className="text-[9px] text-purple-200 font-medium">+4 pts today</p>
+            <div className="bg-purple-600 text-white p-3  shadow-sm">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-white mb-1">Pass Rate</p>
+              <p className="text-lg font-extrabold leading-tight">{stats.passRate}%</p>
+              <p className="text-[10px] text-white font-medium mt-0.5">+4 pts today</p>
             </div>
-            <div className="bg-teal-500 text-white p-2 rounded-lg shadow-sm">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-teal-100 mb-0.5">Avg Time</p>
-              <p className="text-lg font-extrabold">{formatElapsedTime(stats.avgTime)}</p>
-              <p className="text-[9px] text-teal-100 font-medium">Per participant</p>
+            <div className="bg-teal-500 text-white p-3 shadow-sm">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-white mb-1">Avg Time</p>
+              <p className="text-lg font-extrabold leading-tight">{formatElapsedTime(stats.avgTime)}</p>
+              <p className="text-[10px] text-white font-medium mt-0.5">Per participant</p>
             </div>
-            <div className="bg-emerald-500 text-white p-2 rounded-lg shadow-sm">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-emerald-100 mb-0.5">Active Trainers</p>
-              <p className="text-lg font-extrabold">10 / 10</p>
-              <p className="text-[9px] text-emerald-100 font-medium">6 ready · 4 occupied</p>
+            <div className="bg-emerald-500 text-white p-3 shadow-sm">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-white mb-1">Active Trainers</p>
+              <p className="text-lg font-extrabold leading-tight">10 / 10</p>
+              <p className="text-[10px] text-white font-medium mt-0.5">6 ready · 4 occupied</p>
             </div>
           </div>
         </section>
@@ -405,25 +477,25 @@ export default function Dashboard() {
         {/* ===== REGION-WISE SUMMARY ===== */}
         <section className="px-3">
           <h2 className="text-xs font-black text-indigo-900 uppercase mb-0.5">REGION-WISE SUMMARY</h2>
-          <p className="text-[10px] text-gray-500 mb-1.5 font-medium">North selected · switch zone to refresh the regions below</p>
+          <p className="text-[11px] text-gray-500 mb-1.5 font-medium">North selected · switch zone to refresh the regions below</p>
           <div className="flex gap-1.5 mb-1.5">
             {['NORTH', 'EAST', 'WEST', 'SOUTH', 'CENTRAL'].map(zone => (
-              <button key={zone} className={`px-4 py-0.5 text-[10px] font-bold rounded transition ${zone === 'NORTH' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}>
+              <button key={zone} className={`px-4 py-0.5 text-[11px] font-bold rounded transition ${zone === 'NORTH' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}>
                 {zone}
               </button>
             ))}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
             {[
-              { name: 'NORTH–1', completed: 72, pass: '86%', avg: '19m', border: 'border-t-purple-500' },
-              { name: 'NORTH–2', completed: 68, pass: '82%', avg: '21m', border: 'border-t-sky-500' },
-              { name: 'NORTH–3', completed: 61, pass: '78%', avg: '24m', border: 'border-t-emerald-500' },
-              { name: 'NORTH–4', completed: 54, pass: '74%', avg: '27m', border: 'border-t-orange-500' },
+              { name: 'NORTH–1', completed: 72, pass: '86%', avg: '19m', border: 'border-purple-500' },
+              { name: 'NORTH–2', completed: 68, pass: '82%', avg: '21m', border: 'border-sky-500' },
+              { name: 'NORTH–3', completed: 61, pass: '78%', avg: '24m', border: 'border-emerald-500' },
+              { name: 'NORTH–4', completed: 54, pass: '74%', avg: '27m', border: 'border-orange-500' },
             ].map((region) => (
-              <div key={region.name} className={`bg-white rounded-lg shadow-sm border border-gray-100 border-t-4 ${region.border} p-2 text-center`}>
-                <h3 className="font-bold text-gray-800 text-[11px] mb-0.5">{region.name}</h3>
-                <p className="text-[10px] font-semibold text-gray-700">{region.completed} completed</p>
-                <p className="text-[10px] text-gray-500 font-medium">{region.pass} pass · {region.avg} avg</p>
+              <div key={region.name} className={`bg-white text-black shadow-sm border-2 ${region.border} p-3 text-center`}>
+                <h3 className="font-bold text-[12px] mb-1">{region.name}</h3>
+                <p className="text-[10px] font-semibold">{region.completed} completed</p>
+                <p className="text-[12px] font-medium mt-0.5">{region.pass} pass · {region.avg} avg</p>
               </div>
             ))}
           </div>
@@ -433,15 +505,25 @@ export default function Dashboard() {
         <section className="px-3">
           <div className="flex justify-between items-end mb-1.5">
             <h2 className="text-xs font-black text-indigo-900 uppercase">TRAINERS SUMMARY</h2>
-            <span className="text-[10px] text-indigo-400 font-bold cursor-pointer hover:text-indigo-600 transition">Click a trainer to open journey</span>
+            <span className="text-[11px] text-indigo-400 font-bold cursor-pointer hover:text-indigo-600 transition">Click a trainer to open journey</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
             {stats.trainerStats.slice(0, 5).map(t => (
-              <div key={t.id} className="bg-white rounded-lg shadow-sm border border-gray-100 p-2 text-center hover:shadow-md transition cursor-pointer"
+              <div key={t.id} className="bg-white shadow-sm border border-gray-100 p-3 hover:shadow-md transition cursor-pointer"
                 onClick={() => { setSelectedTrainer(t); setShowTrainerJourney(true); }}>
-                <h3 className="font-bold text-gray-800 text-[11px] mb-0.5 tracking-wide">{t.name.toUpperCase()}</h3>
-                <p className="text-[10px] font-semibold text-gray-700">{t.completed} completed</p>
-                <p className="text-[10px] text-gray-500 font-medium">{t.passRate}% pass · {formatElapsedTime(t.avgTime)}</p>
+                {/* Photo + Name */}
+                <div className="flex items-center gap-2 mb-1.5">
+                  <img
+                    src={t.photoUrl}
+                    alt={t.name}
+                    className="shrink-0 w-9 h-9 rounded-full object-cover ring-2 ring-gray-100"
+                    loading="lazy"
+                    onError={(e) => { e.target.src = FALLBACK_TRAINER_PHOTO; }}
+                  />
+                  <h3 className="font-bold text-black text-[11px] tracking-wide truncate">{t.name.toUpperCase()}</h3>
+                </div>
+                <p className="text-[11px] font-semibold text-black">{t.completed} completed</p>
+                <p className="text-[11px] text-blackfont-medium mt-0.5">{t.passRate}% pass · {formatElapsedTime(t.avgTime)}</p>
               </div>
             ))}
           </div>
@@ -451,43 +533,43 @@ export default function Dashboard() {
         <section className="px-3">
           <div className="flex justify-between items-end mb-1.5">
             <h2 className="text-xs font-black text-indigo-900 uppercase">CONTEST TOTALS</h2>
-            <span className="text-[10px] text-gray-400 font-medium">All dates · all zones</span>
+            <span className="text-[11px] text-gray-400 font-medium">All dates · all zones</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
-            <div className="bg-white rounded-lg shadow-sm border-2 border-gray-900 p-2">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-gray-500 mb-0.5">Total Scheduled</p>
-              <p className="text-sm font-extrabold text-gray-800">{stats.total}</p>
-              <p className="text-[9px] text-gray-500 font-medium">100% registered</p>
+            <div className="bg-white shadow-sm border-2 border-gray-900 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Total Scheduled</p>
+              <p className="text-sm font-extrabold text-gray-800 leading-tight">{stats.total}</p>
+              <p className="text-[10px] text-blackfont-medium mt-0.5">100% registered</p>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border-2 border-sky-500 p-2">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-sky-600 mb-0.5">Total Attempted</p>
-              <p className="text-sm font-extrabold text-sky-700">{stats.completed + stats.inProgress}</p>
-              <p className="text-[9px] text-gray-500 font-medium">{stats.inProgress} in prog · {stats.completed} comp</p>
+            <div className="bg-white shadow-sm border-2 border-sky-500 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-sky-600 mb-1">Total Attempted</p>
+              <p className="text-sm font-extrabold text-sky-700 leading-tight">{stats.completed + stats.inProgress}</p>
+              <p className="text-[10px] text-black font-medium mt-0.5">{stats.inProgress} in prog · {stats.completed} comp</p>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border-2 border-rose-500 p-2">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-rose-600 mb-0.5">Total Absentees</p>
-              <p className="text-sm font-extrabold text-rose-700">269</p>
-              <p className="text-[9px] text-gray-500 font-medium">21.6% not attempted</p>
+            <div className="bg-white shadow-sm border-2 border-rose-500 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-rose-600 mb-1">Total Absentees</p>
+              <p className="text-sm font-extrabold text-rose-700 leading-tight">269</p>
+              <p className="text-[10px] text-black font-medium mt-0.5">21.6% not attempted</p>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border-2 border-orange-500 p-2">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-orange-600 mb-0.5">Total Delayed</p>
-              <p className="text-sm font-extrabold text-orange-700">57</p>
-              <p className="text-[9px] text-gray-500 font-medium">4.6% need action</p>
+            <div className="bg-white shadow-sm border-2 border-orange-500 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-orange-600 mb-1">Total Delayed</p>
+              <p className="text-sm font-extrabold text-orange-700 leading-tight">57</p>
+              <p className="text-[10px] text-black font-medium mt-0.5">4.6% need action</p>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border-2 border-pink-500 p-2">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-pink-600 mb-0.5">Total Resets</p>
-              <p className="text-sm font-extrabold text-pink-700">23</p>
-              <p className="text-[9px] text-gray-500 font-medium">1.8% reset rate</p>
+            <div className="bg-white shadow-sm border-2 border-pink-500 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-pink-600 mb-1">Total Resets</p>
+              <p className="text-sm font-extrabold text-pink-700 leading-tight">23</p>
+              <p className="text-[10px] text-black font-medium mt-0.5">1.8% reset rate</p>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border-2 border-purple-600 p-2">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-purple-600 mb-0.5">Overall Pass</p>
-              <p className="text-sm font-extrabold text-purple-700">{stats.passRate}%</p>
-              <p className="text-[9px] text-gray-500 font-medium">Goal 80%</p>
+            <div className="bg-white shadow-sm border-2 border-purple-600 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-purple-600 mb-1">Overall Pass</p>
+              <p className="text-sm font-extrabold text-purple-700 leading-tight">{stats.passRate}%</p>
+              <p className="text-[10px] text-black font-medium mt-0.5">Goal 80%</p>
             </div>
-            <div className="bg-white rounded-lg shadow-sm border-2 border-teal-500 p-2">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-teal-600 mb-0.5">Overall Avg Time</p>
-              <p className="text-sm font-extrabold text-teal-700">{formatElapsedTime(stats.avgTime)}</p>
-              <p className="text-[9px] text-gray-500 font-medium">Per participant</p>
+            <div className="bg-white shadow-sm border-2 border-teal-500 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-teal-600 mb-1">Overall Avg Time</p>
+              <p className="text-sm font-extrabold text-teal-700 leading-tight">{formatElapsedTime(stats.avgTime)}</p>
+              <p className="text-[10px] text-black font-medium mt-0.5">Per participant</p>
             </div>
           </div>
         </section>
@@ -497,29 +579,29 @@ export default function Dashboard() {
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-2 mb-2">
             <div>
               <h1 className="text-lg font-black text-gray-900 tracking-tight">TRAINER SCHEDULE <span className="text-gray-400 font-light">/</span> ROUND 1</h1>
-              <p className="text-[10px] text-gray-500 font-medium">Trainer metrics are merged into each column header</p>
-              <p className="text-[10px] text-gray-400">Grid combines trainer output, participant state, and scheduled capacity in one operational view</p>
+              <p className="text-[11px] text-gray-500 font-medium">Trainer metrics are merged into each column header</p>
+              <p className="text-[11px] text-gray-400">Grid combines trainer output, participant state, and scheduled capacity in one operational view</p>
             </div>
-            <div className="flex items-center gap-4 bg-white border border-gray-200 rounded-lg px-4 py-1.5 shadow-sm">
+            <div className="flex items-center gap-5 bg-white border border-gray-200 px-5 py-2.5 shadow-sm min-w-[250px]">
               <div className="text-center">
-                <p className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Attempted</p>
-                <p className="text-xl font-extrabold text-blue-600 leading-none">{stats.completed + stats.inProgress}</p>
+                <p className="text-[10px] font-bold text-black uppercase tracking-wider mb-0.5">Attempted</p>
+                <p className="text-2xl font-extrabold text-blue-600 leading-none">{stats.completed + stats.inProgress}</p>
               </div>
-              <div className="text-[10px] text-gray-500 font-medium space-y-0">
-                <p>Absentees 34</p>
-                <p>In Progress {stats.inProgress}</p>
-                <p>Completed {stats.completed}</p>
+              <div className="text-[11px] text-gray-500 font-medium space-y-0.5 border-l border-gray-100 pl-4">
+                <p>Absentees <span className="font-bold text-gray-700">34</span></p>
+                <p>In Progress <span className="font-bold text-gray-700">{stats.inProgress}</span></p>
+                <p>Completed <span className="font-bold text-gray-700">{stats.completed}</span></p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-[10px] font-bold text-purple-600">Availability is indicated by header color only</p>
+              <p className="text-[11px] font-bold text-purple-600">Availability is indicated by header color only</p>
             </div>
           </div>
 
           {/* Flex container: Prev btn | Grid | Next btn — buttons TOP-ALIGNED */}
           <div className="flex items-start gap-1">
             {/* Prev Button */}
-            <div className="shrink-0 h-[62px] flex items-center">
+            <div className="shrink-0 h-[60px] flex items-center">
               <button
                 onClick={() => setTrainerPage(p => Math.max(0, p - 1))}
                 disabled={trainerPage === 0}
@@ -532,7 +614,7 @@ export default function Dashboard() {
 
             {/* Grid */}
             <div className="flex-1 overflow-x-auto bg-white shadow-sm border border-gray-200">
-              <div className="grid grid-cols-[80px_repeat(5,1fr)] min-w-[800px]">
+              <div className="grid grid-cols-[85px_repeat(5,1fr)] min-w-[820px]">
                 {/* Header Row */}
                 <div className="bg-[#1A202C] text-white p-2 flex items-center justify-center text-[11px] font-bold tracking-wider border-r border-gray-700">
                   TIME
@@ -549,11 +631,20 @@ export default function Dashboard() {
                       className="bg-[#1A202C] text-white p-2 border-r border-gray-700 last:border-r-0 cursor-pointer hover:bg-[#2D3748] transition-colors"
                       onClick={() => { setSelectedTrainer(trainer); setShowTrainerJourney(true); }}
                     >
-                      <div className="flex items-center justify-between mb-0.5">
-                        <span className="text-[11px] font-bold">{trainer?.name}</span>
-                        <span className={`h-2 w-2 rounded-full ${dotColor}`} />
+                      {/* Photo (left) + Name (right) + status dot */}
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <img
+                          src={trainer?.photoUrl}
+                          alt={trainer?.name}
+                          className="shrink-0 w-8 h-8 rounded-full object-cover ring-1 ring-white/30"
+                          loading="lazy"
+                          onError={(e) => { e.target.src = FALLBACK_TRAINER_PHOTO; }}
+                        />
+                        <span className="text-[11px] font-bold truncate flex-1">{trainer?.name}</span>
+                        <span className={`h-2 w-2 rounded-full shrink-0 ${dotColor}`} />
                       </div>
-                      <div className="text-[9px] text-gray-300 font-medium">
+                      {/* Metrics */}
+                      <div className="text-[10px] text-gray-300 font-medium">
                         <p>{tStat?.completed || 0} / {tStat?.assigned || 0} completed · {tStat?.passRate || 0}% pass</p>
                         <p>{formatElapsedTime(tStat?.avgTime || 0)} avg / participant</p>
                       </div>
@@ -574,7 +665,7 @@ export default function Dashboard() {
                       if (!participant) {
                         return (
                           <div key={`${room.id}-${rowIdx}`} className="border border-gray-200 bg-white p-2 flex items-center justify-center min-h-[52px]">
-                            <span className="text-gray-300 text-[10px]">—</span>
+                            <span className="text-gray-300 text-[11px]">—</span>
                           </div>
                         );
                       }
@@ -596,8 +687,8 @@ export default function Dashboard() {
                           onClick={() => { setSelectedParticipant(participant); setShowParticipantJourney(true); }}
                         >
                           <div className="text-[11px] font-bold text-gray-800 leading-tight">{participant.displayName}</div>
-                          <div className="text-[9px] text-gray-500 font-medium leading-tight">{participant.empId} · {participant.role}</div>
-                          <div className={`text-[9px] font-bold tracking-wider leading-tight ${statusColor}`}>
+                          <div className="text-[10px] text-gray-500 font-medium leading-tight">{participant.empId} · {participant.role}</div>
+                          <div className={`text-[10px] font-bold tracking-wider leading-tight ${statusColor}`}>
                             {statusText}
                           </div>
                         </div>
@@ -609,7 +700,7 @@ export default function Dashboard() {
             </div>
 
             {/* Next Button */}
-            <div className="shrink-0 h-[62px] flex items-center">
+            <div className="shrink-0 h-[60px] flex items-center">
               <button
                 onClick={() => setTrainerPage(p => Math.min(totalPages - 1, p + 1))}
                 disabled={trainerPage >= totalPages - 1}
@@ -660,28 +751,36 @@ export default function Dashboard() {
       {/* ===== TRAINER JOURNEY POPUP ===== */}
       {showTrainerJourney && selectedTrainer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div className="mx-4 w-full max-w-lg overflow-hidden rounded-xl bg-white shadow-2xl animate-slideUp">
+          <div className="mx-4 w-full max-w-lg overflow-hidden  bg-white shadow-2xl animate-slideUp">
             <div className="px-5 py-2.5 bg-gradient-to-r from-purple-700 to-indigo-800 flex items-center justify-between">
-              <div>
-                <p className="text-[9px] font-bold text-purple-200 uppercase tracking-wider">TRAINER JOURNEY</p>
-                <h2 className="text-lg font-bold text-white mt-0.5">{selectedTrainer.name}</h2>
-                <p className="text-[10px] text-purple-200 font-medium">Sales · North</p>
+              <div className="flex items-center gap-3">
+                <img
+                  src={selectedTrainer.photoUrl}
+                  alt={selectedTrainer.name}
+                  className="w-12 h-12 rounded-full object-cover ring-2 ring-white/40 shadow-md"
+                  onError={(e) => { e.target.src = FALLBACK_TRAINER_PHOTO; }}
+                />
+                <div>
+                  <p className="text-[10px] font-bold text-purple-200 uppercase tracking-wider">TRAINER JOURNEY</p>
+                  <h2 className="text-lg font-bold text-white mt-0.5">{selectedTrainer.name}</h2>
+                  <p className="text-[11px] text-purple-200 font-medium">Sales · North</p>
+                </div>
               </div>
               <button onClick={() => { setShowTrainerJourney(false); setSelectedTrainer(null); }} className="text-white/70 hover:text-white transition">
                 <X className="h-4 w-4" />
               </button>
             </div>
             <div className="grid grid-cols-5 gap-3 px-5 py-2.5 border-b border-gray-100">
-              <div><p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Assigned</p><p className="text-lg font-extrabold text-gray-900 mt-0.5">9</p></div>
-              <div><p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Completed</p><p className="text-lg font-extrabold text-gray-900 mt-0.5">5</p></div>
-              <div><p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Delayed</p><p className="text-lg font-extrabold text-gray-900 mt-0.5">1</p></div>
-              <div><p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Pass Rate</p><p className="text-lg font-extrabold text-gray-900 mt-0.5">88%</p></div>
-              <div><p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Avg Time</p><p className="text-lg font-extrabold text-gray-900 mt-0.5">17m 42s</p></div>
+              <div><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Assigned</p><p className="text-lg font-extrabold text-gray-900 mt-0.5">9</p></div>
+              <div><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Completed</p><p className="text-lg font-extrabold text-gray-900 mt-0.5">5</p></div>
+              <div><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Delayed</p><p className="text-lg font-extrabold text-gray-900 mt-0.5">1</p></div>
+              <div><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Pass Rate</p><p className="text-lg font-extrabold text-gray-900 mt-0.5">88%</p></div>
+              <div><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Avg Time</p><p className="text-lg font-extrabold text-gray-900 mt-0.5">17m 42s</p></div>
             </div>
             <div className="px-5 py-2.5">
               <div className="flex items-center justify-between mb-1.5">
-                <h3 className="text-[10px] font-bold text-gray-800 uppercase tracking-wider">Round Milestones</h3>
-                <span className="text-[10px] font-medium text-gray-500">5 / 9 complete</span>
+                <h3 className="text-[11px] font-bold text-gray-800 uppercase tracking-wider">Round Milestones</h3>
+                <span className="text-[11px] font-medium text-gray-500">5 / 9 complete</span>
               </div>
               <div className="flex items-center justify-between gap-1.5">
                 {[
@@ -692,15 +791,15 @@ export default function Dashboard() {
                   { label: 'R5', value: '1/1', status: 'DONE', color: 'bg-teal-500' },
                 ].map((round, idx) => (
                   <div key={idx} className="flex flex-col items-center gap-0.5 flex-1">
-                    <div className={`w-full py-1.5 rounded text-center text-[10px] font-bold text-white ${round.color}`}>{round.label}</div>
-                    <span className="text-[9px] font-bold text-gray-700">{round.value}</span>
-                    <span className={`text-[8px] font-bold ${round.status === 'LATE' ? 'text-orange-500' : round.status === 'LIVE' ? 'text-purple-600' : 'text-teal-600'}`}>{round.status}</span>
+                    <div className={`w-full py-1.5 rounded text-center text-[11px] font-bold text-white ${round.color}`}>{round.label}</div>
+                    <span className="text-[10px] font-bold text-gray-700">{round.value}</span>
+                    <span className={`text-[9px] font-bold ${round.status === 'LATE' ? 'text-orange-500' : round.status === 'LIVE' ? 'text-purple-600' : 'text-teal-600'}`}>{round.status}</span>
                   </div>
                 ))}
               </div>
             </div>
             <div className="px-5 py-2.5 bg-gray-50 border-t border-gray-100">
-              <h3 className="text-[10px] font-bold text-gray-800 uppercase tracking-wider mb-1.5">Recent Assessments</h3>
+              <h3 className="text-[11px] font-bold text-gray-800 uppercase tracking-wider mb-1.5">Recent Assessments</h3>
               <div className="space-y-1.5">
                 {[
                   { time: '09:00', name: 'Aarav Sharma', score: '82%', status: 'PASSED' },
@@ -714,17 +813,17 @@ export default function Dashboard() {
                       <span className="text-gray-500">·</span>
                       <span className="text-gray-600 font-medium">{item.score}</span>
                     </div>
-                    <span className={`text-[9px] font-bold tracking-wider ${item.status === 'PASSED' ? 'text-teal-600' : 'text-purple-600'}`}>{item.status}</span>
+                    <span className={`text-[10px] font-bold tracking-wider ${item.status === 'PASSED' ? 'text-teal-600' : 'text-purple-600'}`}>{item.status}</span>
                   </div>
                 ))}
               </div>
             </div>
             <div className="px-5 pb-1.5">
-              <div className="bg-amber-50 border border-amber-200 rounded p-1.5 text-[10px] font-medium text-amber-800">
+              <div className="bg-amber-50 border border-amber-200 rounded p-1.5 text-[11px] font-medium text-amber-800">
                 <strong>ATTENTION</strong> · 2 assessments started more than 15 minutes late
               </div>
             </div>
-            <div className="px-5 py-1.5 text-[9px] text-gray-400 font-medium">Last activity · 10:34 IST</div>
+            <div className="px-5 py-1.5 text-[10px] text-gray-400 font-medium">Last activity · 10:34 IST</div>
           </div>
         </div>
       )}
@@ -732,36 +831,36 @@ export default function Dashboard() {
       {/* ===== PARTICIPANT JOURNEY POPUP ===== */}
       {showParticipantJourney && selectedParticipant && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div className="mx-4 w-full max-w-lg overflow-hidden rounded-xl bg-white shadow-2xl animate-slideUp">
+          <div className="mx-4 w-full max-w-lg overflow-hidden bg-white shadow-2xl animate-slideUp">
             <div className="px-5 py-2.5 bg-gradient-to-r from-teal-500 to-emerald-600 flex items-center justify-between">
               <div>
-                <p className="text-[9px] font-bold text-teal-100 uppercase tracking-wider">PARTICIPANT JOURNEY</p>
+                <p className="text-[10px] font-bold text-teal-100 uppercase tracking-wider">PARTICIPANT JOURNEY</p>
                 <h2 className="text-lg font-bold text-white mt-0.5">{selectedParticipant.displayName}</h2>
+                 <p className="text-[11px] text-teal-100 font-medium">{selectedParticipant.empId} · {selectedParticipant.role}</p>
               </div>
               <div className="flex flex-col items-end">
-                <span className="text-[10px] text-teal-100 font-medium">{selectedParticipant.empId} · {selectedParticipant.role}</span>
                 <button onClick={() => { setShowParticipantJourney(false); setSelectedParticipant(null); }} className="text-white/70 hover:text-white transition">
                   <X className="h-4 w-4" />
                 </button>
               </div>
             </div>
             <div className="grid grid-cols-4 gap-3 px-5 py-2.5 border-b border-gray-100">
-              <div><p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Rounds</p><p className="text-lg font-extrabold text-gray-900 mt-0.5">3 / 5</p></div>
-              <div><p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Avg Score</p><p className="text-lg font-extrabold text-gray-900 mt-0.5">78%</p></div>
-              <div><p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Total Time</p><p className="text-lg font-extrabold text-gray-900 mt-0.5">52m</p></div>
-              <div><p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Flags</p><p className="text-lg font-extrabold text-gray-900 mt-0.5">1</p></div>
+              <div><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Rounds</p><p className="text-lg font-extrabold text-gray-900 mt-0.5">3 / 5</p></div>
+              <div><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Avg Score</p><p className="text-lg font-extrabold text-gray-900 mt-0.5">78%</p></div>
+              <div><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Time</p><p className="text-lg font-extrabold text-gray-900 mt-0.5">52m</p></div>
+              <div><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Flags</p><p className="text-lg font-extrabold text-gray-900 mt-0.5">1</p></div>
             </div>
             <div className="px-5 py-2.5">
               <div className="flex items-center justify-between mb-1.5">
-                <h3 className="text-[10px] font-bold text-gray-800 uppercase tracking-wider">Assessment Milestones</h3>
-                <span className="text-[10px] font-medium text-gray-500">Next · 14:30</span>
+                <h3 className="text-[11px] font-bold text-gray-800 uppercase tracking-wider">Assessment Milestones</h3>
+                <span className="text-[11px] font-medium text-gray-500">Next · 14:30</span>
               </div>
               <div className="space-y-1.5">
                 {[
-                  { round: 'R1', trainer: 'Priya Sharma', detail: '82%', status: 'PASSED', color: 'bg-teal-500' },
-                  { round: 'R2', trainer: 'Rahul Verma', detail: '76%', status: 'PASSED', color: 'bg-teal-500' },
-                  { round: 'R3', trainer: 'Anjali Nair', detail: '77%', status: 'PASSED', color: 'bg-orange-500' },
-                  { round: 'R4', trainer: 'Vikram Singh', detail: '14:30', status: 'SCHEDULED', color: 'bg-purple-600' },
+                  { round: 'R1', trainer: 'Rahul Verma', detail: '82%', status: 'PASSED', color: 'bg-teal-500' },
+                  { round: 'R2', trainer: 'Vikram Singh', detail: '76%', status: 'PASSED', color: 'bg-teal-500' },
+                  { round: 'R3', trainer: 'Arjun Mehta', detail: '77%', status: 'PASSED', color: 'bg-orange-500' },
+                  { round: 'R4', trainer: 'Karan Kapoor', detail: '14:30', status: 'SCHEDULED', color: 'bg-purple-600' },
                   { round: 'R5', trainer: 'Trainer not assigned', detail: '', status: 'PENDING', color: 'bg-teal-500' },
                 ].map((item, idx) => (
                   <div key={idx} className="flex items-center justify-between">
@@ -770,17 +869,17 @@ export default function Dashboard() {
                       <span className="text-[11px] text-gray-800 font-medium">{item.trainer}</span>
                       {item.detail && <span className="text-[11px] text-gray-500">· {item.detail}</span>}
                     </div>
-                    <span className={`text-[9px] font-bold tracking-wider ${item.status === 'PASSED' ? 'text-teal-600' : item.status === 'SCHEDULED' ? 'text-orange-500' : 'text-gray-400'}`}>{item.status}</span>
+                    <span className={`text-[10px] font-bold tracking-wider ${item.status === 'PASSED' ? 'text-teal-600' : item.status === 'SCHEDULED' ? 'text-orange-500' : 'text-gray-400'}`}>{item.status}</span>
                   </div>
                 ))}
               </div>
             </div>
             <div className="px-5 pb-1.5">
-              <div className="bg-amber-50 border border-amber-200 rounded p-1.5 text-[10px] font-medium text-amber-800">
+              <div className="bg-amber-50 border border-amber-200 rounded p-1.5 text-[11px] font-medium text-amber-800">
                 <strong>FLAG</strong> · ID check pending before Round 4
               </div>
             </div>
-            <div className="px-5 py-1.5 text-[9px] text-gray-400 font-medium">Last activity · 10:34 IST</div>
+            <div className="px-5 py-1.5 text-[10px] text-gray-400 font-medium">Last activity · 10:34 IST</div>
           </div>
         </div>
       )}
