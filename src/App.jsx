@@ -603,7 +603,7 @@ const [liveAlerts, setLiveAlerts] = useState([
         </section>
 
         {/* ===== LIVE SCHEDULE GRID ===== */}
-        <section>
+        <section className="px-3">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-2 mb-2">
             <div>
               <h1 className="text-lg font-black text-gray-900 tracking-tight">TRAINER SCHEDULE <span className="text-gray-400 font-light">/</span> ROUND 1</h1>
@@ -976,16 +976,6 @@ const [liveAlerts, setLiveAlerts] = useState([
             </div>
           ))
         )}
-      </div>
-
-      {/* Footer */}
-      <div className="border-t border-gray-100 px-3 py-2 shrink-0">
-        <button
-          onClick={() => setShowAlerts(false)}
-          className="w-full rounded-lg bg-gray-50 px-3 py-2 text-xs font-bold text-gray-700 transition hover:bg-gray-100"
-        >
-          See all notifications
-        </button>
       </div>
     </div>
   </div>
