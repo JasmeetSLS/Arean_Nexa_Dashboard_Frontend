@@ -5,7 +5,6 @@ import {
   RefreshCw, Play, Award, Hourglass, Bell, Filter, LogOut,
   ChevronLeft, ChevronRight, Search
 } from 'lucide-react';
-import { Toaster } from '../components/Toaster.jsx'; // ---- Toaster ----
 
 // ---- Color palette ----
 const colorPalette = [
@@ -96,8 +95,6 @@ export default function Dashboard() {
     { id: 3, title: 'Trainer Imtiyaz missed slot start', subtitle: 'Slot 7 · Finance · East region', time: '15 min ago', photoUrl: '/trainers/3.jpeg' },
     { id: 4, title: 'Trainer Mihir not assigned', subtitle: 'Slot 2 · CRM · West region', time: '22 min ago', photoUrl: '/trainers/4.jpeg' },
   ]);
-
-  const [toastOn, setToastOn] = useState(false);
 
   const parseDurationFromName = (name) => {
     const match = name.match(/(\d+)\s*min/);
@@ -318,16 +315,6 @@ export default function Dashboard() {
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             <span className="text-xs font-bold text-gray-700">LIVE · 04 Sep 2026 · 12:52 IST</span>
           </div>
-
-          {/* ===== TOAST ON/OFF TOGGLE ===== */}
-          <button
-            onClick={() => setToastOn(!toastOn)}
-            className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition ${
-              toastOn ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-700'
-            }`}
-          >
-            {toastOn ? 'ON' : 'OFF'}
-          </button>
 
           <button
             onClick={() => setShowAlerts(true)}
@@ -947,9 +934,6 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-
-      {/* TOAST NOTIFICATIONS */}
-      <Toaster enabled={toastOn} />
 
     </div>
   );
