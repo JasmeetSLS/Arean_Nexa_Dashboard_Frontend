@@ -97,7 +97,6 @@ export default function Dashboard() {
     { id: 4, title: 'Trainer Mihir not assigned', subtitle: 'Slot 2 · CRM · West region', time: '22 min ago', photoUrl: '/trainers/4.jpeg' },
   ]);
 
-  // ---- Toast toggle state ----
   const [toastOn, setToastOn] = useState(false);
 
   const parseDurationFromName = (name) => {
@@ -256,7 +255,10 @@ export default function Dashboard() {
       if (qTrainer && trainer?.name.toLowerCase().includes(qTrainer)) score += 100;
       if (qParticipant) {
         const roomParticipants = filteredParticipants.filter(p => p.octonormId === room.id);
-        if (roomParticipants.some(p => p.displayName.toLowerCase().includes(qParticipant))) score += 50;
+        if (roomParticipants.some(p =>
+          p.displayName.toLowerCase().includes(qParticipant) ||
+          p.empId.toLowerCase().includes(qParticipant)
+        )) score += 50;
       }
       return { room, score, idx };
     });
@@ -277,7 +279,11 @@ export default function Dashboard() {
 
   const participantMatchesSearch = (participant) => {
     if (!searchParticipant.trim()) return true;
-    return participant.displayName.toLowerCase().includes(searchParticipant.trim().toLowerCase());
+    const q = searchParticipant.trim().toLowerCase();
+    return (
+      participant.displayName.toLowerCase().includes(q) ||
+      participant.empId.toLowerCase().includes(q)
+    );
   };
 
   if (loading) {
@@ -302,26 +308,26 @@ export default function Dashboard() {
       {/* ===== TOP BAR ===== */}
       <div className="shrink-0 flex items-center justify-between gap-3 bg-white px-4 py-2 border-b border-gray-200 z-20">
         <div>
-          <h1 className="text-base font-black text-indigo-900 tracking-tight flex items-center gap-2">
+          <h1 className="text-lg font-black text-indigo-900 tracking-tight flex items-center gap-2">
             SKILL CONTEST <span className="text-purple-500 font-light">/</span> COMMAND CENTER
           </h1>
-          <p className="text-[11px] text-indigo-500 font-medium">Portal progress monitor</p>
+          <p className="text-xs text-indigo-500 font-medium">Portal progress monitor</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-200">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-[11px] font-bold text-gray-700">LIVE · 04 Sep 2026 · 12:52 IST</span>
+            <span className="text-xs font-bold text-gray-700">LIVE · 04 Sep 2026 · 12:52 IST</span>
           </div>
 
           {/* ===== TOAST ON/OFF TOGGLE ===== */}
-         <button
-  onClick={() => setToastOn(!toastOn)}
-  className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition ${
-    toastOn ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-700'
-  }`}
->
-  {toastOn ? 'ON' : 'OFF'}
-</button>
+          <button
+            onClick={() => setToastOn(!toastOn)}
+            className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition ${
+              toastOn ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-700'
+            }`}
+          >
+            {toastOn ? 'ON' : 'OFF'}
+          </button>
 
           <button
             onClick={() => setShowAlerts(true)}
@@ -334,7 +340,7 @@ export default function Dashboard() {
               </span>
             )}
           </button>
-          <button className="flex items-center gap-1 px-3 py-1.5 bg-white border border-gray-200 text-gray-600 rounded-full text-[11px] font-semibold shadow-sm hover:shadow-md transition-all">
+          <button className="flex items-center gap-1 px-3 py-1.5 bg-white border border-gray-200 text-gray-600 rounded-full text-xs font-semibold shadow-sm hover:shadow-md transition-all">
             <LogOut className="h-3.5 w-3.5" />
             <span>Logout</span>
           </button>
@@ -345,16 +351,16 @@ export default function Dashboard() {
       <div className="shrink-0 bg-white px-4 py-1.5 border-b border-gray-200 shadow-sm z-10">
         <div className="flex flex-wrap items-end gap-2">
           <div className="flex flex-col gap-0.5">
-            <label className="text-[10px] font-bold text-indigo-900 uppercase">Date / Month</label>
-            <select className="border border-gray-300 rounded px-2 py-1 text-[11px] bg-white w-26"><option>All</option></select>
+            <label className="text-[11px] font-bold text-indigo-900 uppercase">Date / Month</label>
+            <select className="border border-gray-300 rounded px-2 py-1 text-xs bg-white w-28"><option>All</option></select>
           </div>
           <div className="flex flex-col gap-0.5">
-            <label className="text-[10px] font-bold text-indigo-900 uppercase">Zone</label>
-            <select className="border border-gray-300 rounded px-2 py-1 text-[11px] bg-white w-22"><option>All</option></select>
+            <label className="text-[11px] font-bold text-indigo-900 uppercase">Zone</label>
+            <select className="border border-gray-300 rounded px-2 py-1 text-xs bg-white w-24"><option>All</option></select>
           </div>
           <div className="flex flex-col gap-0.5">
-            <label className="text-[10px] font-bold text-indigo-900 uppercase">Region</label>
-            <select className="border border-gray-300 rounded px-2 py-1 text-[11px] bg-white w-26"
+            <label className="text-[11px] font-bold text-indigo-900 uppercase">Region</label>
+            <select className="border border-gray-300 rounded px-2 py-1 text-xs bg-white w-28"
               value={filters.region} onChange={e => setFilters({ ...filters, region: e.target.value })}>
               <option value="">All</option>
               <option value="North">North</option>
@@ -364,16 +370,16 @@ export default function Dashboard() {
             </select>
           </div>
           <div className="flex flex-col gap-0.5">
-            <label className="text-[10px] font-bold text-indigo-900 uppercase">Trainer</label>
-            <select className="border border-gray-300 rounded px-2 py-1 text-[11px] bg-white w-30"><option>All</option></select>
+            <label className="text-[11px] font-bold text-indigo-900 uppercase">Trainer</label>
+            <select className="border border-gray-300 rounded px-2 py-1 text-xs bg-white w-32"><option>All</option></select>
           </div>
           <div className="flex flex-col gap-0.5">
-            <label className="text-[10px] font-bold text-indigo-900 uppercase">Role</label>
-            <select className="border border-gray-300 rounded px-2 py-1 text-[11px] bg-white w-22"><option>All</option></select>
+            <label className="text-[11px] font-bold text-indigo-900 uppercase">Role</label>
+            <select className="border border-gray-300 rounded px-2 py-1 text-xs bg-white w-24"><option>All</option></select>
           </div>
           <div className="flex flex-col gap-0.5">
-            <label className="text-[10px] font-bold text-indigo-900 uppercase">Agency</label>
-            <select className="border border-gray-300 rounded px-2 py-1 text-[11px] bg-white w-26"
+            <label className="text-[11px] font-bold text-indigo-900 uppercase">Agency</label>
+            <select className="border border-gray-300 rounded px-2 py-1 text-xs bg-white w-28"
               value={filters.agency} onChange={e => setFilters({ ...filters, agency: e.target.value })}>
               <option value="">All</option>
               <option value="Agency A">Agency A</option>
@@ -382,8 +388,8 @@ export default function Dashboard() {
             </select>
           </div>
           <div className="flex flex-col gap-0.5">
-            <label className="text-[10px] font-bold text-indigo-900 uppercase">Dealer</label>
-            <select className="border border-gray-300 rounded px-2 py-1 text-[11px] bg-white w-26"
+            <label className="text-[11px] font-bold text-indigo-900 uppercase">Dealer</label>
+            <select className="border border-gray-300 rounded px-2 py-1 text-xs bg-white w-28"
               value={filters.dealerCode} onChange={e => setFilters({ ...filters, dealerCode: e.target.value })}>
               <option value="">All</option>
               {Array.from(new Set(participants.map(p => p.dealerCode))).map(code => (
@@ -391,7 +397,7 @@ export default function Dashboard() {
               ))}
             </select>
           </div>
-          <div className="ml-auto text-[11px] font-bold text-indigo-400 pb-1">
+          <div className="ml-auto text-xs font-bold text-indigo-400 pb-1">
             <span className="inline-block w-2 h-2 rounded-full bg-indigo-500 animate-pulse mr-1.5 align-middle"></span>
             Last sync 4:51 PM
           </div>
@@ -404,61 +410,61 @@ export default function Dashboard() {
         {/* TODAY'S LIVE DATA */}
         <section className="px-3">
           <div className="flex justify-between items-end mb-1.5">
-            <h2 className="text-xs font-black text-indigo-900 uppercase">TODAY'S LIVE DATA</h2>
-            <span className="text-[11px] text-gray-400 font-medium">Live snapshot · 10 Sep 2026</span>
+            <h2 className="text-sm font-black text-indigo-900 uppercase">TODAY'S LIVE DATA</h2>
+            <span className="text-xs text-gray-400 font-medium">Live snapshot · 10 Sep 2026</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
             <div className="bg-gray-900 text-white p-3 shadow-sm border border-gray-800">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-white mb-1">Scheduled</p>
-              <p className="text-lg font-extrabold leading-tight">{stats.total}</p>
-              <p className="text-[10px] text-white font-medium mt-0.5">Daily plan</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-white mb-1">Scheduled</p>
+              <p className="text-xl font-extrabold leading-tight">{stats.total}</p>
+              <p className="text-[11px] text-white font-medium mt-0.5">Daily plan</p>
             </div>
             <div className="bg-sky-500 text-white p-3 shadow-sm">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-white mb-1">Attempted</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-white mb-1">Attempted</p>
               <div className="flex items-baseline gap-1">
-                <p className="text-lg font-extrabold leading-tight">{stats.completed + stats.inProgress}</p>
-                <p className="text-[11px] font-semibold text-white">/ {stats.total}</p>
+                <p className="text-xl font-extrabold leading-tight">{stats.completed + stats.inProgress}</p>
+                <p className="text-xs font-semibold text-white">/ {stats.total}</p>
               </div>
-              <div className="flex justify-between text-[10px] text-white font-medium mt-0.5">
+              <div className="flex justify-between text-[11px] text-white font-medium mt-0.5">
                 <span>{stats.inProgress} in prog</span>
                 <span>{stats.completed} comp</span>
               </div>
             </div>
             <div className="bg-rose-500 text-white p-3 shadow-sm">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-white mb-1">Absentees</p>
-              <p className="text-lg font-extrabold leading-tight">34</p>
-              <p className="text-[10px] text-white font-medium mt-0.5">18.5% of schedule</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-white mb-1">Absentees</p>
+              <p className="text-xl font-extrabold leading-tight">34</p>
+              <p className="text-[11px] text-white font-medium mt-0.5">18.5% of schedule</p>
             </div>
             <div className="bg-orange-500 text-white p-3 shadow-sm">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-white mb-1">Delayed</p>
-              <p className="text-lg font-extrabold leading-tight">17</p>
-              <p className="text-[10px] text-white font-medium mt-0.5">9 follow-ups</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-white mb-1">Delayed</p>
+              <p className="text-xl font-extrabold leading-tight">17</p>
+              <p className="text-[11px] text-white font-medium mt-0.5">9 follow-ups</p>
             </div>
             <div className="bg-purple-600 text-white p-3 shadow-sm">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-white mb-1">Pass Rate</p>
-              <p className="text-lg font-extrabold leading-tight">{stats.passRate}%</p>
-              <p className="text-[10px] text-white font-medium mt-0.5">+4 pts today</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-white mb-1">Pass Rate</p>
+              <p className="text-xl font-extrabold leading-tight">{stats.passRate}%</p>
+              <p className="text-[11px] text-white font-medium mt-0.5">+4 pts today</p>
             </div>
             <div className="bg-teal-500 text-white p-3 shadow-sm">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-white mb-1">Avg Time</p>
-              <p className="text-lg font-extrabold leading-tight">{formatElapsedTime(stats.avgTime)}</p>
-              <p className="text-[10px] text-white font-medium mt-0.5">Per participant</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-white mb-1">Avg Time</p>
+              <p className="text-xl font-extrabold leading-tight">{formatElapsedTime(stats.avgTime)}</p>
+              <p className="text-[11px] text-white font-medium mt-0.5">Per participant</p>
             </div>
             <div className="bg-emerald-500 text-white p-3 shadow-sm">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-white mb-1">Active Trainers</p>
-              <p className="text-lg font-extrabold leading-tight">10 / 10</p>
-              <p className="text-[10px] text-white font-medium mt-0.5">6 ready · 4 occupied</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-white mb-1">Active Trainers</p>
+              <p className="text-xl font-extrabold leading-tight">10 / 10</p>
+              <p className="text-[11px] text-white font-medium mt-0.5">6 ready · 4 occupied</p>
             </div>
           </div>
         </section>
 
         {/* REGION-WISE SUMMARY */}
         <section className="px-3">
-          <h2 className="text-xs font-black text-indigo-900 uppercase mb-0.5">REGION-WISE SUMMARY</h2>
-          <p className="text-[11px] text-gray-500 mb-1.5 font-medium">North selected · switch zone to refresh the regions below</p>
+          <h2 className="text-sm font-black text-indigo-900 uppercase mb-0.5">REGION-WISE SUMMARY</h2>
+          <p className="text-xs text-gray-500 mb-1.5 font-medium">North selected · switch zone to refresh the regions below</p>
           <div className="flex gap-1.5 mb-1.5">
             {['NORTH', 'EAST', 'WEST', 'SOUTH', 'CENTRAL'].map(zone => (
-              <button key={zone} className={`px-4 py-0.5 text-[11px] font-bold rounded transition ${zone === 'NORTH' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}>
+              <button key={zone} className={`px-4 py-0.5 text-xs font-bold rounded transition ${zone === 'NORTH' ? 'bg-purple-600 text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}>
                 {zone}
               </button>
             ))}
@@ -471,9 +477,9 @@ export default function Dashboard() {
               { name: 'NORTH–4', completed: 54, pass: '74%', avg: '27m', border: 'border-orange-500' },
             ].map((region) => (
               <div key={region.name} className={`bg-white text-black shadow-sm border-2 ${region.border} p-3 text-center`}>
-                <h3 className="font-bold text-[12px] mb-1">{region.name}</h3>
-                <p className="text-[10px] font-semibold">{region.completed} completed</p>
-                <p className="text-[12px] font-medium mt-0.5">{region.pass} pass · {region.avg} avg</p>
+                <h3 className="font-bold text-sm mb-1">{region.name}</h3>
+                <p className="text-xs font-semibold">{region.completed} completed</p>
+                <p className="text-sm font-medium mt-0.5">{region.pass} pass · {region.avg} avg</p>
               </div>
             ))}
           </div>
@@ -482,8 +488,8 @@ export default function Dashboard() {
         {/* TRAINERS SUMMARY */}
         <section className="px-3">
           <div className="flex justify-between items-end mb-1.5">
-            <h2 className="text-xs font-black text-indigo-900 uppercase">TRAINERS SUMMARY</h2>
-            <span className="text-[11px] text-indigo-400 font-bold cursor-pointer hover:text-indigo-600 transition">Click a trainer to open journey</span>
+            <h2 className="text-sm font-black text-indigo-900 uppercase">TRAINERS SUMMARY</h2>
+            <span className="text-xs text-indigo-400 font-bold cursor-pointer hover:text-indigo-600 transition">Click a trainer to open journey</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
             {stats.trainerStats.slice(0, 5).map(t => (
@@ -493,14 +499,14 @@ export default function Dashboard() {
                   <img
                     src={t.photoUrl}
                     alt={t.name}
-                    className="shrink-0 w-9 h-9 rounded-full object-cover ring-2 ring-gray-100"
+                    className="shrink-0 w-10 h-10 rounded-full object-cover ring-2 ring-gray-100"
                     loading="lazy"
                     onError={(e) => { e.target.src = FALLBACK_TRAINER_PHOTO; }}
                   />
-                  <h3 className="font-bold text-black text-[11px] tracking-wide truncate">{t.name.toUpperCase()}</h3>
+                  <h3 className="font-bold text-black text-xs tracking-wide truncate">{t.name.toUpperCase()}</h3>
                 </div>
-                <p className="text-[11px] font-semibold text-black">{t.completed} completed</p>
-                <p className="text-[11px] text-black font-medium mt-0.5">{t.passRate}% pass · {formatElapsedTime(t.avgTime)}</p>
+                <p className="text-xs font-semibold text-black">{t.completed} completed</p>
+                <p className="text-xs text-black font-medium mt-0.5">{t.passRate}% pass · {formatElapsedTime(t.avgTime)}</p>
               </div>
             ))}
           </div>
@@ -509,44 +515,44 @@ export default function Dashboard() {
         {/* CONTEST TOTALS */}
         <section className="px-3">
           <div className="flex justify-between items-end mb-1.5">
-            <h2 className="text-xs font-black text-indigo-900 uppercase">CONTEST TOTALS</h2>
-            <span className="text-[11px] text-gray-400 font-medium">All dates · all zones</span>
+            <h2 className="text-sm font-black text-indigo-900 uppercase">CONTEST TOTALS</h2>
+            <span className="text-xs text-gray-400 font-medium">All dates · all zones</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
             <div className="bg-white shadow-sm border-2 border-gray-900 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Total Scheduled</p>
-              <p className="text-sm font-extrabold text-gray-800 leading-tight">{stats.total}</p>
-              <p className="text-[10px] text-black font-medium mt-0.5">100% registered</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1">Total Scheduled</p>
+              <p className="text-base font-extrabold text-gray-800 leading-tight">{stats.total}</p>
+              <p className="text-[11px] text-black font-medium mt-0.5">100% registered</p>
             </div>
             <div className="bg-white shadow-sm border-2 border-sky-500 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-sky-600 mb-1">Total Attempted</p>
-              <p className="text-sm font-extrabold text-sky-700 leading-tight">{stats.completed + stats.inProgress}</p>
-              <p className="text-[10px] text-black font-medium mt-0.5">{stats.inProgress} in prog · {stats.completed} comp</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-sky-600 mb-1">Total Attempted</p>
+              <p className="text-base font-extrabold text-sky-700 leading-tight">{stats.completed + stats.inProgress}</p>
+              <p className="text-[11px] text-black font-medium mt-0.5">{stats.inProgress} in prog · {stats.completed} comp</p>
             </div>
             <div className="bg-white shadow-sm border-2 border-rose-500 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-rose-600 mb-1">Total Absentees</p>
-              <p className="text-sm font-extrabold text-rose-700 leading-tight">269</p>
-              <p className="text-[10px] text-black font-medium mt-0.5">21.6% not attempted</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-rose-600 mb-1">Total Absentees</p>
+              <p className="text-base font-extrabold text-rose-700 leading-tight">269</p>
+              <p className="text-[11px] text-black font-medium mt-0.5">21.6% not attempted</p>
             </div>
             <div className="bg-white shadow-sm border-2 border-orange-500 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-orange-600 mb-1">Total Delayed</p>
-              <p className="text-sm font-extrabold text-orange-700 leading-tight">57</p>
-              <p className="text-[10px] text-black font-medium mt-0.5">4.6% need action</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-orange-600 mb-1">Total Delayed</p>
+              <p className="text-base font-extrabold text-orange-700 leading-tight">57</p>
+              <p className="text-[11px] text-black font-medium mt-0.5">4.6% need action</p>
             </div>
             <div className="bg-white shadow-sm border-2 border-pink-500 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-pink-600 mb-1">Total Resets</p>
-              <p className="text-sm font-extrabold text-pink-700 leading-tight">23</p>
-              <p className="text-[10px] text-black font-medium mt-0.5">1.8% reset rate</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-pink-600 mb-1">Total Resets</p>
+              <p className="text-base font-extrabold text-pink-700 leading-tight">23</p>
+              <p className="text-[11px] text-black font-medium mt-0.5">1.8% reset rate</p>
             </div>
             <div className="bg-white shadow-sm border-2 border-purple-600 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-purple-600 mb-1">Overall Pass</p>
-              <p className="text-sm font-extrabold text-purple-700 leading-tight">{stats.passRate}%</p>
-              <p className="text-[10px] text-black font-medium mt-0.5">Goal 80%</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-purple-600 mb-1">Overall Pass</p>
+              <p className="text-base font-extrabold text-purple-700 leading-tight">{stats.passRate}%</p>
+              <p className="text-[11px] text-black font-medium mt-0.5">Goal 80%</p>
             </div>
             <div className="bg-white shadow-sm border-2 border-teal-500 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-teal-600 mb-1">Overall Avg Time</p>
-              <p className="text-sm font-extrabold text-teal-700 leading-tight">{formatElapsedTime(stats.avgTime)}</p>
-              <p className="text-[10px] text-black font-medium mt-0.5">Per participant</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-teal-600 mb-1">Overall Avg Time</p>
+              <p className="text-base font-extrabold text-teal-700 leading-tight">{formatElapsedTime(stats.avgTime)}</p>
+              <p className="text-[11px] text-black font-medium mt-0.5">Per participant</p>
             </div>
           </div>
         </section>
@@ -555,23 +561,23 @@ export default function Dashboard() {
         <section className="px-3">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-2 mb-2">
             <div>
-              <h1 className="text-lg font-black text-gray-900 tracking-tight">TRAINER SCHEDULE <span className="text-gray-400 font-light">/</span> ROUND 2</h1>
-              <p className="text-[11px] text-gray-500 font-medium">Trainer metrics are merged into each column header</p>
-              <p className="text-[11px] text-gray-400">Grid combines trainer output, participant state, and scheduled capacity in one operational view</p>
+              <h1 className="text-xl font-black text-gray-900 tracking-tight">TRAINER SCHEDULE <span className="text-gray-400 font-light">/</span> ROUND 2</h1>
+              <p className="text-xs text-gray-500 font-medium">Trainer metrics are merged into each column header</p>
+              <p className="text-xs text-gray-400">Grid combines trainer output, participant state, and scheduled capacity in one operational view</p>
             </div>
             <div className="flex items-center gap-5 bg-white border border-gray-200 px-5 py-2.5 shadow-sm min-w-[250px]">
               <div className="text-center">
-                <p className="text-[10px] font-bold text-black uppercase tracking-wider mb-0.5">Attempted</p>
+                <p className="text-[11px] font-bold text-black uppercase tracking-wider mb-0.5">Attempted</p>
                 <p className="text-2xl font-extrabold text-blue-600 leading-none">{stats.completed + stats.inProgress}</p>
               </div>
-              <div className="text-[11px] text-gray-500 font-medium space-y-0.5 border-l border-gray-100 pl-4">
+              <div className="text-xs text-gray-500 font-medium space-y-0.5 border-l border-gray-100 pl-4">
                 <p>Absentees <span className="font-bold text-gray-700">34</span></p>
                 <p>In Progress <span className="font-bold text-gray-700">{stats.inProgress}</span></p>
                 <p>Completed <span className="font-bold text-gray-700">{stats.completed}</span></p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-[11px] font-bold text-purple-600">Availability is indicated by header color only</p>
+              <p className="text-xs font-bold text-purple-600">Availability is indicated by header color only</p>
             </div>
           </div>
 
@@ -584,7 +590,7 @@ export default function Dashboard() {
                 placeholder="Search trainer..."
                 value={searchTrainer}
                 onChange={(e) => setSearchTrainer(e.target.value)}
-                className="pl-8 pr-7 py-1.5 text-[11px] font-medium border border-gray-300 rounded-md bg-white w-52 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
+                className="pl-8 pr-7 py-1.5 text-xs font-medium border border-gray-300 rounded-md bg-white w-52 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400"
               />
               {searchTrainer && (
                 <button onClick={() => setSearchTrainer('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700">
@@ -600,7 +606,7 @@ export default function Dashboard() {
                 placeholder="Search participant..."
                 value={searchParticipant}
                 onChange={(e) => setSearchParticipant(e.target.value)}
-                className="pl-8 pr-7 py-1.5 text-[11px] font-medium border border-gray-300 rounded-md bg-white w-52 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
+                className="pl-8 pr-7 py-1.5 text-xs font-medium border border-gray-300 rounded-md bg-white w-52 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
               />
               {searchParticipant && (
                 <button onClick={() => setSearchParticipant('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700">
@@ -612,7 +618,7 @@ export default function Dashboard() {
             {(searchTrainer || searchParticipant) && (
               <button
                 onClick={() => { setSearchTrainer(''); setSearchParticipant(''); }}
-                className="ml-auto text-[10px] font-bold text-indigo-500 hover:text-indigo-700 transition"
+                className="ml-auto text-[11px] font-bold text-indigo-500 hover:text-indigo-700 transition"
               >
                 Clear search
               </button>
@@ -620,7 +626,7 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-start gap-1">
-            <div className="shrink-0 h-[60px] flex items-center">
+            <div className="shrink-0 h-[68px] flex items-center">
               <button
                 onClick={() => setTrainerPage(p => Math.max(0, p - 1))}
                 disabled={trainerPage === 0}
@@ -631,8 +637,8 @@ export default function Dashboard() {
             </div>
 
             <div className="flex-1 overflow-x-auto bg-white shadow-sm border border-gray-200">
-              <div className="grid grid-cols-[85px_repeat(5,1fr)] min-w-[820px]">
-                <div className="bg-[#1A202C] text-white p-2 flex items-center justify-center text-[11px] font-bold tracking-wider border-r border-gray-700">
+              <div className="grid grid-cols-[90px_repeat(5,1fr)] min-w-[860px]">
+                <div className="bg-[#1A202C] text-white p-2 flex items-center justify-center text-xs font-bold tracking-wider border-r border-gray-700">
                   TIME
                 </div>
                 {displayedRooms.map((room) => {
@@ -649,7 +655,7 @@ export default function Dashboard() {
                       className={`bg-[#1A202C] text-white p-2 border-r border-gray-700 last:border-r-0 cursor-pointer hover:bg-[#2D3748] transition-all ${isTrainerMatch && searchTrainer.trim() ? 'ring-2 ring-purple-400 ring-inset' : ''} ${trainerDimmed ? 'opacity-25' : ''}`}
                       onClick={() => { setSelectedTrainer(trainer); setShowTrainerJourney(true); }}
                     >
-                      <div className="flex items-center gap-1.5 mb-0.5">
+                      <div className="flex items-center gap-1.5 mb-1">
                         <img
                           src={trainer?.photoUrl}
                           alt={trainer?.name}
@@ -657,10 +663,10 @@ export default function Dashboard() {
                           loading="lazy"
                           onError={(e) => { e.target.src = FALLBACK_TRAINER_PHOTO; }}
                         />
-                        <span className="text-[11px] font-bold truncate flex-1">{trainer?.name}</span>
+                        <span className="text-xs font-bold truncate flex-1">{trainer?.name}</span>
                         <span className={`h-2 w-2 rounded-full shrink-0 ${dotColor}`} />
                       </div>
-                      <div className="text-[10px] text-gray-300 font-medium">
+                      <div className="text-[11px] text-gray-300 font-medium">
                         <p>{tStat?.completed || 0} / {tStat?.assigned || 0} completed · {tStat?.passRate || 0}% pass</p>
                         <p>{formatElapsedTime(tStat?.avgTime || 0)} avg / participant</p>
                       </div>
@@ -670,7 +676,7 @@ export default function Dashboard() {
 
                 {TIME_SLOTS.map((timeLabel, rowIdx) => (
                   <React.Fragment key={`row-${rowIdx}`}>
-                    <div className="bg-gray-100 border border-gray-200 flex items-center justify-center text-[11px] font-bold text-gray-800 py-2">
+                    <div className="bg-gray-100 border border-gray-200 flex items-center justify-center text-xs font-bold text-gray-800 py-2">
                       {timeLabel}
                     </div>
 
@@ -680,8 +686,8 @@ export default function Dashboard() {
 
                       if (!participant) {
                         return (
-                          <div key={`${room.id}-${rowIdx}`} className={`border border-gray-200 bg-white p-2 flex items-center justify-center min-h-[52px] ${trainerDimmed ? 'opacity-25' : ''}`}>
-                            <span className="text-gray-300 text-[11px]">—</span>
+                          <div key={`${room.id}-${rowIdx}`} className={`border border-gray-200 bg-white p-2 flex items-center justify-center min-h-[56px] ${trainerDimmed ? 'opacity-25' : ''}`}>
+                            <span className="text-gray-300 text-xs">—</span>
                           </div>
                         );
                       }
@@ -702,12 +708,12 @@ export default function Dashboard() {
                       return (
                         <div
                           key={`${room.id}-${rowIdx}`}
-                          className={`border border-gray-200 bg-white p-2 flex flex-col justify-center min-h-[52px] border-l-4 ${borderColor} hover:bg-gray-50 transition-all cursor-pointer ${(dimmed || trainerDimmed) ? 'opacity-25' : ''} ${matchesParticipant && searchParticipant.trim() ? 'ring-2 ring-emerald-400 ring-inset' : ''}`}
+                          className={`border border-gray-200 bg-white p-2 flex flex-col justify-center min-h-[56px] border-l-4 ${borderColor} hover:bg-gray-50 transition-all cursor-pointer ${(dimmed || trainerDimmed) ? 'opacity-25' : ''} ${matchesParticipant && searchParticipant.trim() ? 'ring-2 ring-emerald-400 ring-inset' : ''}`}
                           onClick={() => { setSelectedParticipant(participant); setShowParticipantJourney(true); }}
                         >
-                          <div className="text-[11px] font-bold text-gray-800 leading-tight">{participant.displayName}</div>
-                          <div className="text-[10px] text-gray-500 font-medium leading-tight">{participant.empId} · {participant.role}</div>
-                          <div className={`text-[10px] font-bold tracking-wider leading-tight ${statusColor}`}>
+                          <div className="text-xs font-bold text-gray-800 leading-tight">{participant.displayName}</div>
+                          <div className="text-[11px] text-gray-500 font-medium leading-tight">{participant.empId} · {participant.role}</div>
+                          <div className={`text-[11px] font-bold tracking-wider leading-tight ${statusColor}`}>
                             {statusText}
                           </div>
                         </div>
@@ -718,7 +724,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="shrink-0 h-[60px] flex items-center">
+            <div className="shrink-0 h-[68px] flex items-center">
               <button
                 onClick={() => setTrainerPage(p => Math.min(totalPages - 1, p + 1))}
                 disabled={trainerPage >= totalPages - 1}
@@ -736,33 +742,33 @@ export default function Dashboard() {
       <div className="shrink-0 bg-white border-t border-gray-200 px-4 py-2 flex items-center justify-between z-20">
         <div className="flex items-center gap-8">
           <div className="flex items-center gap-4">
-            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">PARTICIPANT</span>
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">PARTICIPANT</span>
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-              <span className="text-[11px] font-medium text-gray-700">Completed</span>
+              <span className="text-xs font-medium text-gray-700">Completed</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-purple-600"></span>
-              <span className="text-[11px] font-medium text-gray-700">In progress</span>
+              <span className="text-xs font-medium text-gray-700">In progress</span>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">TRAINER AVAILABILITY</span>
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">TRAINER AVAILABILITY</span>
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-              <span className="text-[11px] font-medium text-gray-700">Ready</span>
+              <span className="text-xs font-medium text-gray-700">Ready</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-              <span className="text-[11px] font-medium text-gray-700">Occupied</span>
+              <span className="text-xs font-medium text-gray-700">Occupied</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
-              <span className="text-[11px] font-medium text-gray-700">Offline</span>
+              <span className="text-xs font-medium text-gray-700">Offline</span>
             </div>
           </div>
         </div>
-        <div className="text-[11px] font-medium text-gray-500">Skill Contest Portal</div>
+        <div className="text-xs font-medium text-gray-500">Skill Contest Portal</div>
       </div>
 
       {/* TRAINER JOURNEY POPUP */}
@@ -778,9 +784,9 @@ export default function Dashboard() {
                   onError={(e) => { e.target.src = FALLBACK_TRAINER_PHOTO; }}
                 />
                 <div>
-                  <p className="text-[10px] font-bold text-purple-200 uppercase tracking-wider">TRAINER JOURNEY</p>
-                  <h2 className="text-lg font-bold text-white mt-0.5">{selectedTrainer.name}</h2>
-                  <p className="text-[11px] text-purple-200 font-medium">Sales · North</p>
+                  <p className="text-[11px] font-bold text-purple-200 uppercase tracking-wider">TRAINER JOURNEY</p>
+                  <h2 className="text-xl font-bold text-white mt-0.5">{selectedTrainer.name}</h2>
+                  <p className="text-xs text-purple-200 font-medium">Sales · North</p>
                 </div>
               </div>
               <button onClick={() => { setShowTrainerJourney(false); setSelectedTrainer(null); }} className="text-white/70 hover:text-white transition">
@@ -788,16 +794,16 @@ export default function Dashboard() {
               </button>
             </div>
             <div className="grid grid-cols-5 gap-3 px-5 py-2.5 border-b border-gray-100">
-              <div><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Assigned</p><p className="text-lg font-extrabold text-gray-900 mt-0.5">9</p></div>
-              <div><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Completed</p><p className="text-lg font-extrabold text-gray-900 mt-0.5">5</p></div>
-              <div><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Delayed</p><p className="text-lg font-extrabold text-gray-900 mt-0.5">1</p></div>
-              <div><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Pass Rate</p><p className="text-lg font-extrabold text-gray-900 mt-0.5">88%</p></div>
-              <div><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Avg Time</p><p className="text-lg font-extrabold text-gray-900 mt-0.5">17m 42s</p></div>
+              <div><p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Assigned</p><p className="text-xl font-extrabold text-gray-900 mt-0.5">9</p></div>
+              <div><p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Completed</p><p className="text-xl font-extrabold text-gray-900 mt-0.5">5</p></div>
+              <div><p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Delayed</p><p className="text-xl font-extrabold text-gray-900 mt-0.5">1</p></div>
+              <div><p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Pass Rate</p><p className="text-xl font-extrabold text-gray-900 mt-0.5">88%</p></div>
+              <div><p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Avg Time</p><p className="text-xl font-extrabold text-gray-900 mt-0.5">17m 42s</p></div>
             </div>
             <div className="px-5 py-2.5">
               <div className="flex items-center justify-between mb-1.5">
-                <h3 className="text-[11px] font-bold text-gray-800 uppercase tracking-wider">Round Milestones</h3>
-                <span className="text-[11px] font-medium text-gray-500">5 / 9 complete</span>
+                <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider">Round Milestones</h3>
+                <span className="text-xs font-medium text-gray-500">5 / 9 complete</span>
               </div>
               <div className="flex items-center justify-between gap-1.5">
                 {[
@@ -808,39 +814,39 @@ export default function Dashboard() {
                   { label: 'R5', value: '1/1', status: 'DONE', color: 'bg-teal-500' },
                 ].map((round, idx) => (
                   <div key={idx} className="flex flex-col items-center gap-0.5 flex-1">
-                    <div className={`w-full py-1.5 rounded text-center text-[11px] font-bold text-white ${round.color}`}>{round.label}</div>
-                    <span className="text-[10px] font-bold text-gray-700">{round.value}</span>
-                    <span className={`text-[9px] font-bold ${round.status === 'LATE' ? 'text-orange-500' : round.status === 'LIVE' ? 'text-purple-600' : 'text-teal-600'}`}>{round.status}</span>
+                    <div className={`w-full py-1.5 rounded text-center text-xs font-bold text-white ${round.color}`}>{round.label}</div>
+                    <span className="text-[11px] font-bold text-gray-700">{round.value}</span>
+                    <span className={`text-[10px] font-bold ${round.status === 'LATE' ? 'text-orange-500' : round.status === 'LIVE' ? 'text-purple-600' : 'text-teal-600'}`}>{round.status}</span>
                   </div>
                 ))}
               </div>
             </div>
             <div className="px-5 py-2.5 bg-gray-50 border-t border-gray-100">
-              <h3 className="text-[11px] font-bold text-gray-800 uppercase tracking-wider mb-1.5">Recent Assessments</h3>
+              <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-1.5">Recent Assessments</h3>
               <div className="space-y-1.5">
                 {[
                   { time: '09:00', name: 'Ayush Raj', score: '82%', status: 'PASSED' },
                   { time: '10:00', name: 'Danish Ahamad', score: '86%', status: 'PASSED' },
                   { time: '11:00', name: 'Gulshan Kumar', score: '68%', status: 'IN PROGRESS' },
                 ].map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between text-[11px]">
+                  <div key={idx} className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-500 font-medium w-10">{item.time}</span>
+                      <span className="text-gray-500 font-medium w-12">{item.time}</span>
                       <span className="text-gray-800 font-semibold">{item.name}</span>
                       <span className="text-gray-500">·</span>
                       <span className="text-gray-600 font-medium">{item.score}</span>
                     </div>
-                    <span className={`text-[10px] font-bold tracking-wider ${item.status === 'PASSED' ? 'text-teal-600' : 'text-purple-600'}`}>{item.status}</span>
+                    <span className={`text-[11px] font-bold tracking-wider ${item.status === 'PASSED' ? 'text-teal-600' : 'text-purple-600'}`}>{item.status}</span>
                   </div>
                 ))}
               </div>
             </div>
             <div className="px-5 pb-1.5">
-              <div className="bg-amber-50 border border-amber-200 rounded p-1.5 text-[11px] font-medium text-amber-800">
+              <div className="bg-amber-50 border border-amber-200 rounded p-1.5 text-xs font-medium text-amber-800">
                 <strong>ATTENTION</strong> · 2 assessments started more than 15 minutes late
               </div>
             </div>
-            <div className="px-5 py-1.5 text-[10px] text-gray-400 font-medium">Last activity · 10:34 IST</div>
+            <div className="px-5 py-1.5 text-[11px] text-gray-400 font-medium">Last activity · 10:34 IST</div>
           </div>
         </div>
       )}
@@ -851,24 +857,24 @@ export default function Dashboard() {
           <div className="mx-4 w-full max-w-lg overflow-hidden bg-white shadow-2xl">
             <div className="px-5 py-2.5 bg-gradient-to-r from-teal-500 to-emerald-600 flex items-center justify-between">
               <div>
-                <p className="text-[10px] font-bold text-teal-100 uppercase tracking-wider">PARTICIPANT JOURNEY</p>
-                <h2 className="text-lg font-bold text-white mt-0.5">{selectedParticipant.displayName}</h2>
-                <p className="text-[11px] text-teal-100 font-medium">{selectedParticipant.empId} · {selectedParticipant.role}</p>
+                <p className="text-[11px] font-bold text-teal-100 uppercase tracking-wider">PARTICIPANT JOURNEY</p>
+                <h2 className="text-xl font-bold text-white mt-0.5">{selectedParticipant.displayName}</h2>
+                <p className="text-xs text-teal-100 font-medium">{selectedParticipant.empId} · {selectedParticipant.role}</p>
               </div>
               <button onClick={() => { setShowParticipantJourney(false); setSelectedParticipant(null); }} className="text-white/70 hover:text-white transition">
                 <X className="h-4 w-4" />
               </button>
             </div>
             <div className="grid grid-cols-4 gap-3 px-5 py-2.5 border-b border-gray-100">
-              <div><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Rounds</p><p className="text-lg font-extrabold text-gray-900 mt-0.5">3 / 5</p></div>
-              <div><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Avg Score</p><p className="text-lg font-extrabold text-gray-900 mt-0.5">78%</p></div>
-              <div><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Time</p><p className="text-lg font-extrabold text-gray-900 mt-0.5">52m</p></div>
-              <div><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Flags</p><p className="text-lg font-extrabold text-gray-900 mt-0.5">1</p></div>
+              <div><p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Rounds</p><p className="text-xl font-extrabold text-gray-900 mt-0.5">3 / 5</p></div>
+              <div><p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Avg Score</p><p className="text-xl font-extrabold text-gray-900 mt-0.5">78%</p></div>
+              <div><p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total Time</p><p className="text-xl font-extrabold text-gray-900 mt-0.5">52m</p></div>
+              <div><p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Flags</p><p className="text-xl font-extrabold text-gray-900 mt-0.5">1</p></div>
             </div>
             <div className="px-5 py-2.5">
               <div className="flex items-center justify-between mb-1.5">
-                <h3 className="text-[11px] font-bold text-gray-800 uppercase tracking-wider">Assessment Milestones</h3>
-                <span className="text-[11px] font-medium text-gray-500">Next · 14:30</span>
+                <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider">Assessment Milestones</h3>
+                <span className="text-xs font-medium text-gray-500">Next · 14:30</span>
               </div>
               <div className="space-y-1.5">
                 {[
@@ -880,21 +886,21 @@ export default function Dashboard() {
                 ].map((item, idx) => (
                   <div key={idx} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className={`w-6 h-6 rounded text-center flex items-center justify-center text-[10px] font-bold text-white ${item.color}`}>{item.round}</div>
-                      <span className="text-[11px] text-gray-800 font-medium">{item.trainer}</span>
-                      {item.detail && <span className="text-[11px] text-gray-500">· {item.detail}</span>}
+                      <div className={`w-7 h-7 rounded text-center flex items-center justify-center text-[11px] font-bold text-white ${item.color}`}>{item.round}</div>
+                      <span className="text-xs text-gray-800 font-medium">{item.trainer}</span>
+                      {item.detail && <span className="text-xs text-gray-500">· {item.detail}</span>}
                     </div>
-                    <span className={`text-[10px] font-bold tracking-wider ${item.status === 'PASSED' ? 'text-teal-600' : item.status === 'SCHEDULED' ? 'text-orange-500' : 'text-gray-400'}`}>{item.status}</span>
+                    <span className={`text-[11px] font-bold tracking-wider ${item.status === 'PASSED' ? 'text-teal-600' : item.status === 'SCHEDULED' ? 'text-orange-500' : 'text-gray-400'}`}>{item.status}</span>
                   </div>
                 ))}
               </div>
             </div>
             <div className="px-5 pb-1.5">
-              <div className="bg-amber-50 border border-amber-200 rounded p-1.5 text-[11px] font-medium text-amber-800">
+              <div className="bg-amber-50 border border-amber-200 rounded p-1.5 text-xs font-medium text-amber-800">
                 <strong>FLAG</strong> · ID check pending before Round 4
               </div>
             </div>
-            <div className="px-5 py-1.5 text-[10px] text-gray-400 font-medium">Last activity · 10:34 IST</div>
+            <div className="px-5 py-1.5 text-[11px] text-gray-400 font-medium">Last activity · 10:34 IST</div>
           </div>
         </div>
       )}
@@ -908,8 +914,8 @@ export default function Dashboard() {
           >
             <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-gray-900">Notifications</h2>
-                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                <h2 className="text-lg font-bold text-gray-900">Notifications</h2>
+                <span className="bg-red-500 text-white text-[11px] font-bold px-1.5 py-0.5 rounded-full">
                   {liveAlerts.length}
                 </span>
               </div>
@@ -925,15 +931,15 @@ export default function Dashboard() {
                     <img
                       src={alert.photoUrl}
                       alt={alert.title}
-                      className="w-10 h-10 rounded-full object-cover ring-2 ring-white shadow-sm"
+                      className="w-11 h-11 rounded-full object-cover ring-2 ring-white shadow-sm"
                       onError={(e) => { e.target.src = FALLBACK_TRAINER_PHOTO; }}
                     />
                     <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-red-500 border-2 border-white" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-gray-900 leading-snug truncate">{alert.title}</p>
-                    <p className="text-[11px] text-gray-500 font-medium mt-0.5 truncate">{alert.subtitle}</p>
-                    <p className="text-[10px] text-gray-400 font-medium mt-1">{alert.time}</p>
+                    <p className="text-sm font-bold text-gray-900 leading-snug truncate">{alert.title}</p>
+                    <p className="text-xs text-gray-500 font-medium mt-0.5 truncate">{alert.subtitle}</p>
+                    <p className="text-[11px] text-gray-400 font-medium mt-1">{alert.time}</p>
                   </div>
                 </div>
               ))}
@@ -943,7 +949,7 @@ export default function Dashboard() {
       )}
 
       {/* TOAST NOTIFICATIONS */}
-    <Toaster enabled={toastOn} />
+      <Toaster enabled={toastOn} />
 
     </div>
   );
