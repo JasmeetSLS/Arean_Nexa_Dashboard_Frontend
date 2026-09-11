@@ -5,7 +5,7 @@ import {
   RefreshCw, Play, Award, Hourglass, Bell, Filter, LogOut,
   ChevronLeft, ChevronRight, Search
 } from 'lucide-react';
-import { Toaster } from '../components/Toaster.jsx';
+import { Toaster } from '../components/Toaster.jsx'; // ---- Toaster ----
 
 // ---- Color palette ----
 const colorPalette = [
