@@ -52,28 +52,32 @@ const indianNames = Array.from({ length: 90 }, (_, i) => {
 });
 
 // ---- Trainer Master Data (MALE trainers with explicit photo URLs) ----
+// ---- Trainer Master Data (MALE trainers with LOCAL photo URLs from public/trainers/) ----
+// Images live in: /public/trainers/<filename>.jpg
+// They are served at URL: /trainers/<filename>.jpg
 const TRAINER_MASTER = [
-  { id: 1, name: 'Rahul Verma', languages: 'English, Hindi', availability: 'available',
-    photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Rahul_verma_wiki.jpg/250px-Rahul_verma_wiki.jpg?utm_source=en.wikipedia.org&utm_campaign=parser&utm_content=thumbnail' },
-  { id: 2, name: 'Vikram Singh', languages: 'English, Tamil', availability: 'available',
-    photoUrl: 'https://media.licdn.com/dms/image/v2/D4E03AQGBJ-u9FO7SDA/profile-displayphoto-scale_200_200/B4EZgeP3iDGYAY-/0/1752854136331?e=2147483647&v=beta&t=DH1Q_5WUzu_T2VO9ky2EEbnLAAWT74DbTTBVkrkfum4' },
-  { id: 3, name: 'Arjun Mehta', languages: 'English, Malayalam', availability: 'available',
-    photoUrl: 'https://media.licdn.com/dms/image/v2/D5603AQEWSRRRd0ymOw/profile-displayphoto-shrink_200_200/B56ZVAw_njGsAY-/0/1740548340841?e=2147483647&v=beta&t=1u_cL9n2iPj_VUYZqW_esz2l7odF42gldGEv5tyBXc0' },
-  { id: 4, name: 'Karan Kapoor', languages: 'Hindi, English', availability: 'available',
-    photoUrl: 'https://media.licdn.com/dms/image/v2/D4D03AQHw3ZFBJGCC7g/profile-displayphoto-shrink_200_200/B4DZZhQyZ.HIAY-/0/1745388520436?e=2147483647&v=beta&t=UUKJlDlfnoZlzkfsYECuwBVx29G9fAkYpWFNhibgtRs' },
-  { id: 5, name: 'Aditya Sharma', languages: 'English, Telugu', availability: 'available',
-    photoUrl: 'https://eye7.b-cdn.net/wp-content/uploads/dr-aditya-sharma.jpg' },
-  { id: 6, name: 'Rajesh Kumar', languages: 'English, Kannada', availability: 'available',
-    photoUrl: 'https://upeswebsitecdn-prod-hphqfhc0b8h2ffhf.a02.azurefd.net/drupal-data/2026-03/Rajesh%20Kumar_0.png' },
-  { id: 7, name: 'Amit Joshi', languages: 'Hindi, Tamil', availability: 'busy',
-    photoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQg3w-SyH9nJjOgmANT0XKlpxZYEJvdBQP5-d8u9uQLU3k65dGe6UXxH0q2&s=10' },
-  { id: 8, name: 'Suresh Pillai', languages: 'English, Malayalam', availability: 'busy',
-    photoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQkAvZr_rGNrJ1ucQegB0ev5KgBS8YWX-JRz2cRE90O3HkiWynVAI5-E9Xz&s=10' },
-  { id: 9, name: 'Rohan Nair', languages: 'Hindi, English', availability: 'busy',
-    photoUrl: 'https://media.licdn.com/dms/image/v2/D4E03AQGu0AuoKkz-lw/profile-displayphoto-scale_200_200/B4EZ7bHaldKEAg-/0/1781792617044?e=2147483647&v=beta&t=sEVddkb8T5r4C_0NaeIzD1Z_S8XwPmhMG3HEyNI3OGI' },
-  { id: 10, name: 'Nikhil Reddy', languages: 'English, Telugu', availability: 'busy',
-    photoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSAeF1DJYpjcjp9mrt09BYE-r4EQkrhf8LgIHIzgRijahj1mng2xiIXIk5F&s=10' },
+  { id: 1, name: 'Pooja Bora', languages: 'English, Hindi', availability: 'available',
+    photoUrl: '/trainers/1.jpeg' },
+  { id: 2, name: 'Meharban singh Bhatia', languages: 'English, Tamil', availability: 'available',
+    photoUrl: '/trainers/2.jpeg' },
+  { id: 3, name: 'Imtiyaz syed', languages: 'English, Malayalam', availability: 'available',
+    photoUrl: '/trainers/3.jpeg' },
+  { id: 4, name: 'Mihir Zaveri', languages: 'Hindi, English', availability: 'available',
+    photoUrl: '/trainers/4.jpeg' },
+  { id: 5, name: 'Virendar hada', languages: 'English, Telugu', availability: 'available',
+    photoUrl: '/trainers/5.jpeg' },
+  { id: 6, name: 'Arun jose', languages: 'English, Kannada', availability: 'available',
+    photoUrl: '/trainers/6.jpeg' },
+  { id: 7, name: 'Manjira', languages: 'Hindi, Tamil', availability: 'busy',
+    photoUrl: '/trainers/7.jpeg' },
+  { id: 8, name: 'Sudhevan kj', languages: 'English, Malayalam', availability: 'busy',
+    photoUrl: '/trainers/8.jpeg' },
+  { id: 9, name: 'Sagar mokase', languages: 'Hindi, English', availability: 'busy',
+    photoUrl: '/trainers/9.jpeg' },
+  { id: 10, name: 'Tikendra sumara', languages: 'English, Telugu', availability: 'busy',
+    photoUrl: '/trainers/10.jpeg' },
 ];
+
 
 const FALLBACK_TRAINER_PHOTO = 'https://i.pravatar.cc/150?img=12';
 
