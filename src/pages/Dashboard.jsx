@@ -5,6 +5,8 @@ import {
   RefreshCw, Play, Award, Hourglass, Bell, Filter, LogOut,
   ChevronLeft, ChevronRight, Search
 } from 'lucide-react';
+import { Toaster } from '../components/Toaster.jsx';
+import { FaBell, FaBellSlash } from 'react-icons/fa';
 
 // ---- Color palette ----
 const colorPalette = [
@@ -95,6 +97,9 @@ export default function Dashboard() {
     { id: 3, title: 'Trainer Imtiyaz missed slot start', subtitle: 'Slot 7 · Finance · East region', time: '15 min ago', photoUrl: '/trainers/3.jpeg' },
     { id: 4, title: 'Trainer Mihir not assigned', subtitle: 'Slot 2 · CRM · West region', time: '22 min ago', photoUrl: '/trainers/4.jpeg' },
   ]);
+
+  // ---- Toast toggle state ----
+  const [toastOn, setToastOn] = useState(false);
 
   const parseDurationFromName = (name) => {
     const match = name.match(/(\d+)\s*min/);
@@ -315,6 +320,19 @@ export default function Dashboard() {
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             <span className="text-xs font-bold text-gray-700">LIVE · 04 Sep 2026 · 12:52 IST</span>
           </div>
+
+{/* ===== TOAST TOGGLE (react-icons) ===== */}
+<button
+  onClick={() => setToastOn(!toastOn)}
+  title={toastOn ? 'Notifications ON' : 'Notifications OFF'}
+  className={`flex items-center justify-center h-8 w-8 rounded-full border transition ${
+    toastOn
+      ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm'
+      : 'bg-white border-gray-200 text-gray-400 hover:shadow-md'
+  }`}
+>
+  {toastOn ? <FaBell className="h-4 w-4" /> : <FaBellSlash className="h-4 w-4" />}
+</button>
 
           <button
             onClick={() => setShowAlerts(true)}
@@ -590,7 +608,7 @@ export default function Dashboard() {
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Search participant..."
+                placeholder="Search participant / MSpin..."
                 value={searchParticipant}
                 onChange={(e) => setSearchParticipant(e.target.value)}
                 className="pl-8 pr-7 py-1.5 text-xs font-medium border border-gray-300 rounded-md bg-white w-52 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
@@ -934,6 +952,9 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* ===== TOAST NOTIFICATIONS ===== */}
+      <Toaster enabled={toastOn} />
 
     </div>
   );
