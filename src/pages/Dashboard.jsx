@@ -453,7 +453,7 @@ export default function Dashboard() {
             <div className="bg-teal-500 text-white p-3 shadow-sm">
               <p className="text-[11px] font-bold uppercase tracking-wider text-white mb-1">Avg Time</p>
               <p className="text-xl font-extrabold leading-tight">{formatElapsedTime(stats.avgTime)}</p>
-              <p className="text-[11px] text-white font-medium mt-0.5">Per participant</p>
+              <p className="text-[11px] text-white font-medium mt-0.5">Per Participant</p>
             </div>
             <div className="bg-emerald-500 text-white p-3 shadow-sm">
               <p className="text-[11px] font-bold uppercase tracking-wider text-white mb-1">Active Trainers</p>
@@ -557,7 +557,7 @@ export default function Dashboard() {
             <div className="bg-white shadow-sm border-2 border-teal-500 p-3">
               <p className="text-[11px] font-bold uppercase tracking-wider text-teal-600 mb-1">Overall Avg Time</p>
               <p className="text-base font-extrabold text-teal-700 leading-tight">{formatElapsedTime(stats.avgTime)}</p>
-              <p className="text-[11px] text-black font-medium mt-0.5">Per participant</p>
+              <p className="text-[11px] text-black font-medium mt-0.5">Per Participant</p>
             </div>
           </div>
         </section>
@@ -608,7 +608,7 @@ export default function Dashboard() {
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Search participant / MSpin..."
+                placeholder="Search Participant / MSPIN..."
                 value={searchParticipant}
                 onChange={(e) => setSearchParticipant(e.target.value)}
                 className="pl-8 pr-7 py-1.5 text-xs font-medium border border-gray-300 rounded-md bg-white w-52 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
