@@ -908,11 +908,7 @@ const handleExportUsers = () => {
             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">TRAINER AVAILABILITY</span>
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-              <span className="text-xs font-medium text-gray-700">Ready</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-              <span className="text-xs font-medium text-gray-700">Occupied</span>
+              <span className="text-xs font-medium text-gray-700">Online</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
