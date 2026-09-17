@@ -1886,32 +1886,26 @@ export default function Dashboard() {
               </button>
             </div>
 
-            <div className="grid grid-cols-4 gap-3 px-5 py-2.5 border-b border-gray-100">
-              <div>
-                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Assigned</p>
-                <p className="text-xl font-extrabold text-gray-900 mt-0.5">
-                  {selectedTrainer.totalAssigned ?? selectedTrainer.assigned ?? 0}
-                </p>
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Completed</p>
-                <p className="text-xl font-extrabold text-gray-900 mt-0.5">
-                  {selectedTrainer.completed ?? 0}
-                </p>
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Pass Rate</p>
-                <p className="text-xl font-extrabold text-gray-900 mt-0.5">
-                  {selectedTrainer.passPercentage ?? selectedTrainer.passRate ?? 0}%
-                </p>
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Avg Time</p>
-                <p className="text-xl font-extrabold text-gray-900 mt-0.5">
-                  {selectedTrainer.avgTime ?? '00:00:00'}
-                </p>
-              </div>
-            </div>
+           <div className="grid grid-cols-3 gap-3 px-5 py-2.5 border-b border-gray-100">
+  <div>
+    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Completed</p>
+    <p className="text-xl font-extrabold text-gray-900 mt-0.5">
+      {selectedTrainer.totalAssigned ?? selectedTrainer.assigned ?? 0}
+    </p>
+  </div>
+  <div>
+    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Pass Rate</p>
+    <p className="text-xl font-extrabold text-gray-900 mt-0.5">
+      {selectedTrainer.passPercentage ?? selectedTrainer.passRate ?? 0}%
+    </p>
+  </div>
+  <div>
+    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Avg Time</p>
+    <p className="text-xl font-extrabold text-gray-900 mt-0.5">
+      {selectedTrainer.avgTime ?? '00:00:00'}
+    </p>
+  </div>
+</div>
 
 {/* ---- Round Journey (top) ---- */}
 <div className="px-5 py-2.5">
@@ -1942,7 +1936,7 @@ export default function Dashboard() {
                 {roundLabel}
               </div>
               <span className="text-[11px] font-bold text-gray-700">
-                {countNum}
+                {countNum} Participants
               </span>
             </div>
           );
@@ -1958,7 +1952,7 @@ export default function Dashboard() {
 {/* ---- Assigned Participants (below) ---- */}
 <div className="px-5 py-2.5 bg-gray-50 border-t border-gray-100">
   <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-1.5">
-    Assigned Participants
+    Recent Participants
   </h3>
   <div className="space-y-1.5 max-h-56 overflow-y-auto">
     {((gridTrainers.find(g => g.trainer.id === selectedTrainer.id)?.trainer.participants) || [])
@@ -2051,7 +2045,7 @@ export default function Dashboard() {
                       <span className="text-xs text-gray-800 font-medium flex-1">{r.trainerName}</span>
                       {r.score != null && (
                         <span className="text-xs text-gray-900 font-bold">
-                          {r.score} <span className="text-gray-500 font-medium">({status})</span>
+                          {r.score} Marks
                         </span>
                       )}
                     </div>
