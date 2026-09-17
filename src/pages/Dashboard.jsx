@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   X, Bell, LogOut, ChevronLeft, ChevronRight, Search,
-  Download
+  Download,
 } from 'lucide-react';
 import { Toaster } from '../components/Toaster.jsx';
 import { FaBell, FaBellSlash } from 'react-icons/fa';
@@ -16,28 +16,16 @@ export default function Dashboard() {
   const [gridTrainers, setGridTrainers] = useState([]);
   const [dashData, setDashData] = useState(null);
   const [filterOptions, setFilterOptions] = useState({
-    dates: [],
-    zones: [],
-    regions: [],
-    trainers: [],
-    roles: [],
-    agencies: [],
-    dealerNames: [],
-    dealerCodes: [],
+    dates: [], zones: [], regions: [], trainers: [],
+    roles: [], agencies: [], dealerNames: [], dealerCodes: [],
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // ---- UI state ----
   const [filters, setFilters] = useState({
-    date: '',
-    zone: '',
-    region: '',
-    trainer: '',
-    role: '',
-    agency: '',
-    dealerName: '',
-    dealerCode: '',
+    date: '', zone: '', region: '', trainer: '', role: '',
+    agency: '', dealerName: '', dealerCode: '',
   });
   const [searchTrainer, setSearchTrainer] = useState('');
   const [searchParticipant, setSearchParticipant] = useState('');
@@ -55,17 +43,23 @@ export default function Dashboard() {
   const [liveAlerts] = useState([]);
   const [toastOn, setToastOn] = useState(false);
 
-  // Inside Dashboard component
-const handleExportUsers = () => {
-  const params = new URLSearchParams();
-  if (filters.region) params.set('region', filters.region);
-  if (filters.zone)   params.set('zone',   filters.zone);
-  if (filters.role)   params.set('role',   filters.role);
+  // ---- Export users to Excel ----
+  const handleExportUsers = () => {
+    const params = new URLSearchParams();
+    if (filters.region)     params.set('region',     filters.region);
+    if (filters.zone)       params.set('zone',       filters.zone);
+    if (filters.role)       params.set('role',       filters.role);
+    if (filters.agency)     params.set('agency',     filters.agency);
+    if (filters.dealerName) params.set('dealerName', filters.dealerName);
+    if (filters.dealerCode) params.set('dealerCode', filters.dealerCode);
+    if (filters.trainer)    params.set('trainer',    filters.trainer);
 
-  const qs = params.toString();
-  const url = `http://localhost:5000/api/export/users${qs ? `?${qs}` : ''}`;
-  window.open(url, '_blank');
-};
+    const qs = params.toString();
+    window.open(
+      `http://localhost:5000/api/export/users${qs ? `?${qs}` : ''}`,
+      '_blank'
+    );
+  };
 
   // ---- Fetch grid ----
   useEffect(() => {
@@ -130,16 +124,13 @@ const handleExportUsers = () => {
     return { total, completedCount, inProgressCount };
   }, [gridTrainers]);
 
-  // ---- Search query shortcuts ----
   const qTrainer = searchTrainer.trim().toLowerCase();
   const qParticipant = searchParticipant.trim().toLowerCase();
 
-  // ---- Grid ordering (search-matches first, others still visible) ----
   const orderedGridTrainers = useMemo(() => {
     if (!qTrainer && !qParticipant) {
       return gridTrainers.map(({ trainer }) => ({
-        trainer,
-        participants: trainer.participants || [],
+        trainer, participants: trainer.participants || [],
       }));
     }
 
@@ -171,7 +162,6 @@ const handleExportUsers = () => {
 
   useEffect(() => { setTrainerPage(0); }, [searchTrainer, searchParticipant]);
 
-  // ---- Region summary pagination ----
   const REGION_PER_PAGE = 4;
   const regionSummary = dashData?.regionSummary || [];
   const totalRegionPages = Math.max(1, Math.ceil(regionSummary.length / REGION_PER_PAGE));
@@ -179,12 +169,10 @@ const handleExportUsers = () => {
     regionPage * REGION_PER_PAGE,
     (regionPage + 1) * REGION_PER_PAGE
   );
-
   useEffect(() => {
     if (regionPage >= totalRegionPages) setRegionPage(0);
   }, [regionPage, totalRegionPages]);
 
-  // ---- Trainer summary pagination ----
   const SUMMARY_TRAINER_PER_PAGE = 5;
   const trainerSummary = dashData?.trainerSummary || [];
   const totalSummaryTrainerPages = Math.max(1, Math.ceil(trainerSummary.length / SUMMARY_TRAINER_PER_PAGE));
@@ -192,7 +180,6 @@ const handleExportUsers = () => {
     summaryTrainerPage * SUMMARY_TRAINER_PER_PAGE,
     (summaryTrainerPage + 1) * SUMMARY_TRAINER_PER_PAGE
   );
-
   useEffect(() => {
     if (summaryTrainerPage >= totalSummaryTrainerPages) setSummaryTrainerPage(0);
   }, [summaryTrainerPage, totalSummaryTrainerPages]);
@@ -393,20 +380,21 @@ const handleExportUsers = () => {
               ))}
             </select>
           </div>
- <div className="flex flex-col gap-0.5">
-          <button
-  onClick={handleExportUsers}
-  className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-bold shadow-sm transition"
->
-  <Download className="h-3.5 w-3.5" />
-  Export Excel
-</button>
-</div>
 
-          {/* Last sync */}
-          <div className="ml-auto text-xs font-bold text-indigo-400 pb-1">
-            <span className="inline-block w-2 h-2 rounded-full bg-indigo-500 animate-pulse mr-1.5 align-middle"></span>
-            Last sync {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+          {/* Export + Last sync */}
+          <div className="ml-auto flex items-center gap-3 pb-1">
+            <button
+              onClick={handleExportUsers}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-bold shadow-sm transition"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Export Excel
+            </button>
+
+            <div className="text-xs font-bold text-indigo-400">
+              <span className="inline-block w-2 h-2 rounded-full bg-indigo-500 animate-pulse mr-1.5 align-middle"></span>
+              Last sync {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+            </div>
           </div>
         </div>
       </div>
@@ -498,7 +486,6 @@ const handleExportUsers = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
                 {displayedRegions.map((r) => {
                   const regionDimmed = !!qTrainer;
-
                   return (
                     <div
                       key={`${r.region}|${r.zone}`}
@@ -786,16 +773,15 @@ const handleExportUsers = () => {
                       >
                         <div
                           className={`bg-[#1A202C] text-white p-2 border-b border-gray-700 cursor-pointer hover:bg-[#2D3748] transition-all ${trainerMatch && qTrainer ? 'ring-2 ring-purple-400 ring-inset' : ''}`}
-                         onClick={() => {
-  // Prefer the summary object (has roundJourney); fall back to grid trainer
-  const summary = trainerSummary.find(x => x.id === trainer.id);
-  setSelectedTrainer(
-    summary
-      ? { ...summary, totalAssigned: summary.assigned ?? summary.totalAssigned ?? 0 }
-      : { ...trainer, assigned: trainer.totalAssigned ?? 0 }
-  );
-  setShowTrainerJourney(true);
-}}
+                          onClick={() => {
+                            const summary = trainerSummary.find(x => x.id === trainer.id);
+                            setSelectedTrainer(
+                              summary
+                                ? { ...summary, totalAssigned: summary.assigned ?? summary.totalAssigned ?? 0 }
+                                : { ...trainer, assigned: trainer.totalAssigned ?? 0 }
+                            );
+                            setShowTrainerJourney(true);
+                          }}
                         >
                           <div className="flex items-center gap-1.5 mb-1">
                             <img
@@ -824,7 +810,6 @@ const handleExportUsers = () => {
                               const rounds = p.rounds || [];
                               const lastRound = rounds[rounds.length - 1] || {};
                               const isCompleted = lastRound.status === 'completed';
-                              const statusText = isCompleted ? 'COMPLETED' : 'IN PROGRESS';
                               const statusColor = isCompleted ? 'text-emerald-500' : 'text-purple-600';
                               const borderColor = isCompleted ? 'border-l-emerald-500' : 'border-l-purple-600';
 
@@ -858,7 +843,7 @@ const handleExportUsers = () => {
                                     {p.mspin} · {p.role}
                                   </div>
                                   <div className={`text-[11px] font-bold tracking-wider leading-tight ${statusColor}`}>
-                                    {p.roundsStatus} 
+                                    {p.roundsStatus}
                                   </div>
                                 </div>
                               );
@@ -941,96 +926,93 @@ const handleExportUsers = () => {
               </button>
             </div>
 
-           <div className="grid grid-cols-3 gap-3 px-5 py-2.5 border-b border-gray-100">
-  <div>
-    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Completed</p>
-    <p className="text-xl font-extrabold text-gray-900 mt-0.5">
-      {selectedTrainer.totalAssigned ?? selectedTrainer.assigned ?? 0}
-    </p>
-  </div>
-  <div>
-    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Pass Rate</p>
-    <p className="text-xl font-extrabold text-gray-900 mt-0.5">
-      {selectedTrainer.passPercentage ?? selectedTrainer.passRate ?? 0}%
-    </p>
-  </div>
-  <div>
-    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Avg Time</p>
-    <p className="text-xl font-extrabold text-gray-900 mt-0.5">
-      {selectedTrainer.avgTime ?? '00:00:00'}
-    </p>
-  </div>
-</div>
-
-{/* ---- Round Journey (top) ---- */}
-<div className="px-5 py-2.5">
-  <div className="flex items-center justify-between mb-2">
-    <h3 className="text-xs font-bold text-black uppercase tracking-wider">
-     Round Milestones
-    </h3>
-    <span className="text-xs font-medium text-gray-500">
-      {Object.keys(selectedTrainer.roundJourney || {}).length} rounds taught
-    </span>
-  </div>
-
-  {selectedTrainer.roundJourney && Object.keys(selectedTrainer.roundJourney).length > 0 ? (
-    <div className="flex items-start justify-between gap-1.5">
-      {Object.entries(selectedTrainer.roundJourney)
-        .sort((a, b) => {
-          const na = parseInt(a[0].replace(/\D/g, ''), 10) || 0;
-          const nb = parseInt(b[0].replace(/\D/g, ''), 10) || 0;
-          return na - nb;
-        })
-        .map(([roundKey, count]) => {
-          const roundLabel = roundKey.replace(/^round/i, 'R'); // "round1" → "R1"
-          const countNum   = Number(count) || 0;
-
-          return (
-            <div key={roundKey} className="flex flex-col items-center gap-0.5 flex-1">
-              <div className="w-full py-1.5 rounded text-center text-xs font-bold text-white bg-purple-600">
-                {roundLabel}
+            <div className="grid grid-cols-3 gap-3 px-5 py-2.5 border-b border-gray-100">
+              <div>
+                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Completed</p>
+                <p className="text-xl font-extrabold text-gray-900 mt-0.5">
+                  {selectedTrainer.totalAssigned ?? selectedTrainer.assigned ?? 0}
+                </p>
               </div>
-              <span className="text-[11px] font-bold text-gray-700">
-                {countNum} Participants
-              </span>
+              <div>
+                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Pass Rate</p>
+                <p className="text-xl font-extrabold text-gray-900 mt-0.5">
+                  {selectedTrainer.passPercentage ?? selectedTrainer.passRate ?? 0}%
+                </p>
+              </div>
+              <div>
+                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Avg Time</p>
+                <p className="text-xl font-extrabold text-gray-900 mt-0.5">
+                  {selectedTrainer.avgTime ?? '00:00:00'}
+                </p>
+              </div>
             </div>
-          );
-        })}
-    </div>
-  ) : (
-    <div className="text-center text-xs text-gray-400 py-2">
-      No round activity yet.
-    </div>
-  )}
-</div>
 
-{/* ---- Assigned Participants (below) ---- */}
-<div className="px-5 py-2.5 bg-gray-50 border-t border-gray-100">
-  <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-1.5">
-    Recent Participants
-  </h3>
-  <div className="space-y-1.5 max-h-56 overflow-y-auto">
-    {((gridTrainers.find(g => g.trainer.id === selectedTrainer.id)?.trainer.participants) || [])
-      .slice(0, 10)
-      .map((p) => (
-        <div key={p.mspin} className="flex items-center justify-between text-xs">
-          <div className="flex items-center gap-2">
-            <span className="text-gray-500 font-medium w-16 truncate">{p.mspin}</span>
-            <span className="text-gray-800 font-semibold truncate flex-1">{p.name}</span>
-          </div>
-          <span className={`text-[11px] font-bold tracking-wider ${p.status === 'Pass' ? 'text-teal-600' : 'text-purple-600'}`}>
-            {p.status || '—'}
-          </span>
-        </div>
-      ))}
-    {((gridTrainers.find(g => g.trainer.id === selectedTrainer.id)?.trainer.participants) || [])
-      .length === 0 && (
-      <div className="text-center text-xs text-gray-400 py-2">
-        No participants
-      </div>
-    )}
-  </div>
-</div>
+            <div className="px-5 py-2.5">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xs font-bold text-black uppercase tracking-wider">
+                  Round Milestones
+                </h3>
+                <span className="text-xs font-medium text-gray-500">
+                  {Object.keys(selectedTrainer.roundJourney || {}).length} rounds taught
+                </span>
+              </div>
+
+              {selectedTrainer.roundJourney && Object.keys(selectedTrainer.roundJourney).length > 0 ? (
+                <div className="flex items-start justify-between gap-1.5">
+                  {Object.entries(selectedTrainer.roundJourney)
+                    .sort((a, b) => {
+                      const na = parseInt(a[0].replace(/\D/g, ''), 10) || 0;
+                      const nb = parseInt(b[0].replace(/\D/g, ''), 10) || 0;
+                      return na - nb;
+                    })
+                    .map(([roundKey, count]) => {
+                      const roundLabel = roundKey.replace(/^round/i, 'R');
+                      const countNum   = Number(count) || 0;
+                      return (
+                        <div key={roundKey} className="flex flex-col items-center gap-0.5 flex-1">
+                          <div className="w-full py-1.5 rounded text-center text-xs font-bold text-white bg-purple-600">
+                            {roundLabel}
+                          </div>
+                          <span className="text-[11px] font-bold text-gray-700">
+                            {countNum} Participants
+                          </span>
+                        </div>
+                      );
+                    })}
+                </div>
+              ) : (
+                <div className="text-center text-xs text-gray-400 py-2">
+                  No round activity yet.
+                </div>
+              )}
+            </div>
+
+            <div className="px-5 py-2.5 bg-gray-50 border-t border-gray-100">
+              <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-1.5">
+                Recent Participants
+              </h3>
+              <div className="space-y-1.5 max-h-56 overflow-y-auto">
+                {((gridTrainers.find(g => g.trainer.id === selectedTrainer.id)?.trainer.participants) || [])
+                  .slice(0, 10)
+                  .map((p) => (
+                    <div key={p.mspin} className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500 font-medium w-16 truncate">{p.mspin}</span>
+                        <span className="text-gray-800 font-semibold truncate flex-1">{p.name}</span>
+                      </div>
+                      <span className={`text-[11px] font-bold tracking-wider ${p.status === 'Pass' ? 'text-teal-600' : 'text-purple-600'}`}>
+                        {p.status || '—'}
+                      </span>
+                    </div>
+                  ))}
+                {((gridTrainers.find(g => g.trainer.id === selectedTrainer.id)?.trainer.participants) || [])
+                  .length === 0 && (
+                  <div className="text-center text-xs text-gray-400 py-2">
+                    No participants
+                  </div>
+                )}
+              </div>
+            </div>
 
             <div className="px-5 py-1.5 text-[11px] text-gray-400 font-medium">
               Last activity · {new Date().toLocaleString('en-IN', { hour: '2-digit', minute: '2-digit' })}
