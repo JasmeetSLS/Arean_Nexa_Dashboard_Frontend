@@ -140,7 +140,7 @@ export default function Dashboard() {
       if (qParticipant) {
         const hasMatch = (trainer.participants || []).some(
           (p) =>
-            p.mspin?.toLowerCase().includes(qParticipant) ||
+            p.mpin?.toLowerCase().includes(qParticipant) ||
             p.name?.toLowerCase().includes(qParticipant)
         );
         if (hasMatch) score += 50;
@@ -551,7 +551,7 @@ export default function Dashboard() {
                     .find(({ trainer }) => trainer.id === t.id)
                     ?.trainer.participants || []
                   ).some((p) =>
-                    p.mspin?.toLowerCase().includes(qParticipant) ||
+                    p.mpin?.toLowerCase().includes(qParticipant) ||
                     p.name?.toLowerCase().includes(qParticipant)
                   );
 
@@ -721,7 +721,7 @@ export default function Dashboard() {
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Search Participant / MSPIN..."
+                placeholder="Search Participant / MPIN..."
                 value={searchParticipant}
                 onChange={(e) => setSearchParticipant(e.target.value)}
                 className="pl-8 pr-7 py-1.5 text-xs font-medium border border-gray-300 rounded-md bg-white w-52 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
@@ -806,46 +806,46 @@ export default function Dashboard() {
                               <span className="text-gray-300 text-xs">—</span>
                             </div>
                           ) : (
-list.map((p) => {
-  const isCompleted = p.roundsStatus === 'Completed';
-  const statusColor = isCompleted ? 'text-emerald-500' : 'text-purple-600';
-  const borderColor = isCompleted ? 'border-l-emerald-500' : 'border-l-purple-600';
+                            list.map((p) => {
+                              const isCompleted = p.roundsStatus === 'Completed';
+                              const statusColor = isCompleted ? 'text-emerald-500' : 'text-purple-600';
+                              const borderColor = isCompleted ? 'border-l-emerald-500' : 'border-l-purple-600';
 
-  const matchesParticipant =
-    !qParticipant ||
-    p.mspin?.toLowerCase().includes(qParticipant) ||
-    p.name?.toLowerCase().includes(qParticipant);
-  const participantDimmed = qParticipant && !matchesParticipant;
+                              const matchesParticipant =
+                                !qParticipant ||
+                                p.mpin?.toLowerCase().includes(qParticipant) ||
+                                p.name?.toLowerCase().includes(qParticipant);
+                              const participantDimmed = qParticipant && !matchesParticipant;
 
-  return (
-    <div
-      key={p.mspin}
-      className={`border border-gray-200 bg-white p-2 min-h-[56px] border-l-4 ${borderColor} hover:bg-gray-50 transition-all cursor-pointer ${participantDimmed ? 'opacity-25' : ''} ${matchesParticipant && qParticipant ? 'ring-2 ring-emerald-400 ring-inset' : ''}`}
-      onClick={() => {
-        setSelectedParticipant({
-          displayName: p.name,
-          empId:       p.mspin,
-          role:        p.role,
-          percentage:  p.percentage,
-          totalTime:   p.totalTime,
-          roundsStatus: p.roundsStatus,
-          rounds:      p.rounds,
-        });
-        setShowParticipantJourney(true);
-      }}
-    >
-      <div className="text-xs font-bold text-gray-800 leading-tight truncate">
-        {p.name}
-      </div>
-      <div className="text-[11px] text-gray-500 font-medium leading-tight truncate">
-        {p.mspin} · {p.role}
-      </div>
-      <div className={`text-[11px] font-bold tracking-wider leading-tight ${statusColor}`}>
-        {p.roundsStatus}
-      </div>
-    </div>
-  );
-})
+                              return (
+                                <div
+                                  key={p.mpin}
+                                  className={`border border-gray-200 bg-white p-2 min-h-[56px] border-l-4 ${borderColor} hover:bg-gray-50 transition-all cursor-pointer ${participantDimmed ? 'opacity-25' : ''} ${matchesParticipant && qParticipant ? 'ring-2 ring-emerald-400 ring-inset' : ''}`}
+                                  onClick={() => {
+                                    setSelectedParticipant({
+                                      displayName: p.name,
+                                      empId:       p.mpin,
+                                      role:        p.role,
+                                      percentage:  p.percentage,
+                                      totalTime:   p.totalTime,
+                                      roundsStatus: p.roundsStatus,
+                                      rounds:      p.rounds,
+                                    });
+                                    setShowParticipantJourney(true);
+                                  }}
+                                >
+                                  <div className="text-xs font-bold text-gray-800 leading-tight truncate">
+                                    {p.name}
+                                  </div>
+                                  <div className="text-[11px] text-gray-500 font-medium leading-tight truncate">
+                                    {p.mpin} · {p.role}
+                                  </div>
+                                  <div className={`text-[11px] font-bold tracking-wider leading-tight ${statusColor}`}>
+                                    {p.roundsStatus}
+                                  </div>
+                                </div>
+                              );
+                            })
                           )}
                         </div>
                       </div>
@@ -993,9 +993,9 @@ list.map((p) => {
                 {((gridTrainers.find(g => g.trainer.id === selectedTrainer.id)?.trainer.participants) || [])
                   .slice(0, 10)
                   .map((p) => (
-                    <div key={p.mspin} className="flex items-center justify-between text-xs">
+                    <div key={p.mpin} className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-500 font-medium w-16 truncate">{p.mspin}</span>
+                        <span className="text-gray-500 font-medium w-16 truncate">{p.mpin}</span>
                         <span className="text-gray-800 font-semibold truncate flex-1">{p.name}</span>
                       </div>
                       <span className={`text-[11px] font-bold tracking-wider ${p.status === 'Pass' ? 'text-teal-600' : 'text-purple-600'}`}>
@@ -1070,8 +1070,8 @@ list.map((p) => {
               </div>
               <div className="space-y-1.5">
                 {(selectedParticipant.rounds || []).map((r, idx) => {
-                  const status = r.status || 'pending';
-                  const color = status === 'completed' ? 'bg-teal-500' : 'bg-gray-400';
+                  const isDone = r.score != null;
+                  const color = isDone ? 'bg-teal-500' : 'bg-gray-400';
                   return (
                     <div key={idx} className="flex items-center gap-2">
                       <div className={`px-2.5 h-6 rounded flex items-center justify-center text-[11px] font-bold text-white whitespace-nowrap ${color}`}>
