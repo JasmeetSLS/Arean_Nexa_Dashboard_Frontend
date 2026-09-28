@@ -806,48 +806,46 @@ export default function Dashboard() {
                               <span className="text-gray-300 text-xs">—</span>
                             </div>
                           ) : (
-                            list.map((p) => {
-                              const rounds = p.rounds || [];
-                              const lastRound = rounds[rounds.length - 1] || {};
-                              const isCompleted = lastRound.status === 'completed';
-                              const statusColor = isCompleted ? 'text-emerald-500' : 'text-purple-600';
-                              const borderColor = isCompleted ? 'border-l-emerald-500' : 'border-l-purple-600';
+list.map((p) => {
+  const isCompleted = p.roundsStatus === 'Completed';
+  const statusColor = isCompleted ? 'text-emerald-500' : 'text-purple-600';
+  const borderColor = isCompleted ? 'border-l-emerald-500' : 'border-l-purple-600';
 
-                              const matchesParticipant =
-                                !qParticipant ||
-                                p.mspin?.toLowerCase().includes(qParticipant) ||
-                                p.name?.toLowerCase().includes(qParticipant);
-                              const participantDimmed = qParticipant && !matchesParticipant;
+  const matchesParticipant =
+    !qParticipant ||
+    p.mspin?.toLowerCase().includes(qParticipant) ||
+    p.name?.toLowerCase().includes(qParticipant);
+  const participantDimmed = qParticipant && !matchesParticipant;
 
-                              return (
-                                <div
-                                  key={p.mspin}
-                                  className={`border border-gray-200 bg-white p-2 min-h-[56px] border-l-4 ${borderColor} hover:bg-gray-50 transition-all cursor-pointer ${participantDimmed ? 'opacity-25' : ''} ${matchesParticipant && qParticipant ? 'ring-2 ring-emerald-400 ring-inset' : ''}`}
-                                  onClick={() => {
-                                    setSelectedParticipant({
-                                      displayName: p.name,
-                                      empId: p.mspin,
-                                      role: p.role,
-                                      percentage: p.percentage,
-                                      totalTime: p.totalTime,
-                                      roundsStatus: p.roundsStatus,
-                                      rounds: p.rounds,
-                                    });
-                                    setShowParticipantJourney(true);
-                                  }}
-                                >
-                                  <div className="text-xs font-bold text-gray-800 leading-tight truncate">
-                                    {p.name}
-                                  </div>
-                                  <div className="text-[11px] text-gray-500 font-medium leading-tight truncate">
-                                    {p.mspin} · {p.role}
-                                  </div>
-                                  <div className={`text-[11px] font-bold tracking-wider leading-tight ${statusColor}`}>
-                                    {p.roundsStatus}
-                                  </div>
-                                </div>
-                              );
-                            })
+  return (
+    <div
+      key={p.mspin}
+      className={`border border-gray-200 bg-white p-2 min-h-[56px] border-l-4 ${borderColor} hover:bg-gray-50 transition-all cursor-pointer ${participantDimmed ? 'opacity-25' : ''} ${matchesParticipant && qParticipant ? 'ring-2 ring-emerald-400 ring-inset' : ''}`}
+      onClick={() => {
+        setSelectedParticipant({
+          displayName: p.name,
+          empId:       p.mspin,
+          role:        p.role,
+          percentage:  p.percentage,
+          totalTime:   p.totalTime,
+          roundsStatus: p.roundsStatus,
+          rounds:      p.rounds,
+        });
+        setShowParticipantJourney(true);
+      }}
+    >
+      <div className="text-xs font-bold text-gray-800 leading-tight truncate">
+        {p.name}
+      </div>
+      <div className="text-[11px] text-gray-500 font-medium leading-tight truncate">
+        {p.mspin} · {p.role}
+      </div>
+      <div className={`text-[11px] font-bold tracking-wider leading-tight ${statusColor}`}>
+        {p.roundsStatus}
+      </div>
+    </div>
+  );
+})
                           )}
                         </div>
                       </div>
