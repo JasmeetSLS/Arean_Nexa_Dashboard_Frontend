@@ -5,13 +5,19 @@ import {
 } from 'lucide-react';
 import { Toaster } from '../components/Toaster.jsx';
 import { FaBell, FaBellSlash } from 'react-icons/fa';
+import {
+  getGrid,
+  getDashboard,
+  getFilters,
+  getExportUrl,
+} from '../service/api.js';
+import { useAuth } from '../service/auth.jsx';
 
 const FALLBACK_TRAINER_PHOTO = '/trainers/1.jpeg';
-const GRID_API_URL = 'http://localhost:5000/api/grid';
-const DASHBOARD_API_URL = 'http://localhost:5000/api/dashboard';
-const FILTERS_API_URL = 'http://localhost:5000/api/filters';
 
 export default function Dashboard() {
+  const { user, logout } = useAuth();
+
   // ---- API data ----
   const [gridTrainers, setGridTrainers] = useState([]);
   const [dashData, setDashData] = useState(null);
@@ -45,20 +51,16 @@ export default function Dashboard() {
 
   // ---- Export users to Excel ----
   const handleExportUsers = () => {
-    const params = new URLSearchParams();
-    if (filters.region)     params.set('region',     filters.region);
-    if (filters.zone)       params.set('zone',       filters.zone);
-    if (filters.role)       params.set('role',       filters.role);
-    if (filters.agency)     params.set('agency',     filters.agency);
-    if (filters.dealerName) params.set('dealerName', filters.dealerName);
-    if (filters.dealerCode) params.set('dealerCode', filters.dealerCode);
-    if (filters.trainer)    params.set('trainer',    filters.trainer);
+    const f = {};
+    if (filters.region)     f.region     = filters.region;
+    if (filters.zone)       f.zone       = filters.zone;
+    if (filters.role)       f.role       = filters.role;
+    if (filters.agency)     f.agency     = filters.agency;
+    if (filters.dealerName) f.dealerName = filters.dealerName;
+    if (filters.dealerCode) f.dealerCode = filters.dealerCode;
+    if (filters.trainer)    f.trainer    = filters.trainer;
 
-    const qs = params.toString();
-    window.open(
-      `http://localhost:5000/api/export/users${qs ? `?${qs}` : ''}`,
-      '_blank'
-    );
+    window.open(getExportUrl(f), '_blank');
   };
 
   // ---- Fetch grid ----
@@ -66,12 +68,12 @@ export default function Dashboard() {
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch(GRID_API_URL);
-        const json = await res.json();
+        const res = await getGrid();
+        const json = res.data;
         if (json.success) setGridTrainers(json.trainers || []);
         else setError(json.error || 'Failed to load grid data');
       } catch (err) {
-        setError(err.message);
+        setError(err.response?.data?.error || err.message);
       } finally {
         setLoading(false);
       }
@@ -82,9 +84,8 @@ export default function Dashboard() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(DASHBOARD_API_URL);
-        const json = await res.json();
-        if (json.success) setDashData(json);
+        const res = await getDashboard();
+        if (res.data?.success) setDashData(res.data);
       } catch (err) {
         console.error('Dashboard fetch failed:', err);
       }
@@ -95,9 +96,9 @@ export default function Dashboard() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(FILTERS_API_URL);
-        const json = await res.json();
-        if (json.success) {
+        const res = await getFilters();
+        const json = res.data;
+        if (json?.success) {
           setFilterOptions({
             dates:       json.dates       || [],
             zones:       json.zones       || [],
@@ -217,7 +218,13 @@ export default function Dashboard() {
           <h1 className="text-lg font-black text-indigo-900 tracking-tight flex items-center gap-2">
             SKILL CONTEST <span className="text-purple-500 font-light">/</span> COMMAND CENTER
           </h1>
-          <p className="text-xs text-indigo-500 font-medium">Portal progress monitor</p>
+          <p className="text-xs font-semibold text-indigo-500 flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            Logged in as
+            <span className="font-bold text-purple-600">
+              {user?.username || 'Unknown'}
+            </span>
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-200">
@@ -251,7 +258,10 @@ export default function Dashboard() {
             )}
           </button>
 
-          <button className="flex items-center gap-1 px-3 py-1.5 bg-white border border-gray-200 text-gray-600 rounded-full text-xs font-semibold shadow-sm hover:shadow-md transition-all">
+          <button
+            onClick={logout}
+            className="flex items-center gap-1 px-3 py-1.5 bg-white border border-gray-200 text-gray-600 rounded-full text-xs font-semibold shadow-sm hover:shadow-md transition-all"
+          >
             <LogOut className="h-3.5 w-3.5" />
             <span>Logout</span>
           </button>
@@ -416,7 +426,6 @@ export default function Dashboard() {
               <p className="text-xl font-extrabold leading-tight">{dashData?.todayLive?.scheduled ?? 0}</p>
               <p className="text-[11px] text-white font-medium mt-0.5">Daily plan</p>
             </div>
-
             <div className="bg-sky-500 text-white p-3 shadow-sm">
               <p className="text-[11px] font-bold uppercase tracking-wider text-white mb-1">Attempted</p>
               <p className="text-xl font-extrabold leading-tight">
@@ -427,36 +436,29 @@ export default function Dashboard() {
                 <span>{dashData?.todayLive?.completed ?? 0} comp</span>
               </div>
             </div>
-
             <div className="bg-rose-500 text-white p-3 shadow-sm">
               <p className="text-[11px] font-bold uppercase tracking-wider text-white mb-1">Absentees</p>
               <p className="text-xl font-extrabold leading-tight">0</p>
               <p className="text-[11px] text-white font-medium mt-0.5">0% of schedule</p>
             </div>
-
             <div className="bg-orange-500 text-white p-3 shadow-sm">
               <p className="text-[11px] font-bold uppercase tracking-wider text-white mb-1">Delayed</p>
               <p className="text-xl font-extrabold leading-tight">0</p>
               <p className="text-[11px] text-white font-medium mt-0.5">0 follow-ups</p>
             </div>
-
             <div className="bg-purple-600 text-white p-3 shadow-sm">
               <p className="text-[11px] font-bold uppercase tracking-wider text-white mb-1">Pass Rate</p>
               <p className="text-xl font-extrabold leading-tight">{dashData?.todayLive?.passRate ?? 0}%</p>
               <p className="text-[11px] text-white font-medium mt-0.5">Today</p>
             </div>
-
             <div className="bg-teal-500 text-white p-3 shadow-sm">
               <p className="text-[11px] font-bold uppercase tracking-wider text-white mb-1">Avg Time</p>
               <p className="text-xl font-extrabold leading-tight">{dashData?.todayLive?.avgTime ?? '00:00:00'}</p>
               <p className="text-[11px] text-white font-medium mt-0.5">Per Participant</p>
             </div>
-
             <div className="bg-emerald-500 text-white p-3 shadow-sm">
               <p className="text-[11px] font-bold uppercase tracking-wider text-white mb-1">Active Trainers</p>
-              <p className="text-xl font-extrabold leading-tight">
-                {dashData?.todayLive?.activeTrainers ?? 0}
-              </p>
+              <p className="text-xl font-extrabold leading-tight">{dashData?.todayLive?.activeTrainers ?? 0}</p>
               <p className="text-[11px] text-white font-medium mt-0.5">Live from API</p>
             </div>
           </div>
@@ -470,7 +472,6 @@ export default function Dashboard() {
               {regionSummary.length} regions · lifetime
             </span>
           </div>
-
           <div className="flex items-center gap-1">
             <div className="shrink-0 h-[100px] flex items-center">
               <button
@@ -481,7 +482,6 @@ export default function Dashboard() {
                 <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
               </button>
             </div>
-
             <div className="flex-1">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
                 {displayedRegions.map((r) => {
@@ -506,7 +506,6 @@ export default function Dashboard() {
                 )}
               </div>
             </div>
-
             <div className="shrink-0 h-[100px] flex items-center">
               <button
                 onClick={() => setRegionPage(p => Math.min(totalRegionPages - 1, p + 1))}
@@ -517,7 +516,6 @@ export default function Dashboard() {
               </button>
             </div>
           </div>
-
           <div className="flex justify-center mt-2 text-[11px] text-gray-400 font-medium">
             Page {regionPage + 1} of {totalRegionPages}
           </div>
@@ -531,7 +529,6 @@ export default function Dashboard() {
               Click a trainer to open journey
             </span>
           </div>
-
           <div className="flex items-center gap-1">
             <div className="shrink-0 h-[110px] flex items-center">
               <button
@@ -542,7 +539,6 @@ export default function Dashboard() {
                 <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
               </button>
             </div>
-
             <div className="flex-1">
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
                 {displayedSummaryTrainers.map((t) => {
@@ -554,9 +550,7 @@ export default function Dashboard() {
                     p.mpin?.toLowerCase().includes(qParticipant) ||
                     p.name?.toLowerCase().includes(qParticipant)
                   );
-
                   const dimmed = (qTrainer && !trainerMatch) || (qParticipant && !participantMatch);
-
                   return (
                     <div
                       key={t.id}
@@ -589,7 +583,6 @@ export default function Dashboard() {
                 )}
               </div>
             </div>
-
             <div className="shrink-0 h-[110px] flex items-center">
               <button
                 onClick={() => setSummaryTrainerPage(p => Math.min(totalSummaryTrainerPages - 1, p + 1))}
@@ -600,7 +593,6 @@ export default function Dashboard() {
               </button>
             </div>
           </div>
-
           <div className="flex justify-center mt-2 text-[11px] text-gray-400 font-medium">
             Page {summaryTrainerPage + 1} of {totalSummaryTrainerPages}
           </div>
@@ -620,7 +612,6 @@ export default function Dashboard() {
               </p>
               <p className="text-[11px] text-black font-medium mt-0.5">100% registered</p>
             </div>
-
             <div className="bg-white shadow-sm border-2 border-sky-500 p-3">
               <p className="text-[11px] font-bold uppercase tracking-wider text-sky-600 mb-1">Total Attempted</p>
               <p className="text-base font-extrabold text-sky-700 leading-tight">
@@ -630,25 +621,21 @@ export default function Dashboard() {
                 {dashData?.contestTotals?.inProgress ?? 0} in prog · {dashData?.contestTotals?.completed ?? 0} comp
               </p>
             </div>
-
             <div className="bg-white shadow-sm border-2 border-rose-500 p-3">
               <p className="text-[11px] font-bold uppercase tracking-wider text-rose-600 mb-1">Total Absentees</p>
               <p className="text-base font-extrabold text-rose-700 leading-tight">0</p>
               <p className="text-[11px] text-black font-medium mt-0.5">0% not attempted</p>
             </div>
-
             <div className="bg-white shadow-sm border-2 border-orange-500 p-3">
               <p className="text-[11px] font-bold uppercase tracking-wider text-orange-600 mb-1">Total Delayed</p>
               <p className="text-base font-extrabold text-orange-700 leading-tight">0</p>
               <p className="text-[11px] text-black font-medium mt-0.5">0% need action</p>
             </div>
-
             <div className="bg-white shadow-sm border-2 border-pink-500 p-3">
               <p className="text-[11px] font-bold uppercase tracking-wider text-pink-600 mb-1">Total Resets</p>
               <p className="text-base font-extrabold text-pink-700 leading-tight">0</p>
               <p className="text-[11px] text-black font-medium mt-0.5">0% reset rate</p>
             </div>
-
             <div className="bg-white shadow-sm border-2 border-purple-600 p-3">
               <p className="text-[11px] font-bold uppercase tracking-wider text-purple-600 mb-1">Overall Pass</p>
               <p className="text-base font-extrabold text-purple-700 leading-tight">
@@ -656,7 +643,6 @@ export default function Dashboard() {
               </p>
               <p className="text-[11px] text-black font-medium mt-0.5">Goal 80%</p>
             </div>
-
             <div className="bg-white shadow-sm border-2 border-teal-500 p-3">
               <p className="text-[11px] font-bold uppercase tracking-wider text-teal-600 mb-1">Overall Avg Time</p>
               <p className="text-base font-extrabold text-teal-700 leading-tight">
