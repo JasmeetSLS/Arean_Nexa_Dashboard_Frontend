@@ -9,7 +9,13 @@ export default function useChatSocket({ role, trainerId, name }) {
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    const s = io(SOCKET_URL, { transports: ['websocket'] });
+    const token = localStorage.getItem('token');
+
+    const s = io(SOCKET_URL, {
+      transports: ['websocket'],
+      auth: { token },                  // 👈 send JWT to server
+    });
+
     socketRef.current = s;
     setSocket(s);
 
@@ -19,6 +25,10 @@ export default function useChatSocket({ role, trainerId, name }) {
     });
 
     s.on('disconnect', () => setConnected(false));
+    s.on('connect_error', (err) => {
+      console.warn('[socket] connect_error:', err.message);
+      setConnected(false);
+    });
 
     return () => {
       s.disconnect();

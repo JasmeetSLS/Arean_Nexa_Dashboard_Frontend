@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Send, Bot, Wifi, WifiOff, Search, X, MessageSquare,
+  Send, Bot, Wifi, WifiOff, X, MessageSquare,
 } from 'lucide-react';
 import useChatSocket from '../hooks/useChatSocket';
+import { getChatSummary, getChatMessages } from '../service/api';
 
-const API_URL = 'http://localhost:5000';
 const FALLBACK_TRAINER_PHOTO = '/trainers/1.jpeg';
 
 export default function ChatBot() {
@@ -19,21 +19,20 @@ export default function ChatBot() {
   const isCommandCenter = role.toLowerCase() === 'commandcenter';
   const isTrainer       = role.toLowerCase() === 'trainer';
 
-  const socketRole   = isTrainer ? 'trainer' : 'panel';
-  const botName      = isTrainer
-    ? `Trainer ${id}`
-    : role.toLowerCase() === 'participant'
-    ? `Participant ${id}`
-    : 'Command Center';
+  const socketRole = isTrainer ? 'trainer' : 'panel';
+  const botName    = isTrainer ? `Trainer ${id}` : 'Command Center';
 
-  const mySenderType    = isTrainer ? 'trainer' : 'panel';
-  const theirSenderType = isTrainer ? 'panel'   : 'trainer';
+  const mySenderType    = isTrainer ? 'trainer' : 'command';
+  const mySenderId      = isTrainer ? Number(id) : 1;
+  const theirSenderType = isTrainer ? 'command' : 'trainer';
 
-  // Active thread (command center picks from sidebar)
-  const [activeTrainerId, setActiveTrainerId] = useState(Number(id) || 1);
+  // Active thread
+  const [activeTrainerId, setActiveTrainerId] = useState(
+    isTrainer ? Number(id) : (Number(id) || 1)
+  );
 
-  // UI states
-  const [isOpen, setIsOpen]       = useState(false);   // 👈 floating bubble toggle
+  // UI state
+  const [isOpen, setIsOpen]       = useState(false);
   const [messages, setMessages]   = useState([]);
   const [draft, setDraft]         = useState('');
   const [loading, setLoading]     = useState(true);
@@ -53,13 +52,13 @@ export default function ChatBot() {
   // =====================================================================
   useEffect(() => {
     if (!isCommandCenter) return;
+
     (async () => {
       try {
-        const res = await fetch(`${API_URL}/api/chat/summary`);
-        const json = await res.json();
-        if (json.success) {
+        const res = await getChatSummary();
+        if (res.data?.success) {
           setTrainers(
-            (json.summary || []).map((s) => ({
+            (res.data.summary || []).map((s) => ({
               id: s.trainerId,
               name: s.trainerName,
               photoUrl: s.trainerPhoto,
@@ -82,17 +81,23 @@ export default function ChatBot() {
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch(`${API_URL}/api/chat/${activeTrainerId}/messages`);
-        const json = await res.json();
-        if (!cancelled && json.success) setMessages(json.messages || []);
+        const res = await getChatMessages(activeTrainerId);
+        if (!cancelled && res.data?.success) {
+          setMessages(res.data.messages || []);
+        }
 
-        if (!isTrainer && socket) {
+        if (socket) {
           socket.emit('message:read', {
             trainerId: activeTrainerId,
-            readerType: 'panel',
+            readerType: isTrainer ? 'trainer' : 'panel',
           });
+        }
+
+        if (isCommandCenter) {
           setTrainers((prev) =>
-            prev.map((t) => (t.id === activeTrainerId ? { ...t, unread: 0 } : t))
+            prev.map((t) =>
+              t.id === activeTrainerId ? { ...t, unread: 0 } : t
+            )
           );
         }
       } catch (err) {
@@ -102,7 +107,7 @@ export default function ChatBot() {
       }
     })();
     return () => { cancelled = true; };
-  }, [activeTrainerId, isTrainer, socket]);
+  }, [activeTrainerId, isTrainer, isCommandCenter, socket]);
 
   // =====================================================================
   // Live socket listeners
@@ -111,8 +116,15 @@ export default function ChatBot() {
     if (!socket) return;
 
     const onNew = (m) => {
-      if (m.trainerId === activeTrainerId) {
-        setMessages((prev) => [...prev, m]);
+      const threadId = m.senderType === 'trainer' ? m.senderId : m.receiverId;
+
+      // Append if it belongs to the currently open thread (dedupe by id)
+      if (threadId === activeTrainerId) {
+        setMessages((prev) => {
+          if (prev.some((x) => x.id === m.id)) return prev;
+          return [...prev, m];
+        });
+
         if (m.senderType === theirSenderType) {
           socket.emit('message:read', {
             trainerId: activeTrainerId,
@@ -121,28 +133,32 @@ export default function ChatBot() {
         }
       }
 
+      // Sidebar (command center)
       if (isCommandCenter) {
         setTrainers((prev) => {
-          const exists = prev.find((t) => t.id === m.trainerId);
+          const exists = prev.find((t) => t.id === threadId);
           if (!exists) {
-            fetch(`${API_URL}/api/chat/summary`)
-              .then((r) => r.json())
-              .then((j) => j.success && setTrainers(
-                j.summary.map((s) => ({
-                  id: s.trainerId,
-                  name: s.trainerName,
-                  photoUrl: s.trainerPhoto,
-                  lastMessage: s.lastMessage,
-                  unread: s.unread || 0,
-                }))
-              ))
+            getChatSummary()
+              .then((r) => {
+                if (r.data?.success) {
+                  setTrainers(
+                    r.data.summary.map((s) => ({
+                      id: s.trainerId,
+                      name: s.trainerName,
+                      photoUrl: s.trainerPhoto,
+                      lastMessage: s.lastMessage,
+                      unread: s.unread || 0,
+                    }))
+                  );
+                }
+              })
               .catch(() => {});
             return prev;
           }
-          const isActive = m.trainerId === activeTrainerId;
+          const isActive = threadId === activeTrainerId;
           return prev
             .map((t) =>
-              t.id === m.trainerId
+              t.id === threadId
                 ? {
                     ...t,
                     lastMessage: m.message,
@@ -186,22 +202,43 @@ export default function ChatBot() {
     }
   }, [messages, isOpen]);
 
-  // Send
+  // =====================================================================
+  // Send — optimistic UI (append on ack so it shows even when receiver is offline)
+  // =====================================================================
   const handleSend = () => {
     const text = draft.trim();
     if (!text || !socket) return;
+
+    const receiverType = isTrainer ? 'command' : 'trainer';
+    const receiverId   = isTrainer ? 1          : activeTrainerId;
+
     socket.emit(
       'message:send',
       {
-        trainerId: activeTrainerId,
-        senderType: mySenderType,
-        senderName: botName,
-        message: text,
+        senderType:   mySenderType,
+        senderId:     mySenderId,
+        senderName:   botName,
+        receiverType,
+        receiverId,
+        message:      text,
       },
-      (ack) => { if (ack?.ok) setDraft(''); }
+      (ack) => {
+        if (ack?.ok && ack.payload) {
+          // Append immediately from the ack — guarantees the sender
+          // sees their message regardless of receiver's online status
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === ack.payload.id)) return prev;
+            return [...prev, ack.payload];
+          });
+          setDraft('');
+        } else {
+          console.warn('send failed:', ack?.error);
+        }
+      }
     );
   };
 
+  // Derived
   const filteredTrainers = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return trainers;
@@ -210,14 +247,13 @@ export default function ChatBot() {
     );
   }, [trainers, search]);
 
-  // Total unread for the floating bubble badge
   const totalUnread = useMemo(
     () => trainers.reduce((sum, t) => sum + (t.unread || 0), 0),
     [trainers]
   );
 
   // =====================================================================
-  // EMBED MODE — plain full-page chat (no bubble, no popup)
+  // EMBED MODE
   // =====================================================================
   if (embed) {
     return (
@@ -265,7 +301,7 @@ export default function ChatBot() {
           <section className="flex-1 flex flex-col min-w-0">
             <div ref={listRef} className="flex-1 overflow-y-auto p-3 space-y-2 bg-gray-50">
               {messages.map((m) => {
-                const mine = m.senderType === mySenderType;
+                const mine = m.senderType === mySenderType && m.senderId === mySenderId;
                 return (
                   <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm ${
@@ -303,8 +339,6 @@ export default function ChatBot() {
   // =====================================================================
   return (
     <div className="h-screen w-screen bg-transparent pointer-events-none">
-
-      {/* ============= POPUP PANEL ============= */}
       {isOpen && (
         <div
           className="pointer-events-auto fixed z-[70] bg-white shadow-2xl border border-gray-200 rounded-2xl overflow-hidden flex flex-col
@@ -342,10 +376,8 @@ export default function ChatBot() {
             </div>
           </div>
 
-          {/* Body: sidebar (command center) + chat */}
+          {/* Body */}
           <div className="flex-1 flex min-h-0">
-
-            {/* Sidebar with trainers (command center only) */}
             {isCommandCenter && (
               <aside className="w-32 border-r border-gray-200 flex flex-col bg-gray-50 shrink-0">
                 <div className="p-1.5 border-b border-gray-200 bg-white">
@@ -403,7 +435,6 @@ export default function ChatBot() {
               </aside>
             )}
 
-            {/* Chat panel */}
             <section className="flex-1 flex flex-col min-w-0">
               {isCommandCenter && (
                 <div className="shrink-0 px-3 py-1.5 border-b border-gray-200 flex items-center gap-2">
@@ -424,7 +455,6 @@ export default function ChatBot() {
                 </div>
               )}
 
-              {/* Messages */}
               <div ref={listRef} className="flex-1 overflow-y-auto px-3 py-2 space-y-1.5 bg-gray-50">
                 {loading && <p className="text-center text-[11px] text-gray-400">Loading…</p>}
                 {!loading && messages.length === 0 && (
@@ -433,7 +463,7 @@ export default function ChatBot() {
                   </p>
                 )}
                 {messages.map((m) => {
-                  const mine = m.senderType === mySenderType;
+                  const mine = m.senderType === mySenderType && m.senderId === mySenderId;
                   return (
                     <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[85%] px-2.5 py-1.5 rounded-2xl text-xs leading-snug shadow-sm ${
@@ -443,7 +473,7 @@ export default function ChatBot() {
                       }`}>
                         {!mine && (
                           <p className="text-[9px] font-bold uppercase tracking-wider text-purple-500 mb-0.5">
-                            {m.senderName}
+                            {m.senderName || (m.senderType === 'command' ? 'Command Center' : 'Trainer')}
                           </p>
                         )}
                         <p className="whitespace-pre-wrap break-words">{m.message}</p>
@@ -458,7 +488,6 @@ export default function ChatBot() {
                 })}
               </div>
 
-              {/* Composer */}
               <div className="shrink-0 bg-white border-t border-gray-200 px-2 py-1.5 flex items-center gap-1.5">
                 <input
                   type="text"
@@ -481,7 +510,7 @@ export default function ChatBot() {
         </div>
       )}
 
-      {/* ============= FLOATING BUBBLE (bottom-right) ============= */}
+      {/* Floating bubble */}
       <button
         onClick={() => setIsOpen((v) => !v)}
         title={isOpen ? 'Close chat' : 'Open chat'}
