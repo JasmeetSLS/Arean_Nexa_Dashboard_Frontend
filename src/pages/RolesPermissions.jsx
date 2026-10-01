@@ -296,22 +296,6 @@ export default function RolesPermissions() {
     setShowResults(false);
   };
 
-  const totalSelected = current
-    ? ALL_KEYS.reduce((sum, k) => {
-        if (k.includes('.')) {
-          const [g, i] = k.split('.');
-          return sum + (current[g]?.[i] ? 1 : 0);
-        }
-        return sum + Object.values(current[k]).filter(Boolean).length;
-      }, 0)
-    : 0;
-
-  const totalOptions =
-    ALL_ROLES.length +
-    ALL_ZONES.length +
-    ALL_REGIONS.length +
-    PERMISSION_GROUPS.reduce((n, g) => n + g.items.length, 0);
-
   const handleSave = () => {
     console.log('Saving:', { userId: selectedUserId, ...current });
     setSavedMsg('Saved');
@@ -372,7 +356,7 @@ export default function RolesPermissions() {
                     if (selectedUserId) setSelectedUserId(null);
                   }}
                   onFocus={() => setShowResults(true)}
-                  placeholder="Type name or username..."
+                  placeholder="Type name..."
                   className="w-full pl-10 pr-9 py-2.5 text-sm font-medium text-slate-800 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
                 />
                 {search && (
@@ -385,7 +369,7 @@ export default function RolesPermissions() {
                 )}
               </div>
 
-              {/* Dropdown results */}
+              {/* Dropdown results — name only */}
               {showResults && (
                 <div className="absolute left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden max-h-72 overflow-y-auto z-40">
                   {results.length === 0 ? (
@@ -394,40 +378,24 @@ export default function RolesPermissions() {
                     </div>
                   ) : (
                     results.map((u) => {
-                      const initials = u.fullName
-                        .split(' ')
-                        .map((n) => n[0])
-                        .join('')
-                        .slice(0, 2)
-                        .toUpperCase();
                       const active = u.id === selectedUserId;
                       return (
                         <button
                           key={u.id}
                           onClick={() => handleSelectUser(u)}
-                          className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition border-l-2 ${
+                          className={`w-full flex items-center justify-between gap-3 px-3 py-2 text-left transition border-l-2 ${
                             active
                               ? 'bg-indigo-50 border-indigo-500'
                               : 'border-transparent hover:bg-slate-50'
                           }`}
                         >
-                          <div
-                            className={`shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-black text-white ${
-                              active
-                                ? 'bg-gradient-to-br from-indigo-500 to-purple-600'
-                                : 'bg-slate-400'
+                          <span
+                            className={`text-xs font-bold truncate ${
+                              active ? 'text-indigo-800' : 'text-slate-800'
                             }`}
                           >
-                            {initials}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-bold text-slate-900 truncate">
-                              {u.fullName}
-                            </p>
-                            <p className="text-[10px] font-medium text-slate-500 truncate">
-                              @{u.username}
-                            </p>
-                          </div>
+                            {u.fullName}
+                          </span>
                           {active && (
                             <Check className="h-4 w-4 text-indigo-600 shrink-0" strokeWidth={3} />
                           )}
@@ -456,7 +424,7 @@ export default function RolesPermissions() {
             </div>
           ) : (
             <>
-              {/* Required Filters — compact Role → Zone → Region */}
+              {/* Required Filters — Role → Zone → Region */}
               <Card
                 icon={Filter}
                 accent="emerald"
@@ -490,7 +458,7 @@ export default function RolesPermissions() {
                 </div>
               </Card>
 
-              {/* Other permission cards — no badges */}
+              {/* Other permission cards */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {PERMISSION_GROUPS.map((g) => {
                   const allOn = g.items.every((i) => current[g.key][i.key]);
@@ -592,13 +560,14 @@ function Card({ icon: Icon, accent = 'indigo', title, subtitle, badge, action, c
   );
 }
 
+// Grid tiles — bigger checkbox, no label truncation
 function TileGrid({ options, value, onToggle, columns = 4 }) {
   return (
     <div
       className="grid gap-2"
       style={{
         gridTemplateColumns: `repeat(auto-fill, minmax(${
-          columns === 4 ? '120px' : '160px'
+          columns === 4 ? '140px' : '180px'
         }, 1fr))`,
       }}
     >
@@ -609,21 +578,21 @@ function TileGrid({ options, value, onToggle, columns = 4 }) {
             key={o.key}
             type="button"
             onClick={() => onToggle(o.key)}
-            className={`group flex items-center gap-2 px-2.5 py-2 rounded-lg border-2 text-left transition ${
+            className={`group flex items-center gap-2.5 px-3 py-2.5 rounded-lg border-2 text-left transition ${
               active
                 ? 'border-indigo-200 bg-indigo-50/40'
                 : 'border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50'
             }`}
           >
             <span
-              className={`shrink-0 h-4 w-4 rounded border-2 flex items-center justify-center transition ${
+              className={`shrink-0 h-5 w-5 rounded border-2 flex items-center justify-center transition ${
                 active ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-slate-300'
               }`}
             >
-              {active && <Check className="h-2.5 w-2.5 text-white" strokeWidth={4} />}
+              {active && <Check className="h-3 w-3 text-white" strokeWidth={4} />}
             </span>
             <span
-              className={`text-[11px] font-bold truncate ${
+              className={`text-[11px] font-bold leading-tight ${
                 active ? 'text-slate-900' : 'text-slate-600'
               }`}
             >
@@ -636,21 +605,21 @@ function TileGrid({ options, value, onToggle, columns = 4 }) {
   );
 }
 
-// Compact filter column — no count chip, no hint footer
+// Compact filter column — bigger chips, bigger checkbox, taller scroll area
 function FilterColumn({ label, options, value, onToggle, onAll }) {
   const allOn = options.length > 0 && options.every((o) => value[o]);
 
   return (
     <div className="flex flex-col border border-slate-200 rounded-xl bg-slate-50/40 overflow-hidden">
-      {/* Column header — label + Select All only */}
-      <div className="px-3 py-2 bg-white border-b border-slate-100 flex items-center justify-between gap-2">
-        <span className="text-[11px] font-black text-slate-800 uppercase tracking-wide">
+      {/* Column header — bigger text */}
+      <div className="px-4 py-2.5 bg-white border-b border-slate-100 flex items-center justify-between gap-2">
+        <span className="text-xs font-black text-slate-800 uppercase tracking-wide">
           {label}
         </span>
         <button
           onClick={onAll}
           disabled={options.length === 0}
-          className={`text-[10px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded transition whitespace-nowrap ${
+          className={`text-[11px] font-black uppercase tracking-wide px-2 py-1 rounded transition whitespace-nowrap ${
             options.length === 0
               ? 'text-slate-300 cursor-not-allowed'
               : 'text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50'
@@ -660,10 +629,10 @@ function FilterColumn({ label, options, value, onToggle, onAll }) {
         </button>
       </div>
 
-      {/* Chip area — fixed height scrollable */}
-      <div className="h-[120px] overflow-y-auto p-2 flex flex-wrap gap-1 content-start">
+      {/* Chip area — taller, bigger chips */}
+      <div className="h-[180px] overflow-y-auto p-3 flex flex-wrap gap-2 content-start">
         {options.length === 0 ? (
-          <p className="text-[10px] font-medium text-slate-400 italic p-1">
+          <p className="text-xs font-medium text-slate-400 italic p-1">
             No options
           </p>
         ) : (
@@ -674,24 +643,24 @@ function FilterColumn({ label, options, value, onToggle, onAll }) {
                 key={o}
                 type="button"
                 onClick={() => onToggle(o)}
-                className={`flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-bold leading-tight transition ${
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 text-xs font-bold leading-tight transition ${
                   active
                     ? 'border-indigo-300 bg-indigo-50 text-indigo-800'
                     : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
                 }`}
               >
                 <span
-                  className={`h-2.5 w-2.5 rounded-sm border flex items-center justify-center shrink-0 ${
+                  className={`h-4 w-4 rounded border-2 flex items-center justify-center shrink-0 ${
                     active
                       ? 'bg-indigo-600 border-indigo-600'
                       : 'bg-white border-slate-300'
                   }`}
                 >
                   {active && (
-                    <Check className="h-1.5 w-1.5 text-white" strokeWidth={5} />
+                    <Check className="h-2.5 w-2.5 text-white" strokeWidth={5} />
                   )}
                 </span>
-                <span className="truncate max-w-[120px]">{o}</span>
+                <span className="whitespace-nowrap">{o}</span>
               </button>
             );
           })

@@ -42,26 +42,26 @@ const CONTEST_TOTAL_BOXES = [
 ];
 
 const METRIC_BOXES = [
-  { key: 'trainerAssigned', label: 'Trainer — Assigned count' },
-  { key: 'trainerPassRate', label: 'Trainer — Pass rate' },
-  { key: 'trainerAvgTime',  label: 'Trainer — Avg time' },
-  { key: 'participantStatus', label: 'Participant - Status' },
+  { key: 'trainerAssigned',   label: 'Trainer — Assigned count' },
+  { key: 'trainerPassRate',   label: 'Trainer — Pass rate' },
+  { key: 'trainerAvgTime',    label: 'Trainer — Avg time' },
+  { key: 'participantStatus', label: 'Participant — Status' },
 ];
 
 const PARTICIPANT_JOURNEY_BOXES = [
-  { key: 'rounds',          label: 'Rounds completed' },
-  { key: 'percentage',      label: 'Percentage' },
-  { key: 'totalTime',       label: 'Total Time' },
-  { key: 'status',          label: 'status' },
-  { key: 'milestones',      label: 'Assessment Milestones' }
+  { key: 'rounds',     label: 'Rounds completed' },
+  { key: 'percentage', label: 'Percentage' },
+  { key: 'totalTime',  label: 'Total Time' },
+  { key: 'status',     label: 'Status' },
+  { key: 'milestones', label: 'Assessment Milestones' },
 ];
 
 const TRAINER_JOURNEY_BOXES = [
-  { key: 'completed',        label: 'Completed count' },
-  { key: 'passRate',         label: 'Pass rate' },
-  { key: 'avgTime',          label: 'Avg time' },
-  { key: 'roundMilestones',  label: 'Round Milestones' },
-  { key: 'recentList',       label: 'Recent Participants' },
+  { key: 'completed',       label: 'Completed count' },
+  { key: 'passRate',        label: 'Pass rate' },
+  { key: 'avgTime',         label: 'Avg time' },
+  { key: 'roundMilestones', label: 'Round Milestones' },
+  { key: 'recentList',      label: 'Recent Participants' },
 ];
 
 // =====================================================================
@@ -123,7 +123,6 @@ export default function SetupPanel() {
         </div>
 
         <div className="flex items-center gap-3">
-
           <div className="flex items-center gap-2.5 pl-3 pr-2 py-1 bg-white border border-gray-200 rounded-full">
             <div className="h-7 w-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-[11px] font-black">
               {(user?.username || 'JD').slice(0, 2).toUpperCase()}
@@ -273,23 +272,23 @@ export default function SetupPanel() {
         </div>
       </main>
 
-{/* ============== FOOTER BAR ============== */}
-<footer className="shrink-0 bg-white border-t border-gray-200 px-5 py-3 flex items-center justify-end z-20">
-  <div className="flex items-center gap-3">
-    {savedMsg && (
-      <p className="text-xs font-bold text-emerald-600 flex items-center gap-1.5">
-        <Check className="h-3.5 w-3.5" strokeWidth={3} /> {savedMsg}
-      </p>
-    )}
-    <button
-      onClick={handleSave}
-      className="flex items-center gap-1.5 px-5 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-xs font-bold rounded-lg shadow-sm transition"
-    >
-      <Save className="h-3.5 w-3.5" />
-      Save Setup
-    </button>
-  </div>
-</footer>
+      {/* ============== FOOTER BAR ============== */}
+      <footer className="shrink-0 bg-white border-t border-gray-200 px-5 py-3 flex items-center justify-end z-20">
+        <div className="flex items-center gap-3">
+          {savedMsg && (
+            <p className="text-xs font-bold text-emerald-600 flex items-center gap-1.5">
+              <Check className="h-3.5 w-3.5" strokeWidth={3} /> {savedMsg}
+            </p>
+          )}
+          <button
+            onClick={handleSave}
+            className="flex items-center gap-1.5 px-5 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-xs font-bold rounded-lg shadow-sm transition"
+          >
+            <Save className="h-3.5 w-3.5" />
+            Save Setup
+          </button>
+        </div>
+      </footer>
     </div>
   );
 }
@@ -333,13 +332,14 @@ function Card({ icon: Icon, accent = 'indigo', title, subtitle, badge, children 
   );
 }
 
+// Grid tiles — bigger checkbox, no label truncation
 function TileGrid({ options, value, onToggle, columns = 4 }) {
   return (
     <div
       className="grid gap-2"
       style={{
         gridTemplateColumns: `repeat(auto-fill, minmax(${
-          columns === 4 ? '120px' : '160px'
+          columns === 4 ? '140px' : '180px'
         }, 1fr))`,
       }}
     >
@@ -350,23 +350,23 @@ function TileGrid({ options, value, onToggle, columns = 4 }) {
             key={o.key}
             type="button"
             onClick={() => onToggle(o.key)}
-            className={`group flex items-center gap-2 px-2.5 py-2 rounded-lg border-2 text-left transition ${
+            className={`group flex items-center gap-2.5 px-3 py-2.5 rounded-lg border-2 text-left transition ${
               active
                 ? 'border-indigo-200 bg-indigo-50/40'
                 : 'border-slate-100 bg-white hover:border-slate-200 hover:bg-slate-50'
             }`}
           >
             <span
-              className={`shrink-0 h-4 w-4 rounded border-2 flex items-center justify-center transition ${
+              className={`shrink-0 h-5 w-5 rounded border-2 flex items-center justify-center transition ${
                 active
                   ? 'bg-indigo-600 border-indigo-600'
                   : 'bg-white border-slate-300'
               }`}
             >
-              {active && <Check className="h-2.5 w-2.5 text-white" strokeWidth={4} />}
+              {active && <Check className="h-3 w-3 text-white" strokeWidth={4} />}
             </span>
             <span
-              className={`text-[11px] font-bold truncate ${
+              className={`text-[11px] font-bold leading-tight ${
                 active ? 'text-slate-900' : 'text-slate-600'
               }`}
             >
