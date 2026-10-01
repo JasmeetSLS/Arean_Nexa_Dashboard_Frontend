@@ -100,11 +100,8 @@ const Sidebar = ({ isOpen, onClose }) => {
                 "
               >
                 <h1 className="text-xl font-bold text-white">
-                  Contest Dashboard
+                  Contest Panel
                 </h1>
-                <p className="text-xs text-white/50">
-                  Command Center
-                </p>
               </div>
             </div>
 
