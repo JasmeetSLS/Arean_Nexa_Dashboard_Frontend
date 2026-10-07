@@ -7,7 +7,7 @@ import Dashboard from './pages/Dashboard';
 import ChatBot from './pages/ChatBot';
 import RolesPermissions from './pages/RolesPermissions';
 import SetupPanel from './pages/SetupPanel';
-import Layout from './components/Layout'
+import Layout from './components/Layout';
 
 export default function App() {
   return (
@@ -15,19 +15,48 @@ export default function App() {
       <AuthProvider>
         <Routes>
           {/* Public */}
-          <Route path="/login"   element={<Login />} />
-          <Route path="/chatbot" element={<ChatBot />} />
-          <Route path="/setup" element={ <Layout><SetupPanel /> </Layout>} />
-           <Route path="/role" element={ <Layout><RolesPermissions /> </Layout>} />
+          <Route path="/login" element={<Login />} />
 
           {/* Protected */}
           <Route
             path="/"
             element={
               <ProtectedRoute isAdmin={true}>
-                 <Layout>
-                <Dashboard />
+                <Layout>
+                  <Dashboard />
                 </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/setup"
+            element={
+              <ProtectedRoute isAdmin={true}>
+                <Layout>
+                  <SetupPanel />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/role"
+            element={
+              <ProtectedRoute isAdmin={true}>
+                <Layout>
+                  <RolesPermissions />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Chatbot — protected route (shareable URL, still needs a valid token) */}
+          <Route
+            path="/chatbot"
+            element={
+              <ProtectedRoute isAdmin={true}>
+                <ChatBot />
               </ProtectedRoute>
             }
           />

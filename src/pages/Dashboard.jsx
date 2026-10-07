@@ -12,6 +12,7 @@ import {
   getExportUrl,
 } from '../service/api.js';
 import { useAuth } from '../service/auth.jsx';
+import ChatBot from './ChatBot.jsx';
 
 const FALLBACK_TRAINER_PHOTO = '/trainers/1.jpeg';
 
@@ -1133,6 +1134,7 @@ export default function Dashboard() {
 
       {/* TOAST NOTIFICATIONS */}
       <Toaster enabled={toastOn} />
+      <ChatBot embedded={true} />
     </div>
   );
 }

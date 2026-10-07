@@ -29,16 +29,39 @@ api.interceptors.response.use(
   }
 );
 
-// ---- API functions ----
+// =====================================================================
+// AUTH
+// =====================================================================
 export const login = (username, password) =>
   api.post('/auth/login', { username, password });
 
+// =====================================================================
+// DASHBOARD / GRID / FILTERS
+// =====================================================================
 export const getGrid      = () => api.get('/grid');
 export const getDashboard = () => api.get('/dashboard');
 export const getFilters   = () => api.get('/filters');
-export const getChatSummary = () => api.get('/chat/summary');
-export const getChatMessages = (trainerId) => api.get(`/chat/${trainerId}/messages`);
 
+// =====================================================================
+// CHAT APIs
+// =====================================================================
+export const getChatbotMe    = ()           => api.get('/chatbot/me');
+export const getChatSummary  = ()           => api.get('/chat/summary');
+export const getAllAdmins    = ()           => api.get('/chat/admins');
+export const getAllTrainers  = ()           => api.get('/chat/trainers');
+
+export const getChatMessages = (trainerId, params = {}) =>
+  api.get(`/chat/${trainerId}/messages`, { params });
+
+export const sendChatRest    = (trainerId, message) =>
+  api.post(`/chat/${trainerId}/send`, { message });
+
+export const markChatRead    = (trainerId) =>
+  api.post(`/chat/${trainerId}/read`);
+
+// =====================================================================
+// EXPORT (Excel)
+// =====================================================================
 export const getExportUrl = (filters = {}) => {
   const params = new URLSearchParams();
   Object.entries(filters).forEach(([k, v]) => {

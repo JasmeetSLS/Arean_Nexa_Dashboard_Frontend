@@ -1,42 +1,70 @@
 import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = 'http://localhost:5000';
+const API_ORIGIN =
+  import.meta.env.VITE_API_BASE_URL?.replace(/\/api\/?$/, '') ||
+  'http://localhost:5000';
 
-export default function useChatSocket({ role, trainerId, name }) {
-  const socketRef = useRef(null);
-  const [socket, setSocket] = useState(null);
+export function useSocket({ token: tokenOverride = null, autoConnect = true } = {}) {
   const [connected, setConnected] = useState(false);
+  const socketRef  = useRef(null);
+  const handlersRef = useRef(new Map());
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    if (!autoConnect) return;
 
-    const s = io(SOCKET_URL, {
+    const token = tokenOverride || localStorage.getItem('token');
+    if (!token) return;
+
+    const socket = io(API_ORIGIN, {
+      auth: { token },
       transports: ['websocket'],
-      auth: { token },                  // 👈 send JWT to server
+      autoConnect: true,
     });
+    socketRef.current = socket;
 
-    socketRef.current = s;
-    setSocket(s);
-
-    s.on('connect', () => {
-      setConnected(true);
-      s.emit('register', { role, trainerId, name });
-    });
-
-    s.on('disconnect', () => setConnected(false));
-    s.on('connect_error', (err) => {
-      console.warn('[socket] connect_error:', err.message);
+    socket.on('connect',       () => setConnected(true));
+    socket.on('disconnect',    () => setConnected(false));
+    socket.on('connect_error', (err) => {
+      console.error('[useSocket] connect_error', err.message);
       setConnected(false);
+    });
+
+    // Re-attach stored handlers
+    handlersRef.current.forEach((handler, event) => {
+      socket.on(event, handler);
     });
 
     return () => {
-      s.disconnect();
+      socket.removeAllListeners();
+      socket.disconnect();
       socketRef.current = null;
-      setSocket(null);
       setConnected(false);
     };
-  }, [role, trainerId, name]);
+  }, [tokenOverride, autoConnect]);
 
-  return { socket, connected };
+  const emit = (event, payload, ack) => {
+    socketRef.current?.emit(event, payload, ack);
+  };
+
+  const on = (event, handler) => {
+    handlersRef.current.set(event, handler);
+    socketRef.current?.on(event, handler);
+  };
+
+  const off = (event) => {
+    const handler = handlersRef.current.get(event);
+    if (handler) {
+      socketRef.current?.off(event, handler);
+      handlersRef.current.delete(event);
+    }
+  };
+
+  return {
+    socket: socketRef.current,
+    connected,
+    emit,
+    on,
+    off,
+  };
 }
