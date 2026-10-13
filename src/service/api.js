@@ -7,14 +7,12 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Attach token to every request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// Auto-logout on 401
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -32,8 +30,8 @@ api.interceptors.response.use(
 // =====================================================================
 // AUTH
 // =====================================================================
-export const login = (username, password) =>
-  api.post('/auth/login', { username, password });
+export const login = (username, password, type = 'admin') =>
+  api.post('/auth/login', { username, password, type });
 
 // =====================================================================
 // DASHBOARD / GRID / FILTERS
@@ -43,21 +41,29 @@ export const getDashboard = () => api.get('/dashboard');
 export const getFilters   = () => api.get('/filters');
 
 // =====================================================================
-// CHAT APIs
+// SETUP PANEL
 // =====================================================================
-export const getChatbotMe    = ()           => api.get('/chatbot/me');
-export const getChatSummary  = ()           => api.get('/chat/summary');
-export const getAllAdmins    = ()           => api.get('/chat/admins');
-export const getAllTrainers  = ()           => api.get('/chat/trainers');
+export const getSetup  = ()        => api.get('/setup');
+export const saveSetup = (payload) => api.post('/setup', payload);
 
-export const getChatMessages = (trainerId, params = {}) =>
-  api.get(`/chat/${trainerId}/messages`, { params });
+// =====================================================================
+// ROLES & PERMISSIONS
+// =====================================================================
+export const getPermissionAdmins  = ()       => api.get('/permissions/admins');
+export const getPermissionOptions = (userId) => api.get('/permissions/options', { params: { userId } });
+export const savePermissions      = (payload)=> api.post('/permissions', payload);
 
-export const sendChatRest    = (trainerId, message) =>
-  api.post(`/chat/${trainerId}/send`, { message });
-
-export const markChatRead    = (trainerId) =>
-  api.post(`/chat/${trainerId}/read`);
+// =====================================================================
+// CHAT
+// =====================================================================
+export const getMe              = ()       => api.get('/chatbot/me');
+export const getUsers           = ()       => api.get('/users');
+export const getConversations   = ()       => api.get('/conversations');
+export const createConversation = (peerId) => api.post('/conversations', { peerId });
+export const getMessages        = (id, params) =>
+  api.get(`/conversations/${id}/messages`, { params });
+export const getTrainerToken    = (trainerId) =>
+  api.post(`/chat/trainer-token/${trainerId}`);
 
 // =====================================================================
 // EXPORT (Excel)

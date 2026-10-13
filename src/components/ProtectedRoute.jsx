@@ -4,7 +4,7 @@ import { useAuth } from '../service/auth';
 const ProtectedRoute = ({ children, isAdmin = false }) => {
   const { loading, isAuthenticated, user } = useAuth();
 
-  // While restoring session from localStorage
+  // 1. Waiting for session restore
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen bg-[#F3F4F6]">
@@ -13,14 +13,15 @@ const ProtectedRoute = ({ children, isAdmin = false }) => {
     );
   }
 
-  // Not logged in → go to login
+  // 2. Not logged in → login page
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  // Optional: admin/active check
-  if (isAdmin && user?.status !== 'active') {
-    return <Navigate to="/login" replace />;
+  // 3. Role guard for admin-only routes
+  if (isAdmin && user?.type !== 'admin') {
+    // a trainer trying to open /, /setup, /role → send them to /trainer
+    return <Navigate to="/trainer" replace />;
   }
 
   return children;

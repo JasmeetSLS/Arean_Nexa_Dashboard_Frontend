@@ -1,70 +1,44 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 
-const API_ORIGIN =
-  import.meta.env.VITE_API_BASE_URL?.replace(/\/api\/?$/, '') ||
-  'http://localhost:5000';
+const SOCKET_URL =
+  (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api')
+    .replace('/api', '');
 
-export function useSocket({ token: tokenOverride = null, autoConnect = true } = {}) {
-  const [connected, setConnected] = useState(false);
-  const socketRef  = useRef(null);
-  const handlersRef = useRef(new Map());
+export default function useChatSocket({ onMessage, onTyping, onRead } = {}) {
+  const socketRef = useRef(null);
+
+  const cbMsg    = useRef(onMessage);
+  const cbTyping = useRef(onTyping);
+  const cbRead   = useRef(onRead);
+
+  useEffect(() => { cbMsg.current    = onMessage; }, [onMessage]);
+  useEffect(() => { cbTyping.current = onTyping;  }, [onTyping]);
+  useEffect(() => { cbRead.current   = onRead;    }, [onRead]);
 
   useEffect(() => {
-    if (!autoConnect) return;
-
-    const token = tokenOverride || localStorage.getItem('token');
+    const token = localStorage.getItem('token');
     if (!token) return;
 
-    const socket = io(API_ORIGIN, {
-      auth: { token },
+    const socket = io(SOCKET_URL, {
+      auth: { token },             // ← backend decodes this
       transports: ['websocket'],
-      autoConnect: true,
     });
+
+    socket.on('receive_message', (m) => cbMsg.current?.(m));
+    socket.on('typing',          (t) => cbTyping.current?.(t));
+    socket.on('message_read',    (r) => cbRead.current?.(r));
+
     socketRef.current = socket;
 
-    socket.on('connect',       () => setConnected(true));
-    socket.on('disconnect',    () => setConnected(false));
-    socket.on('connect_error', (err) => {
-      console.error('[useSocket] connect_error', err.message);
-      setConnected(false);
-    });
-
-    // Re-attach stored handlers
-    handlersRef.current.forEach((handler, event) => {
-      socket.on(event, handler);
-    });
-
     return () => {
-      socket.removeAllListeners();
+      socket.off('receive_message');
+      socket.off('typing');
+      socket.off('message_read');
       socket.disconnect();
       socketRef.current = null;
-      setConnected(false);
     };
-  }, [tokenOverride, autoConnect]);
+  }, []);
 
-  const emit = (event, payload, ack) => {
-    socketRef.current?.emit(event, payload, ack);
-  };
-
-  const on = (event, handler) => {
-    handlersRef.current.set(event, handler);
-    socketRef.current?.on(event, handler);
-  };
-
-  const off = (event) => {
-    const handler = handlersRef.current.get(event);
-    if (handler) {
-      socketRef.current?.off(event, handler);
-      handlersRef.current.delete(event);
-    }
-  };
-
-  return {
-    socket: socketRef.current,
-    connected,
-    emit,
-    on,
-    off,
-  };
+  return socketRef;
 }

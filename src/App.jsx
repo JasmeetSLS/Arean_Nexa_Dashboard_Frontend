@@ -8,6 +8,7 @@ import ChatBot from './pages/ChatBot';
 import RolesPermissions from './pages/RolesPermissions';
 import SetupPanel from './pages/SetupPanel';
 import Layout from './components/Layout';
+import TrainerHome from './pages/TrainerHome';
 
 export default function App() {
   return (
@@ -60,6 +61,16 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
+           <Route
+          path="/trainer"
+          element={
+            <ProtectedRoute>
+              <TrainerHome />
+            </ProtectedRoute>
+          }
+        />
+
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

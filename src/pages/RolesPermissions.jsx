@@ -6,179 +6,45 @@ import {
   CheckCircle2, XCircle,
 } from 'lucide-react';
 import { useAuth } from '../service/auth.jsx';
+import {
+  getPermissionAdmins,
+  getPermissionOptions,
+  savePermissions,
+} from '../service/api';
 
 // =====================================================================
-// MASTER DATA
+// SECTION ICON MAP  (field_group -> lucide icon)
 // =====================================================================
-const PARTICIPANTS = [
-  { role: 'RM',  zone: 'Central',    region: 'C1' },
-  { role: 'RM',  zone: 'Central',    region: 'C1' },
-  { role: 'RM',  zone: 'Central',    region: 'C1' },
-  { role: 'RM',  zone: 'Central',    region: 'C1' },
-  { role: 'RM',  zone: 'Central',    region: 'C1' },
-  { role: 'SRM', zone: 'Central',    region: 'C2' },
-  { role: 'SRM', zone: 'Central',    region: 'C2' },
-  { role: 'SRM', zone: 'Central',    region: 'C2' },
-  { role: 'SRM', zone: 'Central',    region: 'C2' },
-  { role: 'SRM', zone: 'Central',    region: 'C2' },
-  { role: 'RM',  zone: 'Central',    region: 'C3' },
-  { role: 'RM',  zone: 'Central',    region: 'C3' },
-  { role: 'RM',  zone: 'Central',    region: 'C3' },
-  { role: 'RM',  zone: 'Central',    region: 'C3' },
-  { role: 'RM',  zone: 'Central',    region: 'C3' },
-  { role: 'RM',  zone: 'Central',    region: 'C4' },
-  { role: 'RM',  zone: 'Central',    region: 'C4' },
-  { role: 'RM',  zone: 'Central',    region: 'C4' },
-  { role: 'RM',  zone: 'Central',    region: 'C4' },
-  { role: 'RM',  zone: 'Central',    region: 'C4' },
-  { role: 'RM',  zone: 'East',       region: 'E1' },
-  { role: 'RM',  zone: 'East',       region: 'E1' },
-  { role: 'RM',  zone: 'East',       region: 'E1' },
-  { role: 'RM',  zone: 'East',       region: 'E1' },
-  { role: 'RM',  zone: 'East',       region: 'E1' },
-  { role: 'RM',  zone: 'East',       region: 'E2' },
-  { role: 'RM',  zone: 'East',       region: 'E2' },
-  { role: 'RM',  zone: 'East',       region: 'E2' },
-  { role: 'SRM', zone: 'East',       region: 'E2' },
-  { role: 'RM',  zone: 'East',       region: 'E2' },
-  { role: 'RM',  zone: 'East',       region: 'E3' },
-  { role: 'RM',  zone: 'East',       region: 'E3' },
-  { role: 'RM',  zone: 'East',       region: 'E3' },
-  { role: 'RM',  zone: 'East',       region: 'E3' },
-  { role: 'SRM', zone: 'East',       region: 'E3' },
-  { role: 'RM',  zone: 'North',      region: 'N1' },
-  { role: 'RM',  zone: 'North',      region: 'N1' },
-  { role: 'RM',  zone: 'North',      region: 'N1' },
-  { role: 'SRM', zone: 'North',      region: 'N1' },
-  { role: 'RM',  zone: 'North',      region: 'N1' },
-  { role: 'RM',  zone: 'North',      region: 'N2' },
-  { role: 'RM',  zone: 'North',      region: 'N2' },
-  { role: 'RM',  zone: 'North',      region: 'N2' },
-  { role: 'SRM', zone: 'North',      region: 'N2' },
-  { role: 'RM',  zone: 'North',      region: 'N2' },
-  { role: 'RM',  zone: 'North',      region: 'N3' },
-  { role: 'RM',  zone: 'North',      region: 'N3' },
-  { role: 'SRM', zone: 'North',      region: 'N3' },
-  { role: 'RM',  zone: 'North',      region: 'N3' },
-  { role: 'RM',  zone: 'North',      region: 'N3' },
-  { role: 'RM',  zone: 'North',      region: 'N4' },
-  { role: 'RM',  zone: 'North',      region: 'N4' },
-  { role: 'RM',  zone: 'North',      region: 'N4' },
-  { role: 'RM',  zone: 'North',      region: 'N4' },
-  { role: 'SRM', zone: 'North',      region: 'N4' },
-  { role: 'RM',  zone: 'South',      region: 'S1' },
-  { role: 'SRM', zone: 'South',      region: 'S1' },
-  { role: 'RM',  zone: 'South',      region: 'S1' },
-  { role: 'RM',  zone: 'South',      region: 'S1' },
-  { role: 'RM',  zone: 'South',      region: 'S1' },
-  { role: 'RM',  zone: 'South',      region: 'S2' },
-  { role: 'RM',  zone: 'South',      region: 'S2' },
-  { role: 'RM',  zone: 'South',      region: 'S2' },
-  { role: 'RM',  zone: 'South',      region: 'S2' },
-  { role: 'RM',  zone: 'South',      region: 'S2' },
-  { role: 'RM',  zone: 'South',      region: 'S3' },
-  { role: 'SRM', zone: 'South',      region: 'S3' },
-  { role: 'RM',  zone: 'South',      region: 'S3' },
-  { role: 'RM',  zone: 'South',      region: 'S3' },
-  { role: 'RM',  zone: 'South',      region: 'S3' },
-  { role: 'RM',  zone: 'South East', region: 'T1' },
-  { role: 'SRM', zone: 'South East', region: 'T1' },
-  { role: 'RM',  zone: 'South East', region: 'T1' },
-  { role: 'RM',  zone: 'South East', region: 'T1' },
-  { role: 'RM',  zone: 'South East', region: 'T1' },
-  { role: 'RM',  zone: 'South East', region: 'T2' },
-  { role: 'RM',  zone: 'South East', region: 'T2' },
-  { role: 'RM',  zone: 'South East', region: 'T2' },
-  { role: 'SRM', zone: 'South East', region: 'T2' },
-  { role: 'SRM', zone: 'South East', region: 'T2' },
-  { role: 'RM',  zone: 'West',       region: 'W1' },
-  { role: 'RM',  zone: 'West',       region: 'W1' },
-  { role: 'SRM', zone: 'West',       region: 'W1' },
-  { role: 'RM',  zone: 'West',       region: 'W1' },
-  { role: 'SRM', zone: 'West',       region: 'W1' },
-  { role: 'RM',  zone: 'West',       region: 'W2' },
-  { role: 'RM',  zone: 'West',       region: 'W2' },
-  { role: 'RM',  zone: 'West',       region: 'W2' },
-  { role: 'RM',  zone: 'West',       region: 'W3' },
-  { role: 'RM',  zone: 'West',       region: 'W3' },
-];
+const SECTION_ICON = {
+  filters:            Search,
+  todayLive:          Radio,
+  contest:            Trophy,
+  metrics:            BarChart3,
+  participantJourney: Route,
+  trainerJourney:     UserCircle2,
+};
 
-const uniq = (arr) => Array.from(new Set(arr));
-const ALL_ROLES   = uniq(PARTICIPANTS.map((p) => p.role));
-const ALL_ZONES   = uniq(PARTICIPANTS.map((p) => p.zone));
-const ALL_REGIONS = uniq(PARTICIPANTS.map((p) => p.region));
+const SECTION_TITLE = {
+  filters:            'Required Filters',
+  todayLive:          "Today's Live Data",
+  contest:            'Contest Totals',
+  metrics:            'Metric Sections',
+  participantJourney: 'Participant Journey',
+  trainerJourney:     'Trainer Journey',
+};
 
-const TODAY_LIVE_BOXES = [
-  { key: 'scheduled',      label: 'Scheduled' },
-  { key: 'attempted',      label: 'Attempted' },
-  { key: 'absentees',      label: 'Absentees' },
-  { key: 'delayed',        label: 'Delayed' },
-  { key: 'passRate',       label: 'Pass Rate' },
-  { key: 'avgTime',        label: 'Avg Time' },
-  { key: 'activeTrainers', label: 'Active Trainers' },
-];
+const SECTION_SUBTITLE = {
+  filters:            'Filters visible on the dashboard',
+  todayLive:          'Data boxes shown in the today section',
+  contest:            'Data boxes shown in contest totals',
+  metrics:            'Metrics displayed on the dashboard',
+  participantJourney: 'Fields shown in the participant popup',
+  trainerJourney:     'Fields shown in the trainer popup',
+};
 
-const CONTEST_TOTAL_BOXES = [
-  { key: 'totalScheduled', label: 'Total Scheduled' },
-  { key: 'totalAttempted', label: 'Total Attempted' },
-  { key: 'totalAbsentees', label: 'Total Absentees' },
-  { key: 'totalDelayed',   label: 'Total Delayed' },
-  { key: 'totalResets',    label: 'Total Resets' },
-  { key: 'overallPass',    label: 'Overall Pass' },
-  { key: 'overallAvg',     label: 'Overall Avg Time' },
-];
-
-const METRIC_BOXES = [
-  { key: 'trainerAssigned',   label: 'Trainer — Assigned' },
-  { key: 'trainerPassRate',   label: 'Trainer — Pass Rate' },
-  { key: 'trainerAvgTime',    label: 'Trainer — Avg Time' },
-  { key: 'participantStatus', label: 'Participant — Status' },
-];
-
-const PARTICIPANT_JOURNEY_BOXES = [
-  { key: 'rounds',     label: 'Rounds Completed' },
-  { key: 'percentage', label: 'Percentage' },
-  { key: 'totalTime',  label: 'Total Time' },
-  { key: 'status',     label: 'Status' },
-  { key: 'milestones', label: 'Assessment Milestones' },
-];
-
-const TRAINER_JOURNEY_BOXES = [
-  { key: 'completed',       label: 'Completed Count' },
-  { key: 'passRate',        label: 'Pass Rate' },
-  { key: 'avgTime',         label: 'Avg Time' },
-  { key: 'roundMilestones', label: 'Round Milestones' },
-  { key: 'recentList',      label: 'Recent Participants' },
-];
-
-const PERMISSION_GROUPS = [
-  { key: 'todayLive',   title: "Today's Live Data",   subtitle: 'Data boxes shown in the today section', icon: Radio,       items: TODAY_LIVE_BOXES },
-  { key: 'contest',     title: 'Contest Totals',      subtitle: 'Data boxes shown in contest totals',    icon: Trophy,      items: CONTEST_TOTAL_BOXES },
-  { key: 'metrics',     title: 'Metric Sections',     subtitle: 'Metrics displayed on the dashboard',    icon: BarChart3,   items: METRIC_BOXES },
-  { key: 'participant', title: 'Participant Journey', subtitle: 'Fields shown in the participant popup', icon: Route,       items: PARTICIPANT_JOURNEY_BOXES },
-  { key: 'trainer',     title: 'Trainer Journey',     subtitle: 'Fields shown in the trainer popup',     icon: UserCircle2, items: TRAINER_JOURNEY_BOXES },
-];
-
-const MOCK_USERS = [
-  { id: 1, fullName: 'Pankaj Kumar' },
-  { id: 2, fullName: 'Rahul Mehta'  },
-  { id: 3, fullName: 'Priya Verma'  },
-  { id: 4, fullName: 'Vikram Shah'  },
-  { id: 5, fullName: 'Anita Rao'    },
-  { id: 6, fullName: 'Karan Singh'  },
-];
-
-const defaultPermissions = () => ({
-  role:   Object.fromEntries(ALL_ROLES.map((r)   => [r, false])),
-  zone:   Object.fromEntries(ALL_ZONES.map((z)   => [z, false])),
-  region: Object.fromEntries(ALL_REGIONS.map((r) => [r, false])),
-  ...Object.fromEntries(
-    PERMISSION_GROUPS.map((g) => [
-      g.key,
-      Object.fromEntries(g.items.map((i) => [i.key, false])),
-    ])
-  ),
-});
+// human-readable field label from key
+const prettify = (k) =>
+  k.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
 
 // =====================================================================
 // PAGE
@@ -186,45 +52,86 @@ const defaultPermissions = () => ({
 export default function RolesPermissions() {
   const { user } = useAuth();
 
-  const [search, setSearch]                 = useState('');
-  const [showResults, setShowResults]       = useState(false);
+  // dropdown data
+  const [admins, setAdmins]   = useState([]);
+  const [search, setSearch]   = useState('');
+  const [showResults, setShowResults] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
-  const [savedMsg, setSavedMsg]             = useState('');
 
+  // options fetched from backend
+  const [sections, setSections] = useState([]);   // [{ key, fields:[{field_key}] }]
+  const [roles, setRoles]       = useState([]);
+  const [zones, setZones]       = useState([]);
+  const [regions, setRegions]   = useState([]);
+
+  // current user's selections
+  const [selected, setSelected] = useState({
+    role: {}, zone: {}, region: {},
+    // dynamic field_groups filled at load
+  });
+
+  const [savedMsg, setSavedMsg] = useState('');
   const searchWrapRef = useRef(null);
 
-  const [data, setData] = useState(() =>
-    Object.fromEntries(MOCK_USERS.map((u) => [u.id, defaultPermissions()]))
-  );
+  // ---- load admin list once ----
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await getPermissionAdmins();
+        if (data?.success) setAdmins(data.admins || []);
+      } catch (err) {
+        console.error('[perm admins]', err);
+      }
+    })();
+  }, []);
 
-  const results = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return MOCK_USERS;
-    return MOCK_USERS.filter((u) => u.fullName.toLowerCase().includes(q));
-  }, [search]);
+  // ---- load options when user changes ----
+  useEffect(() => {
+    if (!selectedUserId) return;
+    (async () => {
+      try {
+        const { data } = await getPermissionOptions(selectedUserId);
+        if (!data?.success) return;
 
-  const selectedUser = MOCK_USERS.find((u) => u.id === selectedUserId);
-  const current      = selectedUserId ? data[selectedUserId] : null;
+        setSections(data.sections || []);
+        setRoles(data.roles       || []);
+        setZones(data.zones       || []);
+        setRegions(data.regions   || []);
 
-  const zoneOptions = useMemo(() => {
-    if (!current) return ALL_ZONES;
-    const roles = ALL_ROLES.filter((r) => current.role[r]);
-    if (roles.length === 0) return ALL_ZONES;
-    return uniq(PARTICIPANTS.filter((p) => roles.includes(p.role)).map((p) => p.zone));
-  }, [current]);
+        // build defaults
+        const base = {
+          role:   Object.fromEntries((data.roles   || []).map((r) => [r, false])),
+          zone:   Object.fromEntries((data.zones   || []).map((z) => [z, false])),
+          region: Object.fromEntries((data.regions || []).map((r) => [r, false])),
+        };
+        (data.sections || []).forEach((s) => {
+          base[s.key] = Object.fromEntries(s.fields.map((f) => [f.field_key, false]));
+        });
 
-  const regionOptions = useMemo(() => {
-    if (!current) return ALL_REGIONS;
-    const roles = ALL_ROLES.filter((r) => current.role[r]);
-    const zones = ALL_ZONES.filter((z) => current.zone[z]);
-    return uniq(
-      PARTICIPANTS
-        .filter((p) => roles.length === 0 || roles.includes(p.role))
-        .filter((p) => zones.length === 0 || zones.includes(p.zone))
-        .map((p) => p.region)
-    );
-  }, [current]);
+        // merge existing
+        const ex = data.existing;
+        if (ex) {
+          (ex.allowed_roles   || []).forEach((r) => { if (r in base.role)   base.role[r]     = true; });
+          (ex.allowed_zones   || []).forEach((z) => { if (z in base.zone)   base.zone[z]     = true; });
+          (ex.allowed_regions || []).forEach((r) => { if (r in base.region) base.region[r]   = true; });
 
+          const perms = ex.permissions || {};
+          Object.entries(perms).forEach(([grp, obj]) => {
+            if (!base[grp]) base[grp] = {};
+            Object.entries(obj).forEach(([k, v]) => {
+              if (k in base[grp]) base[grp][k] = !!v;
+            });
+          });
+        }
+
+        setSelected(base);
+      } catch (err) {
+        console.error('[perm options]', err);
+      }
+    })();
+  }, [selectedUserId]);
+
+  // close dropdown on outside click
   useEffect(() => {
     const onClick = (e) => {
       if (searchWrapRef.current && !searchWrapRef.current.contains(e.target)) {
@@ -235,32 +142,36 @@ export default function RolesPermissions() {
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
 
+  const results = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return admins;
+    return admins.filter((a) => a.username.toLowerCase().includes(q));
+  }, [admins, search]);
+
+  const selectedUser = admins.find((a) => a.id === selectedUserId);
+  const current      = selectedUserId ? selected : null;
+
+  // ---- toggles ----
   const toggleItem = (groupKey, itemKey) => {
-    if (!selectedUserId) return;
-    setData((prev) => ({
+    setSelected((prev) => ({
       ...prev,
-      [selectedUserId]: {
-        ...prev[selectedUserId],
-        [groupKey]: { ...prev[selectedUserId][groupKey], [itemKey]: !prev[selectedUserId][groupKey][itemKey] },
-      },
+      [groupKey]: { ...prev[groupKey], [itemKey]: !prev[groupKey]?.[itemKey] },
     }));
   };
 
   const toggleAllKeys = (groupKey, keys) => {
-    if (!current) return;
-    const g = current[groupKey];
-    const allOn = keys.every((k) => g[k]);
-    const updated = { ...g };
-    keys.forEach((k) => (updated[k] = !allOn));
-    setData((prev) => ({
-      ...prev,
-      [selectedUserId]: { ...prev[selectedUserId], [groupKey]: updated },
-    }));
+    setSelected((prev) => {
+      const g = prev[groupKey] || {};
+      const allOn = keys.every((k) => g[k]);
+      const updated = { ...g };
+      keys.forEach((k) => { updated[k] = !allOn; });
+      return { ...prev, [groupKey]: updated };
+    });
   };
 
   const handleSelectUser = (u) => {
     setSelectedUserId(u.id);
-    setSearch(u.fullName);
+    setSearch(u.username);
     setShowResults(false);
   };
 
@@ -270,53 +181,62 @@ export default function RolesPermissions() {
     setShowResults(false);
   };
 
-  const handleSave = () => {
-    console.log('Saving:', { userId: selectedUserId, ...current });
-    setSavedMsg('Saved');
-    setTimeout(() => setSavedMsg(''), 2000);
+  const handleSave = async () => {
+    if (!selectedUserId || !current) return;
+
+    // build payload
+    const permissions = {};
+    sections.forEach((s) => {
+      permissions[s.key] = {};
+      s.fields.forEach((f) => {
+        permissions[s.key][f.field_key] = !!current[s.key]?.[f.field_key];
+      });
+    });
+
+    const allowedRoles   = Object.keys(current.role  ).filter((k) => current.role[k]);
+    const allowedZones   = Object.keys(current.zone  ).filter((k) => current.zone[k]);
+    const allowedRegions = Object.keys(current.region).filter((k) => current.region[k]);
+
+    try {
+      const { data } = await savePermissions({
+        userId: selectedUserId,
+        allowedRoles, allowedZones, allowedRegions,
+        permissions,
+      });
+      setSavedMsg(data?.success ? 'Saved' : (data?.error || 'Save failed'));
+    } catch (err) {
+      console.error('[perm save]', err);
+      setSavedMsg(err?.response?.data?.error || 'Save failed');
+    } finally {
+      setTimeout(() => setSavedMsg(''), 2000);
+    }
   };
 
-  const ROWS = selectedUser
+  // ---- rows to render ----
+  const ROWS = current
     ? [
-        {
-          kind: 'single',
-          icon: Users,
-          title: 'Role',
-          subtitle: 'Job roles this user can access',
-          groupKey: 'role',
-          options: ALL_ROLES.map((r) => ({ key: r, label: r })),
-        },
-        {
-          kind: 'single',
-          icon: MapPin,
-          title: 'Zone',
-          subtitle: current.role && Object.values(current.role).some(Boolean)
-            ? 'Zones available for the selected roles'
-            : 'All zones (no roles selected)',
-          groupKey: 'zone',
-          options: zoneOptions.map((z) => ({ key: z, label: z })),
-        },
-        {
-          kind: 'single',
-          icon: Globe2,
-          title: 'Region',
-          subtitle: 'Regions available for the selected roles & zones',
-          groupKey: 'region',
-          options: regionOptions.map((r) => ({ key: r, label: r })),
-        },
-        ...PERMISSION_GROUPS.map((g) => ({
+        { kind: 'single', icon: Users,  title: 'Role',   subtitle: 'Job roles this user can access',
+          groupKey: 'role',   options: roles.map((r) => ({ key: r, label: r })) },
+        { kind: 'single', icon: MapPin, title: 'Zone',   subtitle: 'Zones this user can access',
+          groupKey: 'zone',   options: zones.map((z) => ({ key: z, label: z })) },
+        { kind: 'single', icon: Globe2, title: 'Region', subtitle: 'Regions this user can access',
+          groupKey: 'region', options: regions.map((r) => ({ key: r, label: r })) },
+        ...sections.map((s) => ({
           kind: 'group',
-          icon: g.icon,
-          title: g.title,
-          subtitle: g.subtitle,
-          group: g,
+          icon: SECTION_ICON[s.key] || BarChart3,
+          title: SECTION_TITLE[s.key] || prettify(s.key),
+          subtitle: SECTION_SUBTITLE[s.key] || '',
+          groupKey: s.key,
+          options: s.fields.map((f) => ({
+            key: f.field_key,
+            label: prettify(f.field_key),
+          })),
         })),
       ]
     : [];
 
   return (
     <div className="h-screen flex flex-col bg-[#F7F8FC] font-sans">
-
       <header className="shrink-0 flex items-center justify-between gap-3 bg-white px-5 py-3 border-b border-gray-200 z-30">
         <div>
           <h1 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
@@ -327,20 +247,17 @@ export default function RolesPermissions() {
             Search a user and toggle their permissions
           </p>
         </div>
-
         <div className="flex items-center gap-2.5 pl-3 pr-2 py-1 bg-white border border-gray-200 rounded-full">
           <div className="h-7 w-7 rounded-full bg-blue-600 flex items-center justify-center text-white text-[11px] font-black">
             {(user?.name || 'AD').slice(0, 2).toUpperCase()}
           </div>
-          <p className="text-[11px] font-black text-slate-900">
-            {user?.name || 'Admin'}
-          </p>
+          <p className="text-[11px] font-black text-slate-900">{user?.name || 'Admin'}</p>
           <ChevronRight className="h-3.5 w-3.5 text-slate-400 rotate-90" />
         </div>
       </header>
 
       <main className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-
+        {/* Search */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
           <div className="relative w-full max-w-md" ref={searchWrapRef}>
             <label className="block text-[11px] font-black text-slate-700 uppercase tracking-wide mb-1.5">
@@ -388,7 +305,7 @@ export default function RolesPermissions() {
                         }`}
                       >
                         <span className={`text-xs font-bold truncate ${active ? 'text-blue-800' : 'text-slate-800'}`}>
-                          {u.fullName}
+                          {u.username}
                         </span>
                         {active && <Check className="h-4 w-4 text-blue-600 shrink-0" strokeWidth={3} />}
                       </button>
@@ -400,6 +317,7 @@ export default function RolesPermissions() {
           </div>
         </div>
 
+        {/* Content */}
         {!selectedUser ? (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm py-20 flex flex-col items-center justify-center text-center">
             <div className="h-16 w-16 rounded-2xl bg-blue-50 flex items-center justify-center mb-3">
@@ -417,46 +335,23 @@ export default function RolesPermissions() {
             <table className="w-full table-fixed border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="text-left px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-[260px]">
-                    Section
-                  </th>
-                  <th className="text-left px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider">
-                    Options
-                  </th>
-                  <th className="text-center px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-[110px]">
-                    Selected
-                  </th>
-                  <th className="text-center px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-[120px]">
-                    Toggle All
-                  </th>
+                  <th className="text-left px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-[260px]">Section</th>
+                  <th className="text-left px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider">Options</th>
+                  <th className="text-center px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-[110px]">Selected</th>
+                  <th className="text-center px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-[120px]">Toggle All</th>
                 </tr>
               </thead>
               <tbody>
                 {ROWS.map((row, idx) => {
                   const Icon = row.icon;
-
-                  let options, value, onToggle, onToggleAll;
-
-                  if (row.kind === 'single') {
-                    options     = row.options;
-                    value       = current[row.groupKey];
-                    onToggle    = (k) => toggleItem(row.groupKey, k);
-                    onToggleAll = () => toggleAllKeys(row.groupKey, options.map((o) => o.key));
-                  } else {
-                    const g = row.group;
-                    options     = g.items.map((i) => ({ key: i.key, label: i.label }));
-                    value       = current[g.key];
-                    onToggle    = (k) => toggleItem(g.key, k);
-                    onToggleAll = () => toggleAllKeys(g.key, options.map((o) => o.key));
-                  }
-
-                  const selectedCount = Object.values(value).filter(Boolean).length;
-                  const totalCount    = options.length;
+                  const value = current[row.groupKey] || {};
+                  const selectedCount = row.options.filter((o) => value[o.key]).length;
+                  const totalCount    = row.options.length;
                   const allOn         = selectedCount === totalCount && totalCount > 0;
 
                   return (
                     <tr
-                      key={row.title}
+                      key={row.groupKey}
                       className={`align-top ${
                         idx !== ROWS.length - 1 ? 'border-b border-slate-100' : ''
                       } hover:bg-blue-50/30 transition`}
@@ -467,29 +362,23 @@ export default function RolesPermissions() {
                             <Icon className="h-3.5 w-3.5 text-blue-600" />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-[12px] font-black text-slate-900 leading-tight">
-                              {row.title}
-                            </p>
-                            <p className="text-[10px] font-medium text-slate-500 mt-0.5 leading-tight">
-                              {row.subtitle}
-                            </p>
+                            <p className="text-[12px] font-black text-slate-900 leading-tight">{row.title}</p>
+                            <p className="text-[10px] font-medium text-slate-500 mt-0.5 leading-tight">{row.subtitle}</p>
                           </div>
                         </div>
                       </td>
 
                       <td className="px-5 py-4">
-                        {options.length === 0 ? (
-                          <p className="text-[11px] italic text-slate-400">
-                            No options available
-                          </p>
+                        {totalCount === 0 ? (
+                          <p className="text-[11px] italic text-slate-400">No options available</p>
                         ) : (
                           <div className="flex flex-wrap gap-1.5">
-                            {options.map((o) => (
+                            {row.options.map((o) => (
                               <Pill
                                 key={o.key}
                                 label={o.label}
                                 active={!!value[o.key]}
-                                onClick={() => onToggle(o.key)}
+                                onClick={() => toggleItem(row.groupKey, o.key)}
                               />
                             ))}
                           </div>
@@ -505,7 +394,7 @@ export default function RolesPermissions() {
                       <td className="px-5 py-4 text-center">
                         <button
                           type="button"
-                          onClick={onToggleAll}
+                          onClick={() => toggleAllKeys(row.groupKey, row.options.map((o) => o.key))}
                           disabled={totalCount === 0}
                           className={`text-[11px] font-black px-3 py-1.5 rounded-md border transition ${
                             totalCount === 0
@@ -550,8 +439,6 @@ export default function RolesPermissions() {
   );
 }
 
-// =====================================================================
-// PILL — same style as SetupPanel
 // =====================================================================
 function Pill({ label, active, onClick }) {
   return (

@@ -4,16 +4,25 @@ import { useNavigate } from 'react-router-dom';
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [token, setToken]   = useState(null);
-  const [user, setUser]     = useState(null);
+  const [token, setToken]     = useState(null);
+  const [user, setUser]       = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Restore session on mount
   useEffect(() => {
+    // 1. If URL carries a token (?token=...), save it and strip
+    const qs     = new URLSearchParams(window.location.search);
+    const qToken = qs.get('token');
+    if (qToken) {
+      localStorage.setItem('token', qToken);
+      qs.delete('token');
+      const clean = window.location.pathname + (qs.toString() ? `?${qs}` : '');
+      window.history.replaceState({}, '', clean);
+    }
+
+    // 2. Restore
     const storedToken = localStorage.getItem('token');
     const storedUser  = localStorage.getItem('user');
-
     if (storedToken) {
       setToken(storedToken);
       try {
@@ -25,7 +34,6 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  // Called by Login page after successful API response
   const setAuthToken = (newToken, newUser = null) => {
     localStorage.setItem('token', newToken);
     if (newUser) localStorage.setItem('user', JSON.stringify(newUser));

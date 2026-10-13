@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LogIn, User, Lock, AlertCircle, ShieldCheck } from 'lucide-react';
+import { LogIn, User, Lock, AlertCircle, ShieldCheck, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { login as loginApi } from '../service/api';
 import { useAuth } from '../service/auth';
@@ -9,6 +9,7 @@ export default function Login() {
   const navigate = useNavigate();
   const { setAuthToken } = useAuth();
 
+  const [type, setType]         = useState('admin');   // 'admin' | 'trainer'
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading]   = useState(false);
@@ -25,38 +26,47 @@ export default function Login() {
 
     try {
       setLoading(true);
-      const res = await loginApi(username.trim(), password);
+
+      // ← pass `type` to the single login endpoint
+      const res  = await loginApi(username.trim(), password, type);
       const data = res.data;
 
       if (!data?.success) {
-        setError(data?.error || 'Login failed');
+        setError(data?.error || data?.message || 'Login failed');
         return;
       }
 
       setAuthToken(data.token, data.user);
-      navigate('/', { replace: true });
+
+      // role-based landing
+      if (data.user?.type === 'trainer') {
+        navigate('/trainer', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed. Please try again.');
+      setError(
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        'Login failed. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    // ⬇️ h-screen + overflow-hidden = no page scroll
     <div className="h-screen w-screen overflow-hidden flex bg-[#F3F4F6] font-sans">
 
       {/* ==================== LEFT: IMAGE ==================== */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-indigo-950 via-indigo-900 to-purple-900 shrink-0">
 
-        {/* Animated background blobs */}
         <div className="absolute top-0 -left-20 w-[500px] h-[500px] bg-purple-600 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-pulse"></div>
         <div
           className="absolute bottom-0 -right-20 w-[500px] h-[500px] bg-indigo-500 rounded-full mix-blend-screen filter blur-3xl opacity-30 animate-pulse"
           style={{ animationDelay: '1s' }}
         ></div>
 
-        {/* Grid overlay */}
         <div
           className="absolute inset-0 opacity-[0.05]"
           style={{
@@ -68,17 +78,13 @@ export default function Login() {
           }}
         ></div>
 
-        {/* Content */}
         <div className="relative z-10 flex flex-col items-center justify-center w-full h-full px-10 py-8">
-
-          {/* Illustration — capped size so it never overflows */}
           <img
             src={loginIllustration}
             alt="Command Center"
-           className="w-auto max-w-[85%] max-h-[55vh] object-contain drop-shadow-2xl mb-6"
+            className="w-auto max-w-[85%] max-h-[55vh] object-contain drop-shadow-2xl mb-6"
           />
 
-          {/* Text */}
           <div className="text-center max-w-md">
             <h1 className="text-2xl xl:text-3xl font-black text-white tracking-tight mb-2">
               SKILL CONTEST
@@ -90,7 +96,6 @@ export default function Login() {
               </p>
               <span className="h-px w-8 bg-purple-400/60"></span>
             </div>
-           
           </div>
         </div>
       </div>
@@ -114,7 +119,7 @@ export default function Login() {
           </div>
 
           {/* Heading */}
-          <div className="mb-7">
+          <div className="mb-6">
             <h2 className="text-2xl xl:text-3xl font-black text-gray-900 tracking-tight">
               Welcome back 👋
             </h2>
@@ -123,7 +128,35 @@ export default function Login() {
             </p>
           </div>
 
-          {/* Form */}
+          {/* ---------- ROLE TOGGLE ---------- */}
+          <div className="mb-6 grid grid-cols-2 gap-2 p-1 bg-gray-100 rounded-xl">
+            <button
+              type="button"
+              onClick={() => { setType('admin'); setError(''); }}
+              className={`flex items-center justify-center gap-2 py-2.5 text-xs font-black uppercase tracking-wider rounded-lg transition ${
+                type === 'admin'
+                  ? 'bg-white text-purple-700 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Admin
+            </button>
+            <button
+              type="button"
+              onClick={() => { setType('trainer'); setError(''); }}
+              className={`flex items-center justify-center gap-2 py-2.5 text-xs font-black uppercase tracking-wider rounded-lg transition ${
+                type === 'trainer'
+                  ? 'bg-white text-purple-700 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <Users className="h-3.5 w-3.5" />
+              Trainer
+            </button>
+          </div>
+
+          {/* ---------- FORM ---------- */}
           <form onSubmit={handleSubmit} className="space-y-5">
 
             {/* Username */}
@@ -187,14 +220,13 @@ export default function Login() {
               ) : (
                 <>
                   <LogIn className="h-4 w-4" />
-                  <span>Sign In</span>
+                  <span>Sign In as {type === 'admin' ? 'Admin' : 'Trainer'}</span>
                 </>
               )}
             </button>
           </form>
         </div>
       </div>
-
     </div>
   );
 }
