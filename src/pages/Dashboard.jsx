@@ -21,55 +21,64 @@ export default function Dashboard() {
 
   // ---- API data ----
   const [gridTrainers, setGridTrainers] = useState([]);
-  const [dashData, setDashData] = useState(null);
+  const [dashData, setDashData]         = useState(null);
   const [filterOptions, setFilterOptions] = useState({
+    projects: [],
     dates: [], zones: [], regions: [], trainers: [],
-    roles: [], agencies: [], dealerNames: [], dealerCodes: [],
+    roles: [], dealerNames: [], dealerCodes: [],
   });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError]     = useState(null);
 
   // ---- UI state ----
+  // ✅ Default to project 1 on first load
   const [filters, setFilters] = useState({
+    projectId: '1',
     date: '', zone: '', region: '', trainer: '', role: '',
-    agency: '', dealerName: '', dealerCode: '',
+    dealerName: '', dealerCode: '',
   });
-  const [searchTrainer, setSearchTrainer] = useState('');
+  const [searchTrainer, setSearchTrainer]         = useState('');
   const [searchParticipant, setSearchParticipant] = useState('');
 
   const [selectedParticipant, setSelectedParticipant] = useState(null);
   const [showParticipantJourney, setShowParticipantJourney] = useState(false);
-  const [selectedTrainer, setSelectedTrainer] = useState(null);
-  const [showTrainerJourney, setShowTrainerJourney] = useState(false);
+  const [selectedTrainer, setSelectedTrainer]         = useState(null);
+  const [showTrainerJourney, setShowTrainerJourney]   = useState(false);
 
-  const [trainerPage, setTrainerPage] = useState(0);
-  const [regionPage, setRegionPage] = useState(0);
+  const [trainerPage, setTrainerPage]               = useState(0);
+  const [regionPage, setRegionPage]                 = useState(0);
   const [summaryTrainerPage, setSummaryTrainerPage] = useState(0);
 
   const [showAlerts, setShowAlerts] = useState(false);
-  const [liveAlerts] = useState([]);
+  const [liveAlerts]  = useState([]);
   const [toastOn, setToastOn] = useState(false);
 
-  // ---- Export users to Excel ----
+  // ---- Export ----
   const handleExportUsers = () => {
+    if (!filters.projectId) return;
     const f = {};
     if (filters.region)     f.region     = filters.region;
     if (filters.zone)       f.zone       = filters.zone;
     if (filters.role)       f.role       = filters.role;
-    if (filters.agency)     f.agency     = filters.agency;
     if (filters.dealerName) f.dealerName = filters.dealerName;
     if (filters.dealerCode) f.dealerCode = filters.dealerCode;
     if (filters.trainer)    f.trainer    = filters.trainer;
 
-    window.open(getExportUrl(f), '_blank');
+    window.open(getExportUrl(filters.projectId, f), '_blank');
   };
 
-  // ---- Fetch grid ----
+  // ---- Fetch grid (re-runs on project change) ----
   useEffect(() => {
+    if (!filters.projectId) {
+      setGridTrainers([]);
+      setLoading(false);
+      return;
+    }
     (async () => {
       try {
         setLoading(true);
-        const res = await getGrid();
+        setError(null);
+        const res  = await getGrid(filters.projectId);
         const json = res.data;
         if (json.success) setGridTrainers(json.trainers || []);
         else setError(json.error || 'Failed to load grid data');
@@ -79,34 +88,35 @@ export default function Dashboard() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [filters.projectId]);
 
-  // ---- Fetch dashboard KPIs ----
+  // ---- Fetch dashboard (re-runs on project change) ----
   useEffect(() => {
+    if (!filters.projectId) { setDashData(null); return; }
     (async () => {
       try {
-        const res = await getDashboard();
+        const res = await getDashboard(filters.projectId);
         if (res.data?.success) setDashData(res.data);
       } catch (err) {
         console.error('Dashboard fetch failed:', err);
       }
     })();
-  }, []);
+  }, [filters.projectId]);
 
-  // ---- Fetch filter options ----
+  // ---- Fetch filter options (once) ----
   useEffect(() => {
     (async () => {
       try {
-        const res = await getFilters();
+        const res  = await getFilters();
         const json = res.data;
         if (json?.success) {
           setFilterOptions({
+            projects:    json.projects    || [],
             dates:       json.dates       || [],
             zones:       json.zones       || [],
             regions:     json.regions     || [],
             trainers:    json.trainers    || [],
             roles:       json.roles       || [],
-            agencies:    json.agencies    || [],
             dealerNames: json.dealerNames || [],
             dealerCodes: json.dealerCodes || [],
           });
@@ -117,16 +127,36 @@ export default function Dashboard() {
     })();
   }, []);
 
+  // ---- Auto-select first project when none selected ----
+  // If the default project '1' no longer exists, fall back to the first real one.
+  useEffect(() => {
+    if (!filterOptions.projects.length) return;
+
+    const exists = filterOptions.projects.some(
+      (p) => String(p.id) === String(filters.projectId)
+    );
+    if (!exists) {
+      setFilters((f) => ({ ...f, projectId: String(filterOptions.projects[0].id) }));
+    }
+  }, [filterOptions.projects, filters.projectId]);
+
+  // ---- Reset page numbers on project change ----
+  useEffect(() => {
+    setTrainerPage(0);
+    setRegionPage(0);
+    setSummaryTrainerPage(0);
+  }, [filters.projectId]);
+
   // ---- Grid derived stats ----
   const gridStats = useMemo(() => {
     const flat = gridTrainers.flatMap(({ trainer }) => trainer.participants || []);
-    const total = flat.length;
-    const completedCount = flat.filter(p => p.roundsStatus === 'Completed').length;
+    const total           = flat.length;
+    const completedCount  = flat.filter(p => p.roundsStatus === 'Completed').length;
     const inProgressCount = flat.filter(p => p.roundsStatus === 'In Progress').length;
     return { total, completedCount, inProgressCount };
   }, [gridTrainers]);
 
-  const qTrainer = searchTrainer.trim().toLowerCase();
+  const qTrainer     = searchTrainer.trim().toLowerCase();
   const qParticipant = searchParticipant.trim().toLowerCase();
 
   const orderedGridTrainers = useMemo(() => {
@@ -135,7 +165,6 @@ export default function Dashboard() {
         trainer, participants: trainer.participants || [],
       }));
     }
-
     const scored = gridTrainers.map(({ trainer }, idx) => {
       let score = 0;
       if (qTrainer && trainer.name.toLowerCase().includes(qTrainer)) score += 100;
@@ -149,7 +178,6 @@ export default function Dashboard() {
       }
       return { trainer, participants: trainer.participants || [], score, idx };
     });
-
     return scored
       .sort((a, b) => b.score - a.score || a.idx - b.idx)
       .map(({ trainer, participants }) => ({ trainer, participants }));
@@ -161,11 +189,10 @@ export default function Dashboard() {
     trainerPage * trainersPerPage,
     (trainerPage + 1) * trainersPerPage
   );
-
   useEffect(() => { setTrainerPage(0); }, [searchTrainer, searchParticipant]);
 
-  const REGION_PER_PAGE = 4;
-  const regionSummary = dashData?.regionSummary || [];
+  const REGION_PER_PAGE  = 4;
+  const regionSummary    = dashData?.regionSummary || [];
   const totalRegionPages = Math.max(1, Math.ceil(regionSummary.length / REGION_PER_PAGE));
   const displayedRegions = regionSummary.slice(
     regionPage * REGION_PER_PAGE,
@@ -185,6 +212,11 @@ export default function Dashboard() {
   useEffect(() => {
     if (summaryTrainerPage >= totalSummaryTrainerPages) setSummaryTrainerPage(0);
   }, [summaryTrainerPage, totalSummaryTrainerPages]);
+
+  // ---- Selected project (for display) ----
+  const selectedProject = filterOptions.projects.find(
+    (p) => String(p.id) === String(filters.projectId)
+  );
 
   if (loading) {
     return (
@@ -225,6 +257,14 @@ export default function Dashboard() {
             <span className="font-bold text-purple-600">
               {user?.username || 'Unknown'}
             </span>
+            {selectedProject && (
+              <>
+                <span className="mx-1 text-gray-300">·</span>
+                <span className="font-bold text-indigo-700">
+                  {selectedProject.name}
+                </span>
+              </>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -272,6 +312,23 @@ export default function Dashboard() {
       {/* ===== FILTER BAR ===== */}
       <div className="shrink-0 bg-white px-4 py-1.5 border-b border-gray-200 shadow-sm z-10">
         <div className="flex flex-wrap items-end gap-2">
+          {/* Project — FIRST */}
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[11px] font-bold text-indigo-900 uppercase">Project</label>
+            <select
+              className="border border-gray-300 rounded px-2 py-1 text-xs bg-white w-36 font-semibold text-indigo-700"
+              value={filters.projectId}
+              onChange={(e) => setFilters({ ...filters, projectId: e.target.value })}
+            >
+              {filterOptions.projects.length === 0 && (
+                <option value="">Loading…</option>
+              )}
+              {filterOptions.projects.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+
           {/* Date / Month */}
           <div className="flex flex-col gap-0.5">
             <label className="text-[11px] font-bold text-indigo-900 uppercase">Date / Month</label>
@@ -347,21 +404,6 @@ export default function Dashboard() {
             </select>
           </div>
 
-          {/* Agency */}
-          <div className="flex flex-col gap-0.5">
-            <label className="text-[11px] font-bold text-indigo-900 uppercase">Agency</label>
-            <select
-              className="border border-gray-300 rounded px-2 py-1 text-xs bg-white w-28"
-              value={filters.agency}
-              onChange={(e) => setFilters({ ...filters, agency: e.target.value })}
-            >
-              <option value="">All</option>
-              {filterOptions.agencies.map(a => (
-                <option key={a} value={a}>{a}</option>
-              ))}
-            </select>
-          </div>
-
           {/* Dealer Name */}
           <div className="flex flex-col gap-0.5">
             <label className="text-[11px] font-bold text-indigo-900 uppercase">Dealer Name</label>
@@ -416,7 +458,9 @@ export default function Dashboard() {
         {/* TODAY'S LIVE DATA */}
         <section className="px-3">
           <div className="flex justify-between items-end mb-1.5">
-            <h2 className="text-sm font-black text-indigo-900 uppercase">TODAY'S LIVE DATA</h2>
+            <h2 className="text-sm font-black text-indigo-900 uppercase">
+              TODAY'S LIVE DATA {selectedProject && `· ${selectedProject.name}`}
+            </h2>
             <span className="text-xs text-gray-400 font-medium">
               Live snapshot · {dashData?.todayLive?.date || '—'}
             </span>
@@ -462,6 +506,43 @@ export default function Dashboard() {
               <p className="text-xl font-extrabold leading-tight">{dashData?.todayLive?.activeTrainers ?? 0}</p>
               <p className="text-[11px] text-white font-medium mt-0.5">Live from API</p>
             </div>
+          </div>
+        </section>
+
+        {/* PROJECT SUMMARY */}
+        <section className="px-3">
+          <div className="flex justify-between items-end mb-1.5">
+            <h2 className="text-sm font-black text-indigo-900 uppercase">PROJECT-WISE SUMMARY</h2>
+            <span className="text-xs text-gray-400 font-medium">
+              {dashData?.projectSummary?.length || 0} project(s)
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+            {(dashData?.projectSummary || []).map((p) => (
+              <div
+                key={p.projectName}
+                className="bg-white shadow-sm border-2 border-indigo-500 p-3 text-center"
+              >
+                <h3 className="font-bold text-sm mb-1 truncate">{p.projectName}</h3>
+                <p className="text-xs font-semibold text-indigo-600">
+                  {p.totalRounds} rounds · {p.totalScore} max
+                </p>
+                <p className="text-xs font-semibold text-purple-600">
+                  Pass ≥ {p.passingPercentage}%
+                </p>
+                <p className="text-xs font-medium mt-0.5">
+                  {p.completed} completed · {p.inProgress} in progress
+                </p>
+                <p className="text-[11px] text-gray-500 mt-0.5">
+                  Total participants: {p.totalUsers}
+                </p>
+              </div>
+            ))}
+            {(dashData?.projectSummary || []).length === 0 && (
+              <div className="col-span-4 text-center text-xs text-gray-400 py-4">
+                No project data available.
+              </div>
+            )}
           </div>
         </section>
 
@@ -603,7 +684,9 @@ export default function Dashboard() {
         <section className="px-3">
           <div className="flex justify-between items-end mb-1.5">
             <h2 className="text-sm font-black text-indigo-900 uppercase">CONTEST TOTALS</h2>
-            <span className="text-xs text-gray-400 font-medium">All dates · all zones</span>
+            <span className="text-xs text-gray-400 font-medium">
+              {selectedProject ? selectedProject.name : 'All projects'}
+            </span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
             <div className="bg-white shadow-sm border-2 border-gray-900 p-3">
@@ -616,7 +699,7 @@ export default function Dashboard() {
             <div className="bg-white shadow-sm border-2 border-sky-500 p-3">
               <p className="text-[11px] font-bold uppercase tracking-wider text-sky-600 mb-1">Total Attempted</p>
               <p className="text-base font-extrabold text-sky-700 leading-tight">
-                {dashData?.contestTotals?.totalScheduled ?? 0}
+                {dashData?.contestTotals?.totalAttempted ?? 0}
               </p>
               <p className="text-[11px] text-black font-medium mt-0.5">
                 {dashData?.contestTotals?.inProgress ?? 0} in prog · {dashData?.contestTotals?.completed ?? 0} comp
@@ -810,13 +893,15 @@ export default function Dashboard() {
                                   className={`border border-gray-200 bg-white p-2 min-h-[56px] border-l-4 ${borderColor} hover:bg-gray-50 transition-all cursor-pointer ${participantDimmed ? 'opacity-25' : ''} ${matchesParticipant && qParticipant ? 'ring-2 ring-emerald-400 ring-inset' : ''}`}
                                   onClick={() => {
                                     setSelectedParticipant({
-                                      displayName: p.name,
-                                      empId:       p.mpin,
-                                      role:        p.role,
-                                      percentage:  p.percentage,
-                                      totalTime:   p.totalTime,
+                                      displayName:  p.name,
+                                      empId:        p.mpin,
+                                      role:         p.role,
+                                      projectName:  p.projectName,
+                                      totalRounds:  p.totalRounds,
+                                      percentage:   p.percentage,
+                                      totalTime:    p.totalTime,
                                       roundsStatus: p.roundsStatus,
-                                      rounds:      p.rounds,
+                                      rounds:       p.rounds,
                                     });
                                     setShowParticipantJourney(true);
                                   }}
@@ -982,7 +1067,7 @@ export default function Dashboard() {
                   .map((p) => (
                     <div key={p.mpin} className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-500 font-medium w-16 truncate">{p.mpin}</span>
+                        <span className="text-gray-500 font-medium w-20 truncate">{p.mpin}</span>
                         <span className="text-gray-800 font-semibold truncate flex-1">{p.name}</span>
                       </div>
                       <span className={`text-[11px] font-bold tracking-wider ${p.status === 'Pass' ? 'text-teal-600' : 'text-purple-600'}`}>
@@ -1014,7 +1099,10 @@ export default function Dashboard() {
               <div>
                 <p className="text-[11px] font-bold text-teal-100 uppercase tracking-wider">PARTICIPANT JOURNEY</p>
                 <h2 className="text-xl font-bold text-white mt-0.5">{selectedParticipant.displayName}</h2>
-                <p className="text-xs text-teal-100 font-medium">{selectedParticipant.empId} · {selectedParticipant.role}</p>
+                <p className="text-xs text-teal-100 font-medium">
+                  {selectedParticipant.empId} · {selectedParticipant.role}
+                  {selectedParticipant.projectName && ` · ${selectedParticipant.projectName}`}
+                </p>
               </div>
               <button onClick={() => { setShowParticipantJourney(false); setSelectedParticipant(null); }} className="text-white/70 hover:text-white transition">
                 <X className="h-4 w-4" />
@@ -1025,7 +1113,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Rounds</p>
                 <p className="text-xl font-extrabold text-gray-900 mt-0.5">
-                  {selectedParticipant.rounds ? selectedParticipant.rounds.length : 0} / 5
+                  {selectedParticipant.rounds?.length || 0} / {selectedParticipant.totalRounds || 5}
                 </p>
               </div>
               <div>
@@ -1052,7 +1140,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between mb-1.5">
                 <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider">Assessment Milestones</h3>
                 <span className="text-xs font-medium text-gray-500">
-                  {selectedParticipant.rounds ? selectedParticipant.rounds.length : 0} of 5
+                  {selectedParticipant.rounds?.length || 0} of {selectedParticipant.totalRounds || 5}
                 </span>
               </div>
               <div className="space-y-1.5">
