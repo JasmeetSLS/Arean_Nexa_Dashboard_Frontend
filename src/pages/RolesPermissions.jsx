@@ -13,38 +13,94 @@ import {
 } from '../service/api';
 
 // =====================================================================
-// SECTION ICON MAP  (field_group -> lucide icon)
+// STATIC SECTIONS  (was setup_field_master — now hardcoded)
+// Each section: key, icon, title, subtitle, fields[]
 // =====================================================================
-const SECTION_ICON = {
-  filters:            Search,
-  todayLive:          Radio,
-  contest:            Trophy,
-  metrics:            BarChart3,
-  participantJourney: Route,
-  trainerJourney:     UserCircle2,
-};
-
-const SECTION_TITLE = {
-  filters:            'Required Filters',
-  todayLive:          "Today's Live Data",
-  contest:            'Contest Totals',
-  metrics:            'Metric Sections',
-  participantJourney: 'Participant Journey',
-  trainerJourney:     'Trainer Journey',
-};
-
-const SECTION_SUBTITLE = {
-  filters:            'Filters visible on the dashboard',
-  todayLive:          'Data boxes shown in the today section',
-  contest:            'Data boxes shown in contest totals',
-  metrics:            'Metrics displayed on the dashboard',
-  participantJourney: 'Fields shown in the participant popup',
-  trainerJourney:     'Fields shown in the trainer popup',
-};
+const STATIC_SECTIONS = [
+  {
+    key: 'filters',
+    icon: Search,
+    title: 'Required Filters',
+    subtitle: 'Filters visible on the dashboard',
+    fields: [
+      { field_key: 'region' },
+      { field_key: 'zone'   },
+      { field_key: 'role'   },
+      { field_key: 'project'},
+    ],
+  },
+  {
+    key: 'todayLive',
+    icon: Radio,
+    title: "Today's Live Data",
+    subtitle: 'Data boxes shown in the today section',
+    fields: [
+      { field_key: 'scheduled'      },
+      { field_key: 'attempted'      },
+      { field_key: 'absentees'      },
+      { field_key: 'delayed'        },
+      { field_key: 'passRate'       },
+      { field_key: 'avgTime'        },
+      { field_key: 'activeTrainers' },
+    ],
+  },
+  {
+    key: 'contest',
+    icon: Trophy,
+    title: 'Contest Totals',
+    subtitle: 'Data boxes shown in contest totals',
+    fields: [
+      { field_key: 'totalScheduled' },
+      { field_key: 'totalAttempted' },
+      { field_key: 'totalAbsentees' },
+      { field_key: 'totalDelayed'   },
+      { field_key: 'totalResets'    },
+      { field_key: 'overallPass'    },
+      { field_key: 'overallAvg'     },
+    ],
+  },
+  {
+    key: 'metrics',
+    icon: BarChart3,
+    title: 'Metric Sections',
+    subtitle: 'Metrics displayed on the dashboard',
+    fields: [
+      { field_key: 'trainerAssigned'   },
+      { field_key: 'trainerPassRate'   },
+      { field_key: 'trainerAvgTime'    },
+      { field_key: 'participantStatus' },
+    ],
+  },
+  {
+    key: 'participantJourney',
+    icon: Route,
+    title: 'Participant Journey',
+    subtitle: 'Fields shown in the participant popup',
+    fields: [
+      { field_key: 'rounds'     },
+      { field_key: 'percentage' },
+      { field_key: 'totalTime'  },
+      { field_key: 'status'     },
+      { field_key: 'milestones' },
+    ],
+  },
+  {
+    key: 'trainerJourney',
+    icon: UserCircle2,
+    title: 'Trainer Journey',
+    subtitle: 'Fields shown in the trainer popup',
+    fields: [
+      { field_key: 'completed'       },
+      { field_key: 'passRate'        },
+      { field_key: 'avgTime'         },
+      { field_key: 'roundMilestones' },
+      { field_key: 'recentList'      },
+    ],
+  },
+];
 
 // =====================================================================
 // STATIC PERMISSION GROUPS  (Role / Zone / Project)
-// These come from participants + project_round_config, NOT setup_field_master
 // =====================================================================
 const STATIC_PERMISSION_GROUPS = [
   {
@@ -70,7 +126,6 @@ const STATIC_PERMISSION_GROUPS = [
   },
 ];
 
-// human-readable field label from key
 const prettify = (k) =>
   k.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
 
@@ -80,22 +135,16 @@ const prettify = (k) =>
 export default function RolesPermissions() {
   const { user } = useAuth();
 
-  // dropdown data
   const [admins, setAdmins]   = useState([]);
   const [search, setSearch]   = useState('');
   const [showResults, setShowResults] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
 
-  // dynamic sections from backend
-  const [sections, setSections] = useState([]);
-
-  // static option lists
   const [roles, setRoles]       = useState([]);
   const [zones, setZones]       = useState([]);
   const [regions, setRegions]   = useState([]);
   const [projects, setProjects] = useState([]);
 
-  // current user's selections
   const [selected, setSelected] = useState({
     role: {}, zone: {}, region: {}, project: {},
   });
@@ -115,7 +164,7 @@ export default function RolesPermissions() {
     })();
   }, []);
 
-  // ---- load options when user changes ----
+  // ---- load options when admin changes ----
   useEffect(() => {
     if (!selectedUserId) return;
     (async () => {
@@ -123,20 +172,19 @@ export default function RolesPermissions() {
         const { data } = await getPermissionOptions(selectedUserId);
         if (!data?.success) return;
 
-        setSections(data.sections || []);
         setRoles(data.roles       || []);
         setZones(data.zones       || []);
         setRegions(data.regions   || []);
         setProjects(data.projects || []);
 
-        // build defaults
+        // build defaults from STATIC_SECTIONS
         const base = {
           role:    Object.fromEntries((data.roles    || []).map((r) => [r, false])),
           zone:    Object.fromEntries((data.zones    || []).map((z) => [z, false])),
           region:  Object.fromEntries((data.regions  || []).map((r) => [r, false])),
           project: Object.fromEntries((data.projects || []).map((p) => [p, false])),
         };
-        (data.sections || []).forEach((s) => {
+        STATIC_SECTIONS.forEach((s) => {
           base[s.key] = Object.fromEntries(s.fields.map((f) => [f.field_key, false]));
         });
 
@@ -164,7 +212,6 @@ export default function RolesPermissions() {
     })();
   }, [selectedUserId]);
 
-  // close dropdown on outside click
   useEffect(() => {
     const onClick = (e) => {
       if (searchWrapRef.current && !searchWrapRef.current.contains(e.target)) {
@@ -184,7 +231,6 @@ export default function RolesPermissions() {
   const selectedUser = admins.find((a) => a.id === selectedUserId);
   const current      = selectedUserId ? selected : null;
 
-  // ---- toggles ----
   const toggleItem = (groupKey, itemKey) => {
     setSelected((prev) => ({
       ...prev,
@@ -217,16 +263,15 @@ export default function RolesPermissions() {
   const handleSave = async () => {
     if (!selectedUserId || !current) return;
 
-    // build dynamic permissions payload
+    // build permissions payload from STATIC_SECTIONS
     const permissions = {};
-    sections.forEach((s) => {
+    STATIC_SECTIONS.forEach((s) => {
       permissions[s.key] = {};
       s.fields.forEach((f) => {
         permissions[s.key][f.field_key] = !!current[s.key]?.[f.field_key];
       });
     });
 
-    // build static groups payload
     const allowedRoles    = Object.keys(current.role   ).filter((k) => current.role[k]);
     const allowedZones    = Object.keys(current.zone   ).filter((k) => current.zone[k]);
     const allowedRegions  = Object.keys(current.region ).filter((k) => current.region[k]);
@@ -248,10 +293,8 @@ export default function RolesPermissions() {
     }
   };
 
-  // ---- rows to render ----
   const ROWS = current
     ? [
-        // --- static groups (Role / Zone / Project) ---
         ...STATIC_PERMISSION_GROUPS.map((g) => {
           const optSource =
             g.groupKey === 'role'    ? roles    :
@@ -263,13 +306,11 @@ export default function RolesPermissions() {
             options: optSource.map((v) => ({ key: v, label: v })),
           };
         }),
-
-        // --- dynamic groups from setup_field_master ---
-        ...sections.map((s) => ({
+        ...STATIC_SECTIONS.map((s) => ({
           kind: 'group',
-          icon: SECTION_ICON[s.key] || BarChart3,
-          title: SECTION_TITLE[s.key] || prettify(s.key),
-          subtitle: SECTION_SUBTITLE[s.key] || '',
+          icon: s.icon,
+          title: s.title,
+          subtitle: s.subtitle,
           groupKey: s.key,
           options: s.fields.map((f) => ({
             key: f.field_key,
@@ -301,7 +342,6 @@ export default function RolesPermissions() {
       </header>
 
       <main className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-        {/* Search */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
           <div className="relative w-full max-w-md" ref={searchWrapRef}>
             <label className="block text-[11px] font-black text-slate-700 uppercase tracking-wide mb-1.5">
@@ -361,7 +401,6 @@ export default function RolesPermissions() {
           </div>
         </div>
 
-        {/* Content */}
         {!selectedUser ? (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm py-20 flex flex-col items-center justify-center text-center">
             <div className="h-16 w-16 rounded-2xl bg-blue-50 flex items-center justify-center mb-3">
