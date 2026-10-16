@@ -46,15 +46,20 @@ export const getFilters   = ()          => api.get('/filters');
 // =====================================================================
 // SETUP PANEL
 // =====================================================================
-export const getSetup  = ()        => api.get('/setup');
-export const saveSetup = (payload) => api.post('/setup', payload);
+export const getProjects = () => api.get('/projects');
+export const addProject  = (payload) => api.post('/projects', payload);
 
 // =====================================================================
 // ROLES & PERMISSIONS
 // =====================================================================
-export const getPermissionAdmins  = ()        => api.get('/permissions/admins');
-export const getPermissionOptions = (userId)  => api.get('/permissions/options', { params: { userId } });
-export const savePermissions      = (payload) => api.post('/permissions', payload);
+export const getPermissionAdmins = () =>
+  api.get('/permissions/admins');
+
+export const getPermissionOptions = (userId) =>
+  api.get('/permissions/options', { params: { userId } });
+
+export const savePermissions = (payload) =>
+  api.post('/permissions', payload);
 
 // =====================================================================
 // CHAT

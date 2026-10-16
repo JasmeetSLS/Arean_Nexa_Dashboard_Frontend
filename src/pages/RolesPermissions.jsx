@@ -42,6 +42,34 @@ const SECTION_SUBTITLE = {
   trainerJourney:     'Fields shown in the trainer popup',
 };
 
+// =====================================================================
+// STATIC PERMISSION GROUPS  (Role / Zone / Project)
+// These come from participants + project_round_config, NOT setup_field_master
+// =====================================================================
+const STATIC_PERMISSION_GROUPS = [
+  {
+    kind: 'single',
+    groupKey: 'role',
+    icon: Users,
+    title: 'Role',
+    subtitle: 'Job roles this user can access',
+  },
+  {
+    kind: 'single',
+    groupKey: 'zone',
+    icon: MapPin,
+    title: 'Zone',
+    subtitle: 'Zones this user can access',
+  },
+  {
+    kind: 'single',
+    groupKey: 'project',
+    icon: Trophy,
+    title: 'Project',
+    subtitle: 'Projects this user can access',
+  },
+];
+
 // human-readable field label from key
 const prettify = (k) =>
   k.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
@@ -58,16 +86,18 @@ export default function RolesPermissions() {
   const [showResults, setShowResults] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
 
-  // options fetched from backend
-  const [sections, setSections] = useState([]);   // [{ key, fields:[{field_key}] }]
+  // dynamic sections from backend
+  const [sections, setSections] = useState([]);
+
+  // static option lists
   const [roles, setRoles]       = useState([]);
   const [zones, setZones]       = useState([]);
   const [regions, setRegions]   = useState([]);
+  const [projects, setProjects] = useState([]);
 
   // current user's selections
   const [selected, setSelected] = useState({
-    role: {}, zone: {}, region: {},
-    // dynamic field_groups filled at load
+    role: {}, zone: {}, region: {}, project: {},
   });
 
   const [savedMsg, setSavedMsg] = useState('');
@@ -97,12 +127,14 @@ export default function RolesPermissions() {
         setRoles(data.roles       || []);
         setZones(data.zones       || []);
         setRegions(data.regions   || []);
+        setProjects(data.projects || []);
 
         // build defaults
         const base = {
-          role:   Object.fromEntries((data.roles   || []).map((r) => [r, false])),
-          zone:   Object.fromEntries((data.zones   || []).map((z) => [z, false])),
-          region: Object.fromEntries((data.regions || []).map((r) => [r, false])),
+          role:    Object.fromEntries((data.roles    || []).map((r) => [r, false])),
+          zone:    Object.fromEntries((data.zones    || []).map((z) => [z, false])),
+          region:  Object.fromEntries((data.regions  || []).map((r) => [r, false])),
+          project: Object.fromEntries((data.projects || []).map((p) => [p, false])),
         };
         (data.sections || []).forEach((s) => {
           base[s.key] = Object.fromEntries(s.fields.map((f) => [f.field_key, false]));
@@ -111,9 +143,10 @@ export default function RolesPermissions() {
         // merge existing
         const ex = data.existing;
         if (ex) {
-          (ex.allowed_roles   || []).forEach((r) => { if (r in base.role)   base.role[r]     = true; });
-          (ex.allowed_zones   || []).forEach((z) => { if (z in base.zone)   base.zone[z]     = true; });
-          (ex.allowed_regions || []).forEach((r) => { if (r in base.region) base.region[r]   = true; });
+          (ex.allowed_roles    || []).forEach((r) => { if (r in base.role)    base.role[r]    = true; });
+          (ex.allowed_zones    || []).forEach((z) => { if (z in base.zone)    base.zone[z]    = true; });
+          (ex.allowed_regions  || []).forEach((r) => { if (r in base.region)  base.region[r]  = true; });
+          (ex.allowed_projects || []).forEach((p) => { if (p in base.project) base.project[p] = true; });
 
           const perms = ex.permissions || {};
           Object.entries(perms).forEach(([grp, obj]) => {
@@ -184,7 +217,7 @@ export default function RolesPermissions() {
   const handleSave = async () => {
     if (!selectedUserId || !current) return;
 
-    // build payload
+    // build dynamic permissions payload
     const permissions = {};
     sections.forEach((s) => {
       permissions[s.key] = {};
@@ -193,14 +226,17 @@ export default function RolesPermissions() {
       });
     });
 
-    const allowedRoles   = Object.keys(current.role  ).filter((k) => current.role[k]);
-    const allowedZones   = Object.keys(current.zone  ).filter((k) => current.zone[k]);
-    const allowedRegions = Object.keys(current.region).filter((k) => current.region[k]);
+    // build static groups payload
+    const allowedRoles    = Object.keys(current.role   ).filter((k) => current.role[k]);
+    const allowedZones    = Object.keys(current.zone   ).filter((k) => current.zone[k]);
+    const allowedRegions  = Object.keys(current.region ).filter((k) => current.region[k]);
+    const allowedProjects = Object.keys(current.project).filter((k) => current.project[k]);
 
     try {
       const { data } = await savePermissions({
         userId: selectedUserId,
         allowedRoles, allowedZones, allowedRegions,
+        allowedProjects,
         permissions,
       });
       setSavedMsg(data?.success ? 'Saved' : (data?.error || 'Save failed'));
@@ -215,12 +251,20 @@ export default function RolesPermissions() {
   // ---- rows to render ----
   const ROWS = current
     ? [
-        { kind: 'single', icon: Users,  title: 'Role',   subtitle: 'Job roles this user can access',
-          groupKey: 'role',   options: roles.map((r) => ({ key: r, label: r })) },
-        { kind: 'single', icon: MapPin, title: 'Zone',   subtitle: 'Zones this user can access',
-          groupKey: 'zone',   options: zones.map((z) => ({ key: z, label: z })) },
-        { kind: 'single', icon: Globe2, title: 'Region', subtitle: 'Regions this user can access',
-          groupKey: 'region', options: regions.map((r) => ({ key: r, label: r })) },
+        // --- static groups (Role / Zone / Project) ---
+        ...STATIC_PERMISSION_GROUPS.map((g) => {
+          const optSource =
+            g.groupKey === 'role'    ? roles    :
+            g.groupKey === 'zone'    ? zones    :
+            g.groupKey === 'project' ? projects : [];
+
+          return {
+            ...g,
+            options: optSource.map((v) => ({ key: v, label: v })),
+          };
+        }),
+
+        // --- dynamic groups from setup_field_master ---
         ...sections.map((s) => ({
           kind: 'group',
           icon: SECTION_ICON[s.key] || BarChart3,

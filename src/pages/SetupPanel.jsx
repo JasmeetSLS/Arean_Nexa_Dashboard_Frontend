@@ -1,171 +1,127 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  ChevronRight, Save, Check, CheckCircle2, XCircle,
-  Building2, Filter, Radio, Trophy, BarChart3,
-  Route, UserCircle2, Settings2,
+  ChevronRight, Save, Check, Plus, RefreshCw, X,
+  Building2, Settings2, Clock, Target, Hash, Percent,
+  AlertCircle, Calendar,
 } from 'lucide-react';
 import { useAuth } from '../service/auth.jsx';
-import { getSetup, saveSetup } from '../service/api';
+import { getProjects, addProject } from '../service/api';
 
-// =====================================================================
-// FLAT FIELD LIST
-//   field_group : section
-//   field_key   : column key
-//   name        : display label
-//   field_order : order INSIDE its group  (1, 2, 3 …)
-//   sort_order  : order of the GROUP itself (filters=1, todayLive=2, …)
-// =====================================================================
-export const FIELDS = [
-  // ---------- filters  (sort_order = 1) ----------
-  { field_group: 'filters', field_key: 'zone',       name: 'Zone',        field_order: 1, sort_order: 1 },
-  { field_group: 'filters', field_key: 'region',     name: 'Region',      field_order: 2, sort_order: 1 },
-  { field_group: 'filters', field_key: 'areaOffice', name: 'Area Office', field_order: 3, sort_order: 1 },
-  { field_group: 'filters', field_key: 'trainer',    name: 'Trainer',     field_order: 4, sort_order: 1 },
-  { field_group: 'filters', field_key: 'role',       name: 'Role',        field_order: 5, sort_order: 1 },
-  { field_group: 'filters', field_key: 'agency',     name: 'Agency',      field_order: 6, sort_order: 1 },
-  { field_group: 'filters', field_key: 'dealerName', name: 'Dealer Name', field_order: 7, sort_order: 1 },
-  { field_group: 'filters', field_key: 'dealerCode', name: 'Dealer Code', field_order: 8, sort_order: 1 },
-
-  // ---------- todayLive  (sort_order = 2) ----------
-  { field_group: 'todayLive', field_key: 'scheduled',      name: 'Scheduled',       field_order: 1, sort_order: 2 },
-  { field_group: 'todayLive', field_key: 'attempted',      name: 'Attempted',       field_order: 2, sort_order: 2 },
-  { field_group: 'todayLive', field_key: 'absentees',      name: 'Absentees',       field_order: 3, sort_order: 2 },
-  { field_group: 'todayLive', field_key: 'delayed',        name: 'Delayed',         field_order: 4, sort_order: 2 },
-  { field_group: 'todayLive', field_key: 'passRate',       name: 'Pass Rate',       field_order: 5, sort_order: 2 },
-  { field_group: 'todayLive', field_key: 'avgTime',        name: 'Avg Time',        field_order: 6, sort_order: 2 },
-  { field_group: 'todayLive', field_key: 'activeTrainers', name: 'Active Trainers', field_order: 7, sort_order: 2 },
-
-  // ---------- contest  (sort_order = 3) ----------
-  { field_group: 'contest', field_key: 'totalScheduled', name: 'Total Scheduled',   field_order: 1, sort_order: 3 },
-  { field_group: 'contest', field_key: 'totalAttempted', name: 'Total Attempted',   field_order: 2, sort_order: 3 },
-  { field_group: 'contest', field_key: 'totalAbsentees', name: 'Total Absentees',   field_order: 3, sort_order: 3 },
-  { field_group: 'contest', field_key: 'totalDelayed',   name: 'Total Delayed',     field_order: 4, sort_order: 3 },
-  { field_group: 'contest', field_key: 'totalResets',    name: 'Total Resets',      field_order: 5, sort_order: 3 },
-  { field_group: 'contest', field_key: 'overallPass',    name: 'Overall Pass',      field_order: 6, sort_order: 3 },
-  { field_group: 'contest', field_key: 'overallAvg',     name: 'Overall Avg Time',  field_order: 7, sort_order: 3 },
-
-  // ---------- metrics  (sort_order = 4) ----------
-  { field_group: 'metrics', field_key: 'trainerAssigned',   name: 'Trainer — Assigned',   field_order: 1, sort_order: 4 },
-  { field_group: 'metrics', field_key: 'trainerPassRate',   name: 'Trainer — Pass Rate',  field_order: 2, sort_order: 4 },
-  { field_group: 'metrics', field_key: 'trainerAvgTime',    name: 'Trainer — Avg Time',   field_order: 3, sort_order: 4 },
-  { field_group: 'metrics', field_key: 'participantStatus', name: 'Participant — Status', field_order: 4, sort_order: 4 },
-
-  // ---------- participantJourney  (sort_order = 5) ----------
-  { field_group: 'participantJourney', field_key: 'rounds',     name: 'Rounds Completed',      field_order: 1, sort_order: 5 },
-  { field_group: 'participantJourney', field_key: 'percentage', name: 'Percentage',            field_order: 2, sort_order: 5 },
-  { field_group: 'participantJourney', field_key: 'totalTime',  name: 'Total Time',            field_order: 3, sort_order: 5 },
-  { field_group: 'participantJourney', field_key: 'status',     name: 'Status',                field_order: 4, sort_order: 5 },
-  { field_group: 'participantJourney', field_key: 'milestones', name: 'Assessment Milestones', field_order: 5, sort_order: 5 },
-
-  // ---------- trainerJourney  (sort_order = 6) ----------
-  { field_group: 'trainerJourney', field_key: 'completed',       name: 'Completed Count',     field_order: 1, sort_order: 6 },
-  { field_group: 'trainerJourney', field_key: 'passRate',        name: 'Pass Rate',           field_order: 2, sort_order: 6 },
-  { field_group: 'trainerJourney', field_key: 'avgTime',         name: 'Avg Time',            field_order: 3, sort_order: 6 },
-  { field_group: 'trainerJourney', field_key: 'roundMilestones', name: 'Round Milestones',    field_order: 4, sort_order: 6 },
-  { field_group: 'trainerJourney', field_key: 'recentList',      name: 'Recent Participants', field_order: 5, sort_order: 6 },
-];
-
-// section meta (title/icon/subtitle) used only for rendering
-const SECTION_META = {
-  filters:            { icon: Filter,      title: 'Required Filters',    subtitle: 'Filters visible on the dashboard' },
-  todayLive:          { icon: Radio,       title: "Today's Live Data",   subtitle: 'Data boxes shown in the today section' },
-  contest:            { icon: Trophy,      title: 'Contest Totals',      subtitle: 'Data boxes shown in contest totals' },
-  metrics:            { icon: BarChart3,   title: 'Metric Sections',     subtitle: 'Metrics displayed on the dashboard' },
-  participantJourney: { icon: Route,       title: 'Participant Journey', subtitle: 'Fields shown in the participant popup' },
-  trainerJourney:     { icon: UserCircle2, title: 'Trainer Journey',     subtitle: 'Fields shown in the trainer popup' },
+const EMPTY_FORM = {
+  projectName:       '',
+  totalRounds:       5,
+  totalScore:        100,
+  passingPercentage: 80,
+  trainerTimeSecs:   4800,     // 01:20:00
+  status:            'active',
 };
 
-const GROUP_ORDER = [
-  'filters', 'todayLive', 'contest',
-  'metrics', 'participantJourney', 'trainerJourney',
-];
+const secsToHms = (s) => {
+  const sec = Number(s) || 0;
+  const h  = String(Math.floor(sec / 3600)).padStart(2, '0');
+  const m  = String(Math.floor((sec % 3600) / 60)).padStart(2, '0');
+  const ss = String(sec % 60).padStart(2, '0');
+  return `${h}:${m}:${ss}`;
+};
+const hmsToSecs = (hms) => {
+  if (!hms) return 0;
+  const [h = '0', m = '0', s = '0'] = String(hms).split(':');
+  return (Number(h) || 0) * 3600 + (Number(m) || 0) * 60 + (Number(s) || 0);
+};
 
 export default function SetupPanel() {
   const { user } = useAuth();
-  const [projectName, setProjectName] = useState('');
-  // selection keyed by `${group}::${key}` → bool
-  const [selected, setSelected] = useState({});
-  const [savedMsg, setSavedMsg] = useState('');
 
-  // ---- load ----
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await getSetup();
-        if (!data?.success) return;
-        setProjectName(data.setup?.projectName || '');
-        const map = {};
-        (data.fields || []).forEach((f) => {
-          map[`${f.field_group}::${f.field_key}`] = !!f.is_selected;
-        });
-        setSelected(map);
-      } catch (err) {
-        console.error('[setup load]', err);
-      }
-    })();
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading]   = useState(true);
+
+  const [showPopup, setShowPopup] = useState(false);
+  const [form, setForm]           = useState(EMPTY_FORM);
+  const [saving, setSaving]       = useState(false);
+  const [errMsg, setErrMsg]       = useState('');
+  const [okMsg, setOkMsg]         = useState('');
+
+  // ---- load list ----
+  const loadProjects = useCallback(async () => {
+    try {
+      setLoading(true);
+      const { data } = await getProjects();
+      if (data?.success) setProjects(data.projects || []);
+    } catch (err) {
+      console.error('[project load]', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const isOn      = (g, k) => !!selected[`${g}::${k}`];
-  const toggleOne = (g, k) =>
-    setSelected((s) => ({ ...s, [`${g}::${k}`]: !s[`${g}::${k}`] }));
-  const toggleAll = (groupFields) => {
-    setSelected((s) => {
-      const allOn = groupFields.every((f) => s[`${f.field_group}::${f.field_key}`]);
-      const next = { ...s };
-      groupFields.forEach((f) => {
-        next[`${f.field_group}::${f.field_key}`] = !allOn;
-      });
-      return next;
-    });
+  useEffect(() => { loadProjects(); }, [loadProjects]);
+
+  // ---- popup helpers ----
+  const openPopup = () => {
+    setForm(EMPTY_FORM);
+    setErrMsg('');
+    setOkMsg('');
+    setShowPopup(true);
+  };
+  const closePopup = () => {
+    if (saving) return;
+    setShowPopup(false);
   };
 
-  // ---- save : sends FLAT array, orders come from FIELDS definition ----
+  const update = (patch) => setForm((f) => ({ ...f, ...patch }));
+
+  // ---- save ----
   const handleSave = async () => {
-    if (!projectName.trim()) {
-      setSavedMsg('Enter a project name');
-      setTimeout(() => setSavedMsg(''), 2000);
+    setErrMsg('');
+    setOkMsg('');
+
+    if (!form.projectName.trim()) {
+      setErrMsg('Project name is required');
       return;
     }
 
     try {
-      const fields = FIELDS.map((f) => ({
-        field_group: f.field_group,
-        field_key:   f.field_key,
-        field_order: f.field_order,   // defined in FIELDS above
-        sort_order:  f.sort_order,    // defined in FIELDS above
-        is_selected: isOn(f.field_group, f.field_key),
-      }));
+      setSaving(true);
+      const { data } = await addProject({
+        projectName:       form.projectName.trim(),
+        totalRounds:       Number(form.totalRounds),
+        totalScore:        Number(form.totalScore),
+        passingPercentage: Number(form.passingPercentage),
+        trainerTimeSecs:   Number(form.trainerTimeSecs),
+        status:            form.status,
+      });
 
-      const { data } = await saveSetup({ projectName: projectName.trim(), fields });
-      setSavedMsg(data?.success ? 'Saved' : (data?.error || 'Save failed'));
+      if (data?.success) {
+        setOkMsg(`Project created (id ${data.id})`);
+        setForm(EMPTY_FORM);
+        await loadProjects();
+        setTimeout(() => setShowPopup(false), 800);
+      } else {
+        setErrMsg(data?.error || 'Save failed');
+      }
     } catch (err) {
-      console.error('[setup save]', err);
-      setSavedMsg(err?.response?.data?.error || 'Save failed');
+      console.error('[project save]', err);
+      setErrMsg(err?.response?.data?.error || 'Save failed');
     } finally {
-      setTimeout(() => setSavedMsg(''), 2000);
+      setSaving(false);
+      setTimeout(() => { setOkMsg(''); setErrMsg(''); }, 2500);
     }
   };
 
-  // ---- build rows for render (grouped for display, still flat data) ----
-  const rows = GROUP_ORDER.map((group) => {
-    const groupFields = FIELDS
-      .filter((f) => f.field_group === group)
-      .sort((a, b) => a.field_order - b.field_order);
-    const meta = SECTION_META[group];
-    const onCount = groupFields.filter((f) => isOn(group, f.field_key)).length;
-    return { group, meta, groupFields, onCount, total: groupFields.length };
-  });
+  const trainerTimeStr = secsToHms(form.trainerTimeSecs);
 
   return (
     <div className="h-screen flex flex-col bg-[#F7F8FC] font-sans">
+
+      {/* HEADER */}
       <header className="shrink-0 flex items-center justify-between gap-3 bg-white px-5 py-3 border-b border-slate-200 z-20">
         <div>
           <h1 className="text-lg font-black text-slate-900 tracking-tight flex items-center gap-2">
             <Settings2 className="h-5 w-5 text-blue-600" />
-            Setup Panel
+            Project Setup
           </h1>
           <p className="text-[11px] font-medium text-slate-500">
-            Configure your contest settings and dashboard preferences
+            Manage your contest projects
           </p>
         </div>
         <div className="flex items-center gap-2.5 pl-3 pr-2 py-1 bg-white border border-slate-200 rounded-full">
@@ -181,129 +137,268 @@ export default function SetupPanel() {
       </header>
 
       <main className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-        {/* Project Info */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-3">
-            <div className="shrink-0 h-9 w-9 rounded-xl bg-blue-50 flex items-center justify-center">
-              <Building2 className="h-4 w-4 text-blue-600" />
-            </div>
-            <div>
-              <h2 className="text-[13px] font-black text-slate-900">Project Information</h2>
-              <p className="text-[11px] font-medium text-slate-500">Name this contest project</p>
-            </div>
+
+        {/* LIST HEADER */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-[15px] font-black text-slate-900">
+              Projects <span className="text-slate-400 font-medium">({projects.length})</span>
+            </h2>
+            <p className="text-[11px] font-medium text-slate-500">
+              All projects configured in the system
+            </p>
           </div>
-          <div className="px-5 py-4">
-            <label className="block text-[11px] font-black text-slate-700 uppercase tracking-wide mb-1.5">
-              Project Name
-            </label>
-            <input
-              type="text"
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-              placeholder="Enter project name"
-              className="w-full max-w-md px-3 py-2.5 text-xs font-semibold text-slate-800 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
-            />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={loadProjects}
+              disabled={loading}
+              className="flex items-center gap-1.5 px-3 py-2 text-[11px] font-black text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 transition"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+            <button
+              onClick={openPopup}
+              className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-black rounded-lg shadow-sm transition"
+            >
+              <Plus className="h-3.5 w-3.5" strokeWidth={3} />
+              Create Project
+            </button>
           </div>
         </div>
 
-        {/* Configuration Table */}
+        {/* PROJECT LIST */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <table className="w-full table-fixed border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="text-left px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-[280px]">Section</th>
-                <th className="text-left px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider">Options</th>
-                <th className="text-center px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-[110px]">Selected</th>
-                <th className="text-center px-5 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-[120px]">Toggle All</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row, idx) => {
-                const Icon = row.meta.icon;
-                const allOn = row.onCount === row.total;
-                return (
-                  <tr key={row.group}
-                      className={`align-top ${idx !== rows.length - 1 ? 'border-b border-slate-100' : ''} hover:bg-blue-50/30 transition`}>
-                    <td className="px-5 py-4">
-                      <div className="flex items-start gap-3">
-                        <div className="shrink-0 h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                          <Icon className="h-3.5 w-3.5 text-blue-600" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-[12px] font-black text-slate-900 leading-tight">{row.meta.title}</p>
-                          <p className="text-[10px] font-medium text-slate-500 mt-0.5 leading-tight">{row.meta.subtitle}</p>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="px-5 py-4">
-                      <div className="flex flex-wrap gap-1.5">
-                        {row.groupFields.map((o) => {
-                          const active = isOn(o.field_group, o.field_key);
-                          return (
-                            <button
-                              key={`${o.field_group}::${o.field_key}`}
-                              type="button"
-                              onClick={() => toggleOne(o.field_group, o.field_key)}
-                              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-bold border transition ${
-                                active
-                                  ? 'bg-blue-600 border-blue-600 text-white'
-                                  : 'bg-white border-slate-200 text-slate-500 hover:bg-blue-50/50'
-                              }`}
-                            >
-                              {active
-                                ? <CheckCircle2 className="h-3 w-3" strokeWidth={2.5} />
-                                : <XCircle className="h-3 w-3" strokeWidth={2.5} />}
-                              {o.name}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </td>
-
-                    <td className="px-5 py-4 text-center">
-                      <span className="inline-block text-[11px] font-black px-2 py-1 rounded-md bg-blue-50 text-blue-700">
-                        {row.onCount} / {row.total}
-                      </span>
-                    </td>
-
-                    <td className="px-5 py-4 text-center">
-                      <button
-                        type="button"
-                        onClick={() => toggleAll(row.groupFields)}
-                        className={`text-[11px] font-black px-3 py-1.5 rounded-md border transition ${
-                          allOn
-                            ? 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                            : 'bg-blue-600 border-blue-600 text-white hover:bg-blue-700'
-                        }`}
-                      >
-                        {allOn ? 'Clear All' : 'Select All'}
-                      </button>
-                    </td>
+          {loading ? (
+            <div className="text-center text-xs text-slate-400 py-10">Loading…</div>
+          ) : projects.length === 0 ? (
+            <div className="text-center py-14">
+              <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-blue-50 mb-3">
+                <Building2 className="h-6 w-6 text-blue-500" />
+              </div>
+              <p className="text-sm font-black text-slate-800">No projects yet</p>
+              <p className="text-[11px] font-medium text-slate-500 mt-1">
+                Click <b>Create Project</b> to add your first one
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full table-auto border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="text-left px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-[60px]">#</th>
+                    <th className="text-left px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider">Project Name</th>
+                    <th className="text-center px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-[110px]">Rounds</th>
+                    <th className="text-center px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-[110px]">Score</th>
+                    <th className="text-center px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-[110px]">Pass %</th>
+                    <th className="text-center px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-[130px]">Trainer Time</th>
+                    <th className="text-center px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-[100px]">Status</th>
+                    <th className="text-left px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-[170px]">Created</th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                  {projects.map((p, i) => (
+                    <tr
+                      key={p.id}
+                      className="border-b border-slate-100 hover:bg-blue-50/40 transition"
+                    >
+                      <td className="px-4 py-3 text-[11px] font-black text-slate-400">
+                        {String(i + 1).padStart(2, '0')}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="shrink-0 h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                            <Building2 className="h-3.5 w-3.5 text-blue-600" />
+                          </div>
+                          <span className="text-[12px] font-black text-slate-800">
+                            {p.projectName}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center text-[12px] font-bold text-slate-700">
+                        {p.totalRounds}
+                      </td>
+                      <td className="px-4 py-3 text-center text-[12px] font-bold text-slate-700">
+                        {p.totalScore}
+                      </td>
+                      <td className="px-4 py-3 text-center text-[12px] font-bold text-slate-700">
+                        {p.passingPercentage}%
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-md">
+                          <Clock className="h-3 w-3" />
+                          {secsToHms(p.trainerTimeSecs)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`inline-block text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full ${
+                          p.status === 'active'
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'bg-rose-50 text-rose-600'
+                        }`}>
+                          {p.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-[11px] font-medium text-slate-500">
+                        {p.createdAt ? new Date(p.createdAt).toLocaleString('en-IN') : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </main>
 
-      <footer className="shrink-0 bg-white border-t border-slate-200 px-5 py-3 flex items-center justify-end z-20">
-        <div className="flex items-center gap-3">
-          {savedMsg && (
-            <p className="text-xs font-bold text-emerald-600 flex items-center gap-1.5">
-              <Check className="h-3.5 w-3.5" strokeWidth={3} /> {savedMsg}
-            </p>
-          )}
-          <button
-            onClick={handleSave}
-            className="flex items-center gap-1.5 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm transition"
+      {/* ===== CREATE PROJECT POPUP ===== */}
+      {showPopup && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={closePopup}
+        >
+          <div
+            className="mx-4 w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
           >
-            <Save className="h-3.5 w-3.5" />
-            Save Setup
-          </button>
+            {/* Popup header */}
+            <div className="px-5 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="shrink-0 h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center">
+                  <Plus className="h-5 w-5 text-white" strokeWidth={3} />
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold text-blue-100 uppercase tracking-wider">
+                    NEW PROJECT
+                  </p>
+                  <h2 className="text-lg font-black text-white">Create Project</h2>
+                </div>
+              </div>
+              <button
+                onClick={closePopup}
+                className="text-white/70 hover:text-white transition"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Popup body */}
+            <div className="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto">
+
+              <Field label="Project Name" icon={Building2} required>
+                <input
+                  type="text"
+                  value={form.projectName}
+                  onChange={(e) => update({ projectName: e.target.value })}
+                  placeholder="e.g. Arena L3"
+                  autoFocus
+                  className="w-full px-3 py-2.5 text-xs font-semibold text-slate-800 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+                />
+              </Field>
+
+              <Field label="Status" icon={Check}>
+                <select
+                  value={form.status}
+                  onChange={(e) => update({ status: e.target.value })}
+                  className="w-full px-3 py-2.5 text-xs font-semibold text-slate-800 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+                >
+                  <option value="active">active</option>
+                  <option value="inactive">inactive</option>
+                </select>
+              </Field>
+
+              <Field label="Total Rounds" icon={Hash} required>
+                <input
+                  type="number" min="1" max="20"
+                  value={form.totalRounds}
+                  onChange={(e) => update({ totalRounds: e.target.value })}
+                  className="w-full px-3 py-2.5 text-xs font-semibold text-slate-800 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+                />
+              </Field>
+
+              <Field label="Total Score" icon={Target} required>
+                <input
+                  type="number" min="1"
+                  value={form.totalScore}
+                  onChange={(e) => update({ totalScore: e.target.value })}
+                  className="w-full px-3 py-2.5 text-xs font-semibold text-slate-800 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+                />
+              </Field>
+
+              <Field label="Passing %" icon={Percent} required>
+                <input
+                  type="number" min="0" max="100" step="0.01"
+                  value={form.passingPercentage}
+                  onChange={(e) => update({ passingPercentage: e.target.value })}
+                  className="w-full px-3 py-2.5 text-xs font-semibold text-slate-800 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+                />
+              </Field>
+
+              <Field label="Trainer Time (HH:MM:SS)" icon={Clock} required>
+                <input
+                  type="text"
+                  value={trainerTimeStr}
+                  onChange={(e) => update({ trainerTimeSecs: hmsToSecs(e.target.value) })}
+                  placeholder="01:20:00"
+                  className="w-full px-3 py-2.5 text-xs font-semibold text-slate-800 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+                />
+                <p className="text-[10px] font-medium text-slate-400 mt-1">
+                  = {form.trainerTimeSecs} seconds
+                </p>
+              </Field>
+            </div>
+
+            {/* Popup messages */}
+            {(okMsg || errMsg) && (
+              <div className="px-6 pb-2">
+                {okMsg && (
+                  <p className="text-xs font-bold text-emerald-600 flex items-center gap-1.5">
+                    <Check className="h-3.5 w-3.5" strokeWidth={3} /> {okMsg}
+                  </p>
+                )}
+                {errMsg && (
+                  <p className="text-xs font-bold text-rose-600 flex items-center gap-1.5">
+                    <AlertCircle className="h-3.5 w-3.5" strokeWidth={3} /> {errMsg}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Popup footer */}
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">
+              <button
+                onClick={closePopup}
+                disabled={saving}
+                className="px-4 py-2 text-xs font-black text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex items-center gap-1.5 px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-xs font-bold rounded-lg shadow-sm transition"
+              >
+                <Save className="h-3.5 w-3.5" />
+                {saving ? 'Saving…' : 'Create Project'}
+              </button>
+            </div>
+          </div>
         </div>
-      </footer>
+      )}
+    </div>
+  );
+}
+
+// ---------- field wrapper ----------
+function Field({ label, icon: Icon, required, children }) {
+  return (
+    <div className="flex flex-col">
+      <label className="flex items-center gap-1.5 text-[11px] font-black text-slate-700 uppercase tracking-wide mb-1.5">
+        {Icon && <Icon className="h-3.5 w-3.5 text-slate-400" />}
+        {label}
+        {required && <span className="text-rose-500">*</span>}
+      </label>
+      {children}
     </div>
   );
 }

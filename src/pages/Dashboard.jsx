@@ -24,17 +24,16 @@ export default function Dashboard() {
   const [dashData, setDashData]         = useState(null);
   const [filterOptions, setFilterOptions] = useState({
     projects: [],
-    dates: [], zones: [], regions: [], trainers: [],
+    zones: [], regions: [], trainers: [],
     roles: [], dealerNames: [], dealerCodes: [],
   });
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
 
   // ---- UI state ----
-  // ✅ Default to project 1 on first load
   const [filters, setFilters] = useState({
     projectId: '1',
-    date: '', zone: '', region: '', trainer: '', role: '',
+    zone: '', region: '', trainer: '', role: '',
     dealerName: '', dealerCode: '',
   });
   const [searchTrainer, setSearchTrainer]         = useState('');
@@ -67,7 +66,7 @@ export default function Dashboard() {
     window.open(getExportUrl(filters.projectId, f), '_blank');
   };
 
-  // ---- Fetch grid (re-runs on project change) ----
+  // ---- Fetch grid (only on project change for now) ----
   useEffect(() => {
     if (!filters.projectId) {
       setGridTrainers([]);
@@ -90,7 +89,7 @@ export default function Dashboard() {
     })();
   }, [filters.projectId]);
 
-  // ---- Fetch dashboard (re-runs on project change) ----
+  // ---- Fetch dashboard (only on project change for now) ----
   useEffect(() => {
     if (!filters.projectId) { setDashData(null); return; }
     (async () => {
@@ -112,7 +111,6 @@ export default function Dashboard() {
         if (json?.success) {
           setFilterOptions({
             projects:    json.projects    || [],
-            dates:       json.dates       || [],
             zones:       json.zones       || [],
             regions:     json.regions     || [],
             trainers:    json.trainers    || [],
@@ -128,10 +126,8 @@ export default function Dashboard() {
   }, []);
 
   // ---- Auto-select first project when none selected ----
-  // If the default project '1' no longer exists, fall back to the first real one.
   useEffect(() => {
     if (!filterOptions.projects.length) return;
-
     const exists = filterOptions.projects.some(
       (p) => String(p.id) === String(filters.projectId)
     );
@@ -213,7 +209,6 @@ export default function Dashboard() {
     if (summaryTrainerPage >= totalSummaryTrainerPages) setSummaryTrainerPage(0);
   }, [summaryTrainerPage, totalSummaryTrainerPages]);
 
-  // ---- Selected project (for display) ----
   const selectedProject = filterOptions.projects.find(
     (p) => String(p.id) === String(filters.projectId)
   );
@@ -312,7 +307,7 @@ export default function Dashboard() {
       {/* ===== FILTER BAR ===== */}
       <div className="shrink-0 bg-white px-4 py-1.5 border-b border-gray-200 shadow-sm z-10">
         <div className="flex flex-wrap items-end gap-2">
-          {/* Project — FIRST */}
+          {/* Project */}
           <div className="flex flex-col gap-0.5">
             <label className="text-[11px] font-bold text-indigo-900 uppercase">Project</label>
             <select
@@ -320,26 +315,9 @@ export default function Dashboard() {
               value={filters.projectId}
               onChange={(e) => setFilters({ ...filters, projectId: e.target.value })}
             >
-              {filterOptions.projects.length === 0 && (
-                <option value="">Loading…</option>
-              )}
+              {filterOptions.projects.length === 0 && <option value="">Loading…</option>}
               {filterOptions.projects.map(p => (
                 <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Date / Month */}
-          <div className="flex flex-col gap-0.5">
-            <label className="text-[11px] font-bold text-indigo-900 uppercase">Date / Month</label>
-            <select
-              className="border border-gray-300 rounded px-2 py-1 text-xs bg-white w-28"
-              value={filters.date}
-              onChange={(e) => setFilters({ ...filters, date: e.target.value })}
-            >
-              <option value="">All</option>
-              {filterOptions.dates.map(d => (
-                <option key={d} value={d}>{d}</option>
               ))}
             </select>
           </div>
@@ -353,9 +331,7 @@ export default function Dashboard() {
               onChange={(e) => setFilters({ ...filters, zone: e.target.value })}
             >
               <option value="">All</option>
-              {filterOptions.zones.map(z => (
-                <option key={z} value={z}>{z}</option>
-              ))}
+              {filterOptions.zones.map(z => <option key={z} value={z}>{z}</option>)}
             </select>
           </div>
 
@@ -368,9 +344,7 @@ export default function Dashboard() {
               onChange={(e) => setFilters({ ...filters, region: e.target.value })}
             >
               <option value="">All</option>
-              {filterOptions.regions.map(r => (
-                <option key={r} value={r}>{r}</option>
-              ))}
+              {filterOptions.regions.map(r => <option key={r} value={r}>{r}</option>)}
             </select>
           </div>
 
@@ -383,9 +357,7 @@ export default function Dashboard() {
               onChange={(e) => setFilters({ ...filters, trainer: e.target.value })}
             >
               <option value="">All</option>
-              {filterOptions.trainers.map(t => (
-                <option key={t.id} value={t.name}>{t.name}</option>
-              ))}
+              {filterOptions.trainers.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
             </select>
           </div>
 
@@ -398,9 +370,7 @@ export default function Dashboard() {
               onChange={(e) => setFilters({ ...filters, role: e.target.value })}
             >
               <option value="">All</option>
-              {filterOptions.roles.map(r => (
-                <option key={r} value={r}>{r}</option>
-              ))}
+              {filterOptions.roles.map(r => <option key={r} value={r}>{r}</option>)}
             </select>
           </div>
 
@@ -413,9 +383,7 @@ export default function Dashboard() {
               onChange={(e) => setFilters({ ...filters, dealerName: e.target.value })}
             >
               <option value="">All</option>
-              {filterOptions.dealerNames.map(n => (
-                <option key={n} value={n}>{n}</option>
-              ))}
+              {filterOptions.dealerNames.map(n => <option key={n} value={n}>{n}</option>)}
             </select>
           </div>
 
@@ -428,9 +396,7 @@ export default function Dashboard() {
               onChange={(e) => setFilters({ ...filters, dealerCode: e.target.value })}
             >
               <option value="">All</option>
-              {filterOptions.dealerCodes.map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
+              {filterOptions.dealerCodes.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
 
@@ -488,7 +454,7 @@ export default function Dashboard() {
             </div>
             <div className="bg-orange-500 text-white p-3 shadow-sm">
               <p className="text-[11px] font-bold uppercase tracking-wider text-white mb-1">Delayed</p>
-              <p className="text-xl font-extrabold leading-tight">0</p>
+              <p className="text-xl font-extrabold leading-tight">{dashData?.todayLive?.delayed ?? 0}</p>
               <p className="text-[11px] text-white font-medium mt-0.5">0 follow-ups</p>
             </div>
             <div className="bg-purple-600 text-white p-3 shadow-sm">
@@ -506,43 +472,6 @@ export default function Dashboard() {
               <p className="text-xl font-extrabold leading-tight">{dashData?.todayLive?.activeTrainers ?? 0}</p>
               <p className="text-[11px] text-white font-medium mt-0.5">Live from API</p>
             </div>
-          </div>
-        </section>
-
-        {/* PROJECT SUMMARY */}
-        <section className="px-3">
-          <div className="flex justify-between items-end mb-1.5">
-            <h2 className="text-sm font-black text-indigo-900 uppercase">PROJECT-WISE SUMMARY</h2>
-            <span className="text-xs text-gray-400 font-medium">
-              {dashData?.projectSummary?.length || 0} project(s)
-            </span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
-            {(dashData?.projectSummary || []).map((p) => (
-              <div
-                key={p.projectName}
-                className="bg-white shadow-sm border-2 border-indigo-500 p-3 text-center"
-              >
-                <h3 className="font-bold text-sm mb-1 truncate">{p.projectName}</h3>
-                <p className="text-xs font-semibold text-indigo-600">
-                  {p.totalRounds} rounds · {p.totalScore} max
-                </p>
-                <p className="text-xs font-semibold text-purple-600">
-                  Pass ≥ {p.passingPercentage}%
-                </p>
-                <p className="text-xs font-medium mt-0.5">
-                  {p.completed} completed · {p.inProgress} in progress
-                </p>
-                <p className="text-[11px] text-gray-500 mt-0.5">
-                  Total participants: {p.totalUsers}
-                </p>
-              </div>
-            ))}
-            {(dashData?.projectSummary || []).length === 0 && (
-              <div className="col-span-4 text-center text-xs text-gray-400 py-4">
-                No project data available.
-              </div>
-            )}
           </div>
         </section>
 
@@ -688,7 +617,7 @@ export default function Dashboard() {
               {selectedProject ? selectedProject.name : 'All projects'}
             </span>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
             <div className="bg-white shadow-sm border-2 border-gray-900 p-3">
               <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1">Total Scheduled</p>
               <p className="text-base font-extrabold text-gray-800 leading-tight">
@@ -712,13 +641,10 @@ export default function Dashboard() {
             </div>
             <div className="bg-white shadow-sm border-2 border-orange-500 p-3">
               <p className="text-[11px] font-bold uppercase tracking-wider text-orange-600 mb-1">Total Delayed</p>
-              <p className="text-base font-extrabold text-orange-700 leading-tight">0</p>
-              <p className="text-[11px] text-black font-medium mt-0.5">0% need action</p>
-            </div>
-            <div className="bg-white shadow-sm border-2 border-pink-500 p-3">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-pink-600 mb-1">Total Resets</p>
-              <p className="text-base font-extrabold text-pink-700 leading-tight">0</p>
-              <p className="text-[11px] text-black font-medium mt-0.5">0% reset rate</p>
+              <p className="text-base font-extrabold text-orange-700 leading-tight">
+                {dashData?.contestTotals?.delayed ?? 0}
+              </p>
+              <p className="text-[11px] text-black font-medium mt-0.5">Need action</p>
             </div>
             <div className="bg-white shadow-sm border-2 border-purple-600 p-3">
               <p className="text-[11px] font-bold uppercase tracking-wider text-purple-600 mb-1">Overall Pass</p>
