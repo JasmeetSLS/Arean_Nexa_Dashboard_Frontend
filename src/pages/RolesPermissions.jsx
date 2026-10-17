@@ -13,25 +13,22 @@ import {
 } from '../service/api';
 
 // =====================================================================
-// STATIC SECTIONS  (was setup_field_master — now hardcoded)
-// Each section: key, icon, title, subtitle, fields[]
+// STATIC SECTIONS
 // =====================================================================
 const STATIC_SECTIONS = [
   {
-    key: 'filters',
-    icon: Search,
+    key: 'filters', icon: Search,
     title: 'Required Filters',
     subtitle: 'Filters visible on the dashboard',
     fields: [
-      { field_key: 'region' },
-      { field_key: 'zone'   },
-      { field_key: 'role'   },
-      { field_key: 'project'},
+      { field_key: 'region'  },
+      { field_key: 'zone'    },
+      { field_key: 'role'    },
+      { field_key: 'project' },
     ],
   },
   {
-    key: 'todayLive',
-    icon: Radio,
+    key: 'todayLive', icon: Radio,
     title: "Today's Live Data",
     subtitle: 'Data boxes shown in the today section',
     fields: [
@@ -45,8 +42,7 @@ const STATIC_SECTIONS = [
     ],
   },
   {
-    key: 'contest',
-    icon: Trophy,
+    key: 'contest', icon: Trophy,
     title: 'Contest Totals',
     subtitle: 'Data boxes shown in contest totals',
     fields: [
@@ -60,8 +56,7 @@ const STATIC_SECTIONS = [
     ],
   },
   {
-    key: 'metrics',
-    icon: BarChart3,
+    key: 'metrics', icon: BarChart3,
     title: 'Metric Sections',
     subtitle: 'Metrics displayed on the dashboard',
     fields: [
@@ -72,8 +67,7 @@ const STATIC_SECTIONS = [
     ],
   },
   {
-    key: 'participantJourney',
-    icon: Route,
+    key: 'participantJourney', icon: Route,
     title: 'Participant Journey',
     subtitle: 'Fields shown in the participant popup',
     fields: [
@@ -85,8 +79,7 @@ const STATIC_SECTIONS = [
     ],
   },
   {
-    key: 'trainerJourney',
-    icon: UserCircle2,
+    key: 'trainerJourney', icon: UserCircle2,
     title: 'Trainer Journey',
     subtitle: 'Fields shown in the trainer popup',
     fields: [
@@ -100,7 +93,7 @@ const STATIC_SECTIONS = [
 ];
 
 // =====================================================================
-// STATIC PERMISSION GROUPS  (Role / Zone / Project)
+// STATIC PERMISSION GROUPS  (Role / Zone / Region / Project)
 // =====================================================================
 const STATIC_PERMISSION_GROUPS = [
   {
@@ -116,6 +109,13 @@ const STATIC_PERMISSION_GROUPS = [
     icon: MapPin,
     title: 'Zone',
     subtitle: 'Zones this user can access',
+  },
+  {
+    kind: 'single',
+    groupKey: 'region',
+    icon: Globe2,
+    title: 'Region',
+    subtitle: 'Regions this user can access',
   },
   {
     kind: 'single',
@@ -177,7 +177,6 @@ export default function RolesPermissions() {
         setRegions(data.regions   || []);
         setProjects(data.projects || []);
 
-        // build defaults from STATIC_SECTIONS
         const base = {
           role:    Object.fromEntries((data.roles    || []).map((r) => [r, false])),
           zone:    Object.fromEntries((data.zones    || []).map((z) => [z, false])),
@@ -188,7 +187,6 @@ export default function RolesPermissions() {
           base[s.key] = Object.fromEntries(s.fields.map((f) => [f.field_key, false]));
         });
 
-        // merge existing
         const ex = data.existing;
         if (ex) {
           (ex.allowed_roles    || []).forEach((r) => { if (r in base.role)    base.role[r]    = true; });
@@ -263,7 +261,6 @@ export default function RolesPermissions() {
   const handleSave = async () => {
     if (!selectedUserId || !current) return;
 
-    // build permissions payload from STATIC_SECTIONS
     const permissions = {};
     STATIC_SECTIONS.forEach((s) => {
       permissions[s.key] = {};
@@ -299,6 +296,7 @@ export default function RolesPermissions() {
           const optSource =
             g.groupKey === 'role'    ? roles    :
             g.groupKey === 'zone'    ? zones    :
+            g.groupKey === 'region'  ? regions  :
             g.groupKey === 'project' ? projects : [];
 
           return {
