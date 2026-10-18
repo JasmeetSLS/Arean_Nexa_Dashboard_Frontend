@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  X, Bell, LogOut, ChevronLeft, ChevronRight,
+  X, Bell, LogOut, ArrowLeft, ArrowRight, ArrowUp, ArrowDown
 } from 'lucide-react';
 import { Toaster } from '../components/Toaster.jsx';
 import { FaBell, FaBellSlash } from 'react-icons/fa';
@@ -8,7 +8,7 @@ import {
   getDashboard,
   getGridTrainer,
   getGridParticipant,
-  getProjects,
+  getFilters,
 } from '../service/api.js';
 import { useAuth } from '../service/auth.jsx';
 import ChatBot from './ChatBot.jsx';
@@ -20,14 +20,22 @@ const REGION_LIMIT = 4;
 export default function Dashboard() {
   const { user, logout } = useAuth();
 
-  const [projects, setProjects]   = useState([]);
-  const [projectId, setProjectId] = useState('1');
+  // Filters State (project is now a filter)
+  const [filters, setFilters] = useState({
+    project: '', date: '', zone: '', region: '', dealerName: '', dealerCode: '', trainer: '', role: ''
+  });
+  const [filterOptions, setFilterOptions] = useState({
+    projects: [], dates: [], zones: [], regions: [], dealerNames: [], dealerCodes: [], trainers: [], roles: []
+  });
 
   // Grid State
   const [trainers, setTrainers]             = useState([]);
-  const [availableRounds, setAvailableRounds] = useState([]); // <-- Add this
+  const [availableRounds, setAvailableRounds] = useState([]); 
   const [trainerPages, setTrainerPages]     = useState(1);
   const [trainerPage, setTrainerPage]       = useState(0);
+  
+  // Participant Pagination State
+  const [participantPage, setParticipantPage] = useState(0); 
   const [trainerParticipants, setTrainerParticipants] = useState({});
   
   // Dashboard State
@@ -45,35 +53,59 @@ export default function Dashboard() {
   const [showAlerts, setShowAlerts] = useState(false);
   const [toastOn, setToastOn]       = useState(false);
 
-  // Reset pages on project change
-  useEffect(() => { setTrainerPage(0); }, [projectId]);
-  useEffect(() => { setRegionPage(0); },  [projectId]);
+  // Reset pages and sub-filters on project change
+  useEffect(() => { 
+    setTrainerPage(0); 
+    setParticipantPage(0);
+    setRegionPage(0);
+    setFilters(prev => ({ ...prev, date: '', zone: '', region: '', dealerName: '', dealerCode: '', trainer: '', role: '' }));
+  }, [filters.project]);
 
-  // 1. Load Projects
+  // 1. Fetch Filter Options (Cascading & Initial Load)
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await getProjects();
-        if (data?.success) setProjects(data.projects || []);
-      } catch (err) { console.error(err); }
+        const { data } = await getFilters({
+          project: filters.project,
+          zone: filters.zone,
+          region: filters.region,
+          dealerName: filters.dealerName
+        });
+        
+        if (data?.success) {
+          setFilterOptions(prev => ({
+            ...prev,
+            projects: data.projects || prev.projects,
+            dates: data.dates || [],
+            zones: data.zones || [],
+            regions: data.regions || [],
+            dealerNames: data.dealerNames || [],
+            dealerCodes: data.dealerCodes || [],
+            trainers: data.trainers || [],
+            roles: data.roles || [],
+          }));
+
+          // Auto-select first project if none selected
+          if (!filters.project && data.projects?.length > 0) {
+            setFilters(prev => ({ ...prev, project: data.projects[0].project_name }));
+          }
+        }
+      } catch (err) { console.error('Filter fetch failed:', err); }
     })();
-  }, []);
+  }, [filters.project, filters.zone, filters.region, filters.dealerName]);
 
+  // 2. Fetch Dashboard API
   useEffect(() => {
-    if (!projects.length) return;
-    if (!projects.some(p => String(p.id) === String(projectId))) {
-      setProjectId(String(projects[0].id));
-    }
-  }, [projects, projectId]);
-
-  // 2. Fetch Dashboard API (No Auto-Refresh)
-  useEffect(() => {
-    if (!projectId) return;
+    if (!filters.project) return;
     let cancelled = false;
 
     const load = async () => {
       try {
-        const { data } = await getDashboard(projectId, { regionPage, regionLimit: REGION_LIMIT });
+        const { data } = await getDashboard({ 
+          ...filters,
+          regionPage, 
+          regionLimit: REGION_LIMIT,
+        });
         if (!cancelled && data?.success) setDashData(data);
       } catch (err) { console.error(err); }
     };
@@ -81,32 +113,38 @@ export default function Dashboard() {
     load();
 
     return () => { cancelled = true; };
-  }, [projectId, regionPage]);
+  }, [filters, regionPage]);
 
-  // 3. Fetch Trainers + Participants (No Auto-Refresh)
+  // 3. Fetch Trainers + Participants
   useEffect(() => {
-    if (!projectId) return;
+    if (!filters.project) return;
     let cancelled = false;
 
     const load = async () => {
       try {
         setLoading(true);
         
-        // Call 1: Fetch 5 Trainers for this page
-        const { data: tData } = await getGridTrainer(projectId, { page: trainerPage, limit: GRID_LIMIT });
+        const { data: tData } = await getGridTrainer({ 
+          ...filters,
+          page: trainerPage, 
+          limit: GRID_LIMIT,
+        });
         if (!tData?.success) return;
         
         const fetchedTrainers = tData.trainers || [];
         setTrainers(fetchedTrainers);
-        setAvailableRounds(tData.rounds || []); // <-- Add this line
+        setAvailableRounds(tData.rounds || []); 
         setTrainerPages(tData.pagination?.totalPages || 1);
         setError(null);
 
-        // Call 2: Fetch 5 Participants for EACH of those trainers
-        const { data: pData } = await getGridParticipant(projectId, { page: trainerPage, limit: GRID_LIMIT });
+        const { data: pData } = await getGridParticipant({ 
+          ...filters,
+          page: trainerPage, 
+          limit: GRID_LIMIT,
+          participantPage: participantPage,
+        });
         
         if (pData?.success) {
-          // Group the returned participants by their trainerId
           const pMap = {};
           fetchedTrainers.forEach(t => { pMap[t.id] = []; });
           
@@ -129,13 +167,12 @@ export default function Dashboard() {
     load();
 
     return () => { cancelled = true; };
-  }, [projectId, trainerPage]);
+  }, [filters, trainerPage, participantPage]);
 
   const regionSummary     = dashData?.regionSummary || [];
   const regionPagination  = dashData?.regionPagination || { page: 0, totalPages: 1, total: 0, limit: REGION_LIMIT };
   const totalRegionPages  = regionPagination.totalPages;
 
-  // Grid stats based on currently loaded participants
   const gridStats = useMemo(() => {
     const allP = Object.values(trainerParticipants).flat();
     return {
@@ -145,9 +182,7 @@ export default function Dashboard() {
     };
   }, [trainerParticipants]);
 
-  const selectedProject = projects.find(p => String(p.id) === String(projectId));
-
-  if (loading && trainers.length === 0) {
+  if (loading && trainers.length === 0 && !filters.project) {
     return (
       <div className="h-screen flex items-center justify-center bg-[#F3F4F6]">
         <div className="h-10 w-10 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin" />
@@ -166,10 +201,10 @@ export default function Dashboard() {
           <p className="text-xs font-semibold text-indigo-500 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
             Logged in as <span className="font-bold text-purple-600">{user?.username || 'Unknown'}</span>
-            {selectedProject && (
+            {filters.project && (
               <>
                 <span className="mx-1 text-gray-300">·</span>
-                <span className="font-bold text-indigo-700">{selectedProject.name}</span>
+                <span className="font-bold text-indigo-700">{filters.project}</span>
               </>
             )}
           </p>
@@ -197,15 +232,90 @@ export default function Dashboard() {
 
       {/* FILTER BAR */}
       <div className="shrink-0 bg-white px-4 py-1.5 border-b border-gray-200 shadow-sm z-10">
-        <div className="flex items-end gap-2">
+        <div className="flex flex-wrap items-end gap-2">
+          
+          {/* Project */}
           <div className="flex flex-col gap-0.5">
             <label className="text-[11px] font-bold text-indigo-900 uppercase">Project</label>
-            <select value={projectId} onChange={(e) => setProjectId(e.target.value)}
-              className="border border-gray-300 rounded px-2 py-1 text-xs bg-white w-56 font-semibold text-indigo-700">
-              {projects.length === 0 && <option value="">Loading…</option>}
-              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            <select value={filters.project} onChange={(e) => setFilters({...filters, project: e.target.value})}
+              className="border border-gray-300 rounded px-2 py-1 text-xs bg-white w-36 font-semibold text-indigo-700">
+              {filterOptions.projects.map(p => <option key={p.id} value={p.project_name}>{p.name}</option>)}
             </select>
           </div>
+
+          {/* Date */}
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[11px] font-bold text-indigo-900 uppercase">Date</label>
+            <select value={filters.date} onChange={(e) => setFilters({...filters, date: e.target.value})}
+              className="border border-gray-300 rounded px-2 py-1 text-xs bg-white w-32">
+              <option value="">All</option>
+              {filterOptions.dates.map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
+          </div>
+
+          {/* Zone */}
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[11px] font-bold text-indigo-900 uppercase">Zone</label>
+            <select value={filters.zone} onChange={(e) => {
+              setFilters({...filters, zone: e.target.value, region: '', dealerName: '', dealerCode: ''});
+            }} className="border border-gray-300 rounded px-2 py-1 text-xs bg-white w-24">
+              <option value="">All</option>
+              {filterOptions.zones.map(z => <option key={z} value={z}>{z}</option>)}
+            </select>
+          </div>
+
+          {/* Region */}
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[11px] font-bold text-indigo-900 uppercase">Region</label>
+            <select value={filters.region} onChange={(e) => {
+              setFilters({...filters, region: e.target.value, dealerName: '', dealerCode: ''});
+            }} className="border border-gray-300 rounded px-2 py-1 text-xs bg-white w-28">
+              <option value="">All</option>
+              {filterOptions.regions.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+
+          {/* Dealer Name */}
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[11px] font-bold text-indigo-900 uppercase">Dealer Name</label>
+            <select value={filters.dealerName} onChange={(e) => {
+              setFilters({...filters, dealerName: e.target.value, dealerCode: ''});
+            }} className="border border-gray-300 rounded px-2 py-1 text-xs bg-white w-44">
+              <option value="">All</option>
+              {filterOptions.dealerNames.map(n => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </div>
+
+          {/* Dealer Code */}
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[11px] font-bold text-indigo-900 uppercase">Dealer Code</label>
+            <select value={filters.dealerCode} onChange={(e) => setFilters({...filters, dealerCode: e.target.value})}
+              className="border border-gray-300 rounded px-2 py-1 text-xs bg-white w-32">
+              <option value="">All</option>
+              {filterOptions.dealerCodes.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+
+          {/* Trainer */}
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[11px] font-bold text-indigo-900 uppercase">Trainer</label>
+            <select value={filters.trainer} onChange={(e) => setFilters({...filters, trainer: e.target.value})}
+              className="border border-gray-300 rounded px-2 py-1 text-xs bg-white w-32">
+              <option value="">All</option>
+              {filterOptions.trainers.map(t => <option key={t.id} value={t.username}>{t.name}</option>)}
+            </select>
+          </div>
+
+          {/* Role */}
+          <div className="flex flex-col gap-0.5">
+            <label className="text-[11px] font-bold text-indigo-900 uppercase">Role</label>
+            <select value={filters.role} onChange={(e) => setFilters({...filters, role: e.target.value})}
+              className="border border-gray-300 rounded px-2 py-1 text-xs bg-white w-24">
+              <option value="">All</option>
+              {filterOptions.roles.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+
           <div className="ml-auto text-xs font-bold text-indigo-400 pb-1">
             <span className="inline-block w-2 h-2 rounded-full bg-indigo-500 mr-1.5 align-middle"></span>
             Manual refresh required
@@ -220,7 +330,7 @@ export default function Dashboard() {
         <section className="px-3">
           <div className="flex justify-between items-end mb-1.5">
             <h2 className="text-sm font-black text-indigo-900 uppercase">
-              TODAY'S LIVE DATA {selectedProject && `· ${selectedProject.name}`}
+              TODAY'S LIVE DATA {filters.project && `· ${filters.project}`}
             </h2>
             <span className="text-xs text-gray-400 font-medium">Snapshot · {dashData?.todayLive?.date || '—'}</span>
           </div>
@@ -276,7 +386,7 @@ export default function Dashboard() {
             <div className="shrink-0 h-[100px] flex items-center">
               <button onClick={() => setRegionPage(p => Math.max(0, p - 1))} disabled={regionPage === 0}
                 className={`flex items-center justify-center h-9 w-6 rounded transition ${regionPage === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:text-purple-600 hover:scale-125'}`}>
-                <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+                <ArrowLeft className="h-5 w-5" strokeWidth={2.5} />
               </button>
             </div>
             <div className="flex-1">
@@ -296,7 +406,7 @@ export default function Dashboard() {
             <div className="shrink-0 h-[100px] flex items-center">
               <button onClick={() => setRegionPage(p => Math.min(totalRegionPages - 1, p + 1))} disabled={regionPage >= totalRegionPages - 1}
                 className={`flex items-center justify-center h-9 w-6 rounded transition ${regionPage >= totalRegionPages - 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:text-purple-600 hover:scale-125'}`}>
-                <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
+                <ArrowRight className="h-5 w-5" strokeWidth={2.5} />
               </button>
             </div>
           </div>
@@ -317,7 +427,7 @@ export default function Dashboard() {
             <div className="shrink-0 h-[110px] flex items-center">
               <button onClick={() => setTrainerPage(p => Math.max(0, p - 1))} disabled={trainerPage === 0}
                 className={`flex items-center justify-center h-9 w-6 rounded transition ${trainerPage === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:text-purple-600 hover:scale-125'}`}>
-                <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+                <ArrowLeft className="h-5 w-5" strokeWidth={2.5} />
               </button>
             </div>
             <div className="flex-1">
@@ -356,12 +466,12 @@ export default function Dashboard() {
             <div className="shrink-0 h-[110px] flex items-center">
               <button onClick={() => setTrainerPage(p => Math.min(trainerPages - 1, p + 1))} disabled={trainerPage >= trainerPages - 1}
                 className={`flex items-center justify-center h-9 w-6 rounded transition ${trainerPage >= trainerPages - 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:text-purple-600 hover:scale-125'}`}>
-                <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
+                <ArrowRight className="h-5 w-5" strokeWidth={2.5} />
               </button>
             </div>
           </div>
           <div className="flex justify-center mt-2 text-[11px] text-gray-400 font-medium">
-            Page {trainerPage + 1} of {trainerPages}
+            Page {trainerPage + 1}
           </div>
         </section>
 
@@ -369,7 +479,7 @@ export default function Dashboard() {
         <section className="px-3">
           <div className="flex justify-between items-end mb-1.5">
             <h2 className="text-sm font-black text-indigo-900 uppercase">CONTEST TOTALS</h2>
-            <span className="text-xs text-gray-400 font-medium">{selectedProject ? selectedProject.name : 'All projects'}</span>
+            <span className="text-xs text-gray-400 font-medium">{filters.project ? filters.project : 'All projects'}</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
             <div className="bg-white shadow-sm border-2 border-gray-900 p-3">
@@ -417,21 +527,36 @@ export default function Dashboard() {
             <div className="flex items-center gap-5 bg-white border border-gray-200 px-5 py-2.5 shadow-sm min-w-[250px]">
               <div className="text-center">
                 <p className="text-[11px] font-bold text-black uppercase tracking-wider mb-0.5">Attempted</p>
-                <p className="text-2xl font-extrabold text-blue-600 leading-none">{gridStats.completedCount + gridStats.inProgressCount}</p>
+                <p className="text-2xl font-extrabold text-blue-600 leading-none">{dashData?.contestTotals?.totalAttempted ?? 0}</p>
               </div>
               <div className="text-xs text-gray-500 font-medium space-y-0.5 border-l border-gray-100 pl-4">
-                <p>Total <span className="font-bold text-gray-700">{gridStats.total}</span></p>
-                <p>In Progress <span className="font-bold text-gray-700">{gridStats.inProgressCount}</span></p>
-                <p>Completed <span className="font-bold text-gray-700">{gridStats.completedCount}</span></p>
+                <p>Total <span className="font-bold text-gray-700">{dashData?.contestTotals?.totalScheduled ?? 0}</span></p>
+                <p>In Progress <span className="font-bold text-gray-700">{dashData?.contestTotals?.inProgress ?? 0}</span></p>
+                <p>Completed <span className="font-bold text-gray-700">{dashData?.contestTotals?.completed ?? 0}</span></p>
               </div>
             </div>
+          </div>
+
+          {/* Grid Top Participant Pagination */}
+          <div className="flex items-center justify-center gap-3 mb-2 bg-white px-2 py-1 rounded shadow-sm border border-gray-200">
+            <button onClick={() => setParticipantPage(p => Math.max(0, p - 1))} disabled={participantPage === 0}
+              className={`flex items-center justify-center h-6 w-6 rounded transition ${participantPage === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:text-purple-600 hover:scale-125'}`}>
+              <ArrowUp className="h-4 w-4" strokeWidth={3} />
+            </button>
+            <span className="text-[11px] text-gray-400 font-medium">
+              Participant Page {participantPage + 1}
+            </span>
+            <button onClick={() => setParticipantPage(p => p + 1)} disabled={trainers.every(t => (trainerParticipants[t.id] || []).length < GRID_LIMIT)}
+              className={`flex items-center justify-center h-6 w-6 rounded transition ${trainers.every(t => (trainerParticipants[t.id] || []).length < GRID_LIMIT) ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:text-purple-600 hover:scale-125'}`}>
+              <ArrowDown className="h-4 w-4" strokeWidth={3} />
+            </button>
           </div>
 
           <div className="flex items-start gap-1">
             <div className="shrink-0 h-[68px] flex items-center">
               <button onClick={() => setTrainerPage(p => Math.max(0, p - 1))} disabled={trainerPage === 0}
                 className={`flex items-center justify-center h-9 w-6 rounded transition ${trainerPage === 0 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:text-purple-600 hover:scale-125'}`}>
-                <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+                <ArrowLeft className="h-5 w-5" strokeWidth={2.5} />
               </button>
             </div>
             
@@ -464,33 +589,35 @@ export default function Dashboard() {
                         </div>
 
                         {/* Participants List */}
-                        <div className="p-2 space-y-1.5 flex-1">
-                          {list.length === 0 ? (
-                            <div className="flex items-center justify-center min-h-[56px]">
-                              <span className="text-gray-300 text-xs">—</span>
-                            </div>
-                          ) : (
-                            list.map((p, pIdx) => {
-                              const isCompleted = p.roundsStatus === 'Completed';
-                              const statusColor = isCompleted ? 'text-emerald-500' : 'text-purple-600';
-                              const borderColor = isCompleted ? 'border-l-emerald-500' : 'border-l-purple-600';
-                              return (
-                                <div
-                                  key={p.mpin || pIdx}
-                                  className={`border border-gray-200 bg-white p-2 min-h-[56px] border-l-4 ${borderColor} hover:bg-gray-50 transition-all cursor-pointer`}
-                                  onClick={() => { setSelectedParticipant(p); setShowParticipantJourney(true); }}
-                                >
-                                  <div className="text-xs font-bold text-gray-800 leading-tight truncate">{p.name || '—'}</div>
-                                  <div className="text-[11px] text-gray-500 font-medium leading-tight truncate">
-                                    {p.mpin || '—'} · {p.role || '—'}
+                        <div className="p-2 flex-1 flex flex-col">
+                          <div className="space-y-1.5 flex-1">
+                            {list.length === 0 ? (
+                              <div className="flex items-center justify-center min-h-[56px]">
+                                <span className="text-gray-300 text-xs">—</span>
+                              </div>
+                            ) : (
+                              list.map((p, pIdx) => {
+                                const isCompleted = p.roundsStatus === 'Completed';
+                                const statusColor = isCompleted ? 'text-emerald-500' : 'text-purple-600';
+                                const borderColor = isCompleted ? 'border-l-emerald-500' : 'border-l-purple-600';
+                                return (
+                                  <div
+                                    key={p.mpin || pIdx}
+                                    className={`border border-gray-200 bg-white p-2 min-h-[56px] border-l-4 ${borderColor} hover:bg-gray-50 transition-all cursor-pointer`}
+                                    onClick={() => { setSelectedParticipant(p); setShowParticipantJourney(true); }}
+                                  >
+                                    <div className="text-xs font-bold text-gray-800 leading-tight truncate">{p.name || '—'}</div>
+                                    <div className="text-[11px] text-gray-500 font-medium leading-tight truncate">
+                                      {p.mpin || '—'} · {p.role || '—'}
+                                    </div>
+                                    <div className={`text-[11px] font-bold tracking-wider leading-tight ${statusColor}`}>
+                                      {p.roundsStatus || '—'}
+                                    </div>
                                   </div>
-                                  <div className={`text-[11px] font-bold tracking-wider leading-tight ${statusColor}`}>
-                                    {p.roundsStatus || '—'}
-                                  </div>
-                                </div>
-                              );
-                            })
-                          )}
+                                );
+                              })
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
@@ -499,15 +626,17 @@ export default function Dashboard() {
               )}
             </div>
 
+            {/* Trainer Right Pagination */}
             <div className="shrink-0 h-[68px] flex items-center">
               <button onClick={() => setTrainerPage(p => Math.min(trainerPages - 1, p + 1))} disabled={trainerPage >= trainerPages - 1}
                 className={`flex items-center justify-center h-9 w-6 rounded transition ${trainerPage >= trainerPages - 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:text-purple-600 hover:scale-125'}`}>
-                <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
+                <ArrowRight className="h-5 w-5" strokeWidth={2.5} />
               </button>
             </div>
           </div>
+          
           <div className="flex justify-center mt-2 text-[11px] text-gray-400 font-medium">
-            Page {trainerPage + 1} of {trainerPages}
+            Trainer Page {trainerPage + 1}
           </div>
         </section>
       </div>
@@ -535,7 +664,6 @@ export default function Dashboard() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="mx-4 w-full max-w-lg overflow-hidden bg-white shadow-2xl flex flex-col max-h-[90vh]">
             
-            {/* Header */}
             <div className="px-5 py-2.5 bg-gradient-to-r from-purple-700 to-indigo-800 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <img src={selectedTrainer.photoUrl || FALLBACK_TRAINER_PHOTO} alt={selectedTrainer.name || ''}
@@ -551,7 +679,6 @@ export default function Dashboard() {
               </button>
             </div>
 
-            {/* Stats Row */}
             <div className="grid grid-cols-3 gap-3 px-5 py-2.5 border-b border-gray-100 shrink-0">
               <div>
                 <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Assigned</p>
@@ -567,7 +694,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Round Milestones */}
             <div className="px-5 py-2.5 shrink-0 border-b border-gray-100">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-xs font-bold text-black uppercase tracking-wider">Round Milestones</h3>
@@ -593,7 +719,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Recent Participants */}
             <div className="px-5 py-2.5 bg-gray-50 flex-1 overflow-hidden flex flex-col">
               <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-1.5 shrink-0">
                 Recent Participants
@@ -618,7 +743,6 @@ export default function Dashboard() {
                           <span className="text-gray-800 font-semibold truncate flex-1">{p.name || '—'}</span>
                         </div>
                         
-                        {/* Simple In Progress / Pass / Fail Text */}
                         <span className={`text-[11px] font-bold tracking-wider ${
                           !isCompleted ? 'text-purple-600' : 
                           isPass ? 'text-teal-600' : 
@@ -634,7 +758,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Footer */}
             <div className="px-5 py-1.5 text-[11px] text-gray-400 font-medium shrink-0">
               Last activity · {new Date().toLocaleString('en-IN', { hour: '2-digit', minute: '2-digit' })}
             </div>

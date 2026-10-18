@@ -29,12 +29,17 @@ export const login = (username, password, type = 'admin') =>
 
 export const getProjects  = ()                     => api.get('/projects');
 export const addProject  = (payload) => api.post('/setup/projects', payload);
-export const getDashboard = (projectId, params={}) => api.get(`/dashboard/${projectId}`, { params });
-export const getGridTrainer = (projectId, params = {}) =>
-  api.get(`/grid-trainer/${projectId}`, { params });
+// Remove getProjects
+export const getFilters = (params = {}) => api.get('/filters', { params });
 
-export const getGridParticipant = (projectId, params = {}) =>
-  api.get(`/grid-participant/${projectId}`, { params });
+export const getDashboard = (params = {}) => 
+  api.get('/dashboard', { params });
+
+export const getGridTrainer = (params = {}) =>
+  api.get('/grid-trainer', { params });
+
+export const getGridParticipant = (params = {}) =>
+  api.get('/grid-participant', { params });
 
 export const getPermissionAdmins  = ()       => api.get('/permissions/admins');
 export const getPermissionOptions = (userId) => api.get('/permissions/options', { params: { userId } });
