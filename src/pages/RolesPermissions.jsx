@@ -13,24 +13,13 @@ import {
 } from '../service/api';
 
 // =====================================================================
-// STATIC SECTIONS
+// STATIC SECTIONS (Ordered to match backend)
 // =====================================================================
 const STATIC_SECTIONS = [
   {
-    key: 'filters', icon: Search,
-    title: 'Required Filters',
-    subtitle: 'Filters visible on the dashboard',
-    fields: [
-      { field_key: 'region'  },
-      { field_key: 'zone'    },
-      { field_key: 'role'    },
-      { field_key: 'project' },
-    ],
-  },
-  {
-    key: 'todayLive', icon: Radio,
-    title: "Today's Live Data",
-    subtitle: 'Data boxes shown in the today section',
+    key: 'liveData', icon: Radio,
+    title: 'Live Data',
+    subtitle: 'Metrics shown in the live data section',
     fields: [
       { field_key: 'scheduled'      },
       { field_key: 'attempted'      },
@@ -42,47 +31,63 @@ const STATIC_SECTIONS = [
     ],
   },
   {
-    key: 'contest', icon: Trophy,
+    key: 'regionSummary', icon: Globe2,
+    title: 'Region Wise Summary',
+    subtitle: 'Region, completed, pass rate, avg time',
+    fields: [
+      { field_key: 'completed' },
+      { field_key: 'passRate'  },
+      { field_key: 'avgTime'   },
+    ],
+  },
+  {
+    key: 'trainerSummary', icon: UserCircle2,
+    title: 'Trainer Summary',
+    subtitle: 'Assigned, pass rate, avg time',
+    fields: [
+      { field_key: 'assigned' },
+      { field_key: 'passRate' },
+      { field_key: 'avgTime'  },
+    ],
+  },
+  {
+    key: 'contestTotals', icon: Trophy,
     title: 'Contest Totals',
-    subtitle: 'Data boxes shown in contest totals',
+    subtitle: 'Overall contest metrics',
     fields: [
       { field_key: 'totalScheduled' },
       { field_key: 'totalAttempted' },
       { field_key: 'totalAbsentees' },
       { field_key: 'totalDelayed'   },
-      { field_key: 'totalResets'    },
       { field_key: 'overallPass'    },
-      { field_key: 'overallAvg'     },
+      { field_key: 'overallAvgTime' },
     ],
   },
   {
-    key: 'metrics', icon: BarChart3,
-    title: 'Metric Sections',
-    subtitle: 'Metrics displayed on the dashboard',
+    key: 'metricGrid', icon: BarChart3,
+    title: 'Metric Grid',
+    subtitle: 'Participant details',
     fields: [
-      { field_key: 'trainerAssigned'   },
-      { field_key: 'trainerPassRate'   },
-      { field_key: 'trainerAvgTime'    },
-      { field_key: 'participantStatus' },
+      { field_key: 'yes' },
     ],
   },
   {
     key: 'participantJourney', icon: Route,
     title: 'Participant Journey',
-    subtitle: 'Fields shown in the participant popup',
+    subtitle: 'Fields shown in participant popup',
     fields: [
-      { field_key: 'rounds'     },
       { field_key: 'percentage' },
       { field_key: 'totalTime'  },
       { field_key: 'status'     },
-      { field_key: 'milestones' },
+      { field_key: 'rounds'     },
     ],
   },
   {
     key: 'trainerJourney', icon: UserCircle2,
     title: 'Trainer Journey',
-    subtitle: 'Fields shown in the trainer popup',
+    subtitle: 'Fields shown in trainer popup',
     fields: [
+      { field_key: 'assigned'        },
       { field_key: 'completed'       },
       { field_key: 'passRate'        },
       { field_key: 'avgTime'         },
@@ -126,8 +131,10 @@ const STATIC_PERMISSION_GROUPS = [
   },
 ];
 
-const prettify = (k) =>
-  k.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
+const prettify = (k) => {
+  if (k === 'yes') return 'Yes';
+  return k.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
+};
 
 // =====================================================================
 // PAGE

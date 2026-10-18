@@ -41,6 +41,8 @@ export const getGridTrainer = (params = {}) =>
 export const getGridParticipant = (params = {}) =>
   api.get('/grid-participant', { params });
 
+export const getMyPermissions = () => api.get('/my-permissions');
+
 export const getPermissionAdmins  = ()       => api.get('/permissions/admins');
 export const getPermissionOptions = (userId) => api.get('/permissions/options', { params: { userId } });
 export const savePermissions      = (payload) => api.post('/permissions', payload);
