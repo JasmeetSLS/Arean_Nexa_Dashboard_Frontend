@@ -25,7 +25,7 @@ export default function useChatSocket({ onMessage, onTyping, onRead } = {}) {
 
     const socket = io(SOCKET_URL, {
       auth: { token },
-      // transports: ['websocket'], // ❌ do NOT force websocket
+      transports: ['websocket'], // ❌ do NOT force websocket
     });
 
     socket.on('receive_message', (m) => {
