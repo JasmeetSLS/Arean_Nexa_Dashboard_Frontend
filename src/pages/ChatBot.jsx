@@ -1,16 +1,17 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { MessageCircle, X, Send } from 'lucide-react';
 import {
-  getMe,
-  getConversations,
-  createConversation,
-  getMessages,
+  getChatUsers,
+  getChatMessages,
+  postChatMessage,
 } from '../service/api';
 import useChatSocket from '../hooks/useChatSocket';
+import { useAuth } from '../service/auth';
 
 export default function ChatBot() {
+  const { user: me } = useAuth();
+
   const [open, setOpen]               = useState(false);
-  const [me, setMe]                   = useState(null);
   const [convs, setConvs]             = useState([]);
   const [active, setActive]           = useState(null);
   const [messages, setMessages]       = useState([]);
@@ -20,6 +21,9 @@ export default function ChatBot() {
 
   const listRef     = useRef(null);
   const typingTimer = useRef(null);
+  const activeRef   = useRef(null);
+
+  useEffect(() => { activeRef.current = active; }, [active]);
 
   // ---------- helpers ----------
   const scrollDown = useCallback(() => {
@@ -28,33 +32,106 @@ export default function ChatBot() {
     }, 30);
   }, []);
 
-  const refreshConvs = useCallback(async () => {
+  const loadUsers = useCallback(async () => {
+    // 1. instant paint from cache
     try {
-      const { data } = await getConversations();
-      const list = data.conversations || [];
+      const cached = JSON.parse(localStorage.getItem('chat:users') || '[]');
+      const list = cached.map((u) => ({
+        peerId:      u.userId,
+        peerName:    u.username,
+        peerType:    u.type,
+        photoUrl:    u.photoUrl,
+        lastMessage: u.lastMessage,
+        unread:      u.unread || 0,
+      }));
       setConvs(list);
       setUnreadTotal(list.reduce((s, c) => s + (c.unread || 0), 0));
+    } catch { /* ignore */ }
+
+    // 2. sync from API
+    try {
+      const { data } = await getChatUsers();
+      if (data.success) {
+        localStorage.setItem('chat:users', JSON.stringify(data.users));
+        const list = data.users.map((u) => ({
+          peerId:      u.userId,
+          peerName:    u.username,
+          peerType:    u.type,
+          photoUrl:    u.photoUrl,
+          lastMessage: u.lastMessage,
+          unread:      u.unread || 0,
+        }));
+        setConvs(list);
+        setUnreadTotal(list.reduce((s, c) => s + (c.unread || 0), 0));
+      }
     } catch (err) {
-      console.error('[ChatBot refreshConvs]', err);
+      console.error('[ChatBot loadUsers]', err);
     }
   }, []);
 
   // ---------- socket ----------
   const socketRef = useChatSocket({
     onMessage: (msg) => {
-      if (
-        active &&
-        ((msg.sender_type === me?.type && msg.receiver_id === active.peerId) ||
-         (msg.receiver_type === me?.type && msg.sender_id === active.peerId))
-      ) {
-        setMessages((prev) => [...prev, msg]);
+      const myId     = Number(me?.userId);
+      const myType   = me?.type;
+      const isMine   =
+        Number(msg.sender_id) === myId && msg.sender_type === myType;
+
+      const peerId   = isMine ? Number(msg.receiver_id) : Number(msg.sender_id);
+      const peerType = isMine ? msg.receiver_type         : msg.sender_type;
+
+      const isActive =
+        activeRef.current &&
+        Number(activeRef.current.peerId) === peerId &&
+        activeRef.current.peerType      === peerType;
+
+      if (isActive) {
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          const next = [...prev, msg];
+          localStorage.setItem(`chat:msgs:${peerId}`, JSON.stringify(next));
+          return next;
+        });
         scrollDown();
-        socketRef.current?.emit('message_read', { peerId: active.peerId });
+        socketRef.current?.emit('message_read', { peerId });
       }
-      refreshConvs();
+
+      setConvs((prev) => {
+        const next = prev.map((c) => {
+          const sameConv =
+            Number(c.peerId) === peerId && c.peerType === peerType;
+          if (!sameConv) return c;
+          return {
+            ...c,
+            lastMessage: msg,
+            unread: c.unread + (isActive ? 0 : 1),
+          };
+        });
+        next.sort(
+          (a, b) =>
+            new Date(b.lastMessage?.created_at || 0) -
+            new Date(a.lastMessage?.created_at || 0)
+        );
+        setUnreadTotal(next.reduce((s, c) => s + (c.unread || 0), 0));
+
+        const cache = next.map((c) => ({
+          userId:      c.peerId,
+          username:    c.peerName,
+          type:        c.peerType,
+          photoUrl:    c.photoUrl,
+          lastMessage: c.lastMessage,
+          unread:      c.unread,
+        }));
+        localStorage.setItem('chat:users', JSON.stringify(cache));
+        return next;
+      });
     },
+
     onTyping: (t) => {
-      if (t.fromId === active?.peerId) {
+      if (
+        activeRef.current &&
+        Number(t.fromId) === Number(activeRef.current.peerId)
+      ) {
         setTyping(t.isTyping);
         if (t.isTyping) {
           clearTimeout(typingTimer.current);
@@ -62,82 +139,116 @@ export default function ChatBot() {
         }
       }
     },
-    onRead: () => {},
+
+    onRead: (r) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          Number(m.receiver_id) === Number(r.byId) &&
+          m.receiver_type === r.byType &&
+          Number(m.sender_id) === Number(me?.userId) &&
+          m.sender_type === me?.type
+            ? { ...m, is_read: 1 }
+            : m
+        )
+      );
+    },
   });
 
   // ---------- init ----------
   useEffect(() => {
-    (async () => {
-      try {
-        const { data: meRes } = await getMe();
-        setMe(meRes.user);
-        await refreshConvs();
-      } catch (err) {
-        console.error('[ChatBot init]', err);
-      }
-    })();
-  }, [refreshConvs]);
+    loadUsers();
+  }, [loadUsers]);
 
   // ---------- open conversation ----------
-  const openConversation = useCallback(async (peer) => {
-    try {
-      const { data } = await createConversation(peer.peerId ?? peer.id);
-      const conv = data.conversation;
-
-      setActive({
-        id:          conv.id,
-        peerId:      conv.peerId,
-        peerType:    conv.peerType,
-        peerName:    conv.peerName,
-        photoUrl:    peer.photoUrl    || null,
-        lastMessage: peer.lastMessage || null,
-        unread:      peer.unread      || 0,
-      });
-    } catch (err) {
-      console.error('[ChatBot openConversation]', err);
-    }
+  const openConversation = useCallback((peer) => {
+    setActive({
+      peerId:      peer.peerId,
+      peerType:    peer.peerType,
+      peerName:    peer.peerName,
+      photoUrl:    peer.photoUrl    || null,
+      lastMessage: peer.lastMessage || null,
+      unread:      0,
+    });
   }, []);
 
   // ---------- load messages on active change ----------
   useEffect(() => {
-    if (!active || !me) return;
+    if (!active) return;
+
+    // instant paint from cache
+    try {
+      const cached = JSON.parse(localStorage.getItem(`chat:msgs:${active.peerId}`) || '[]');
+      setMessages(cached);
+      scrollDown();
+    } catch { setMessages([]); }
+
+    // sync from API
     (async () => {
       try {
-        const { data } = await getMessages(active.peerId, { limit: 100 });
-        setMessages(data.messages || []);
-        scrollDown();
-        socketRef.current?.emit('message_read', { peerId: active.peerId });
-        refreshConvs();
+        const { data } = await getChatMessages(active.peerId, { limit: 100 });
+        if (data.success) {
+          setMessages(data.messages || []);
+          localStorage.setItem(
+            `chat:msgs:${active.peerId}`,
+            JSON.stringify(data.messages || [])
+          );
+          scrollDown();
+          socketRef.current?.emit('message_read', { peerId: active.peerId });
+          loadUsers();
+        }
       } catch (err) {
         console.error('[ChatBot loadMessages]', err);
       }
     })();
-  }, [active, me, scrollDown, refreshConvs, socketRef]);
+  }, [active, scrollDown, loadUsers, socketRef]);
 
   // ---------- send ----------
-  const send = (e) => {
+  const send = async (e) => {
     e.preventDefault();
     const text = input.trim();
-    if (!text || !active || !me || !socketRef.current) return;
-
-    socketRef.current.emit('send_message', {
-      peerId:  active.peerId,
-      message: text,
-    });
-    socketRef.current.emit('typing', { peerId: active.peerId, isTyping: false });
+    if (!text || !active || !me) return;
     setInput('');
+
+    const socket = socketRef.current;
+    if (socket && socket.connected) {
+      socket.emit('send_message', { peerId: active.peerId, message: text }, (ack) => {
+        if (!ack?.ok) console.error('[send_message]', ack?.error);
+      });
+      socket.emit('typing', { peerId: active.peerId, isTyping: false });
+      return;
+    }
+
+    // HTTP fallback
+    try {
+      const { data } = await postChatMessage(active.peerId, text);
+      if (data.success) {
+        const msg = data.data;
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          const next = [...prev, msg];
+          localStorage.setItem(`chat:msgs:${active.peerId}`, JSON.stringify(next));
+          return next;
+        });
+      }
+    } catch (err) {
+      console.error('[ChatBot send fallback]', err);
+    }
   };
 
   const handleChange = (e) => {
     setInput(e.target.value);
-    if (!active || !socketRef.current) return;
-    socketRef.current.emit('typing', { peerId: active.peerId, isTyping: true });
+    const socket = socketRef.current;
+    if (!active || !socket) return;
+    socket.emit('typing', { peerId: active.peerId, isTyping: true });
     clearTimeout(typingTimer.current);
     typingTimer.current = setTimeout(() => {
-      socketRef.current?.emit('typing', { peerId: active.peerId, isTyping: false });
+      socket.emit('typing', { peerId: active.peerId, isTyping: false });
     }, 1200);
   };
 
+  // ====================================================================
+  // UI
+  // ====================================================================
   return (
     <>
       {/* ---------- Floating button ---------- */}
@@ -155,36 +266,44 @@ export default function ChatBot() {
         )}
       </button>
 
-      {/* ---------- Popup panel with sidebar + chat ---------- */}
+      {/* ---------- Popup panel ---------- */}
       {open && (
         <div className="fixed bottom-24 right-6 z-[60] w-[720px] h-[540px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex overflow-hidden">
 
           {/* ============ LEFT SIDEBAR ============ */}
           <aside className="w-64 shrink-0 border-r border-slate-200 flex flex-col bg-white">
-            {/* Sidebar header */}
             <div className="shrink-0 px-4 py-3 border-b border-slate-100">
               <p className="text-sm font-black text-slate-900">
-                {me?.type === 'admin' ? 'Trainers' : 'Admins'}
-              </p>
-              <p className="text-[10px] text-slate-500 truncate">
-                {me?.username} · {me?.type}
+                {me?.username}
               </p>
             </div>
 
-            {/* Conversation list */}
             <div className="flex-1 overflow-y-auto">
               {convs.map((c) => (
                 <button
-                  key={c.peerId}
+                  key={`${c.peerType}:${c.peerId}`}
                   onClick={() => openConversation(c)}
                   className={`w-full text-left px-3 py-2.5 border-b border-slate-50 hover:bg-blue-50/60 transition ${
-                    active?.peerId === c.peerId ? 'bg-blue-50' : ''
+                    active?.peerId === c.peerId && active?.peerType === c.peerType
+                      ? 'bg-blue-50'
+                      : ''
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    <div className="h-8 w-8 rounded-full bg-blue-600 text-white text-[10px] font-black flex items-center justify-center shrink-0">
-                      {c.peerName.slice(0, 2).toUpperCase()}
-                    </div>
+                    {/* === Avatar with photo from API === */}
+                    {c.photoUrl ? (
+                      <img
+                        src={`${import.meta.env.VITE_IMAGE_BASE_URL}${c.photoUrl}`}
+                        alt={c.peerName}
+                        className="h-8 w-8 rounded-full object-cover shrink-0 bg-slate-100"
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      />
+                    ) : (
+                      <div className="h-8 w-8 rounded-full bg-blue-600 text-white text-[10px] font-black flex items-center justify-center shrink-0">
+                        {c.peerName.slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
+
                     <div className="min-w-0 flex-1">
                       <p className="text-xs font-bold text-slate-900 truncate">
                         {c.peerName}
@@ -193,6 +312,7 @@ export default function ChatBot() {
                         {c.lastMessage?.message || 'No messages yet'}
                       </p>
                     </div>
+
                     {c.unread > 0 && (
                       <span className="text-[9px] font-black bg-blue-600 text-white px-1.5 py-0.5 rounded-full">
                         {c.unread}
@@ -214,15 +334,29 @@ export default function ChatBot() {
           <section className="flex-1 flex flex-col min-w-0">
             {active ? (
               <>
-                {/* Chat header */}
                 <header className="shrink-0 px-4 py-3 border-b border-slate-200 bg-white flex items-center justify-between">
-                  <div className="min-w-0">
-                    <p className="text-sm font-black text-slate-900 truncate">
-                      {active.peerName}
-                    </p>
-                    <p className="text-[10px] text-slate-500">
-                      {typing ? 'typing…' : active.peerType}
-                    </p>
+                  <div className="min-w-0 flex items-center gap-2.5">
+                    {/* === Header avatar with photo === */}
+                    {active.photoUrl ? (
+                      <img
+                        src={`${import.meta.env.VITE_API_BASE_URL}${active.photoUrl}`}
+                        alt={active.peerName}
+                        className="h-9 w-9 rounded-full object-cover shrink-0 bg-slate-100"
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      />
+                    ) : (
+                      <div className="h-9 w-9 rounded-full bg-blue-600 text-white text-[11px] font-black flex items-center justify-center shrink-0">
+                        {active.peerName.slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-black text-slate-900 truncate">
+                        {active.peerName}
+                      </p>
+                      <p className="text-[10px] text-slate-500">
+                        {typing ? 'typing…' : active.peerType}
+                      </p>
+                    </div>
                   </div>
                   <button
                     onClick={() => setOpen(false)}
@@ -232,14 +366,17 @@ export default function ChatBot() {
                   </button>
                 </header>
 
-                {/* Messages */}
                 <div
                   ref={listRef}
                   className="flex-1 overflow-y-auto px-4 py-3 space-y-2 bg-[#F7F8FC]"
                 >
                   {messages.map((m) => {
+                    // ✅ FIX: message is "mine" only if BOTH id AND type match
                     const mine =
-                      m.sender_type === me?.type && m.sender_id === me?.userId;
+                      me?.userId != null &&
+                      Number(m.sender_id) === Number(me.userId) &&
+                      m.sender_type === me.type;
+
                     return (
                       <div
                         key={m.id}
@@ -270,7 +407,6 @@ export default function ChatBot() {
                   })}
                 </div>
 
-                {/* Input */}
                 <form
                   onSubmit={send}
                   className="shrink-0 flex items-center gap-2 px-3 py-2 border-t border-slate-200 bg-white"
@@ -290,7 +426,6 @@ export default function ChatBot() {
                 </form>
               </>
             ) : (
-              /* empty state */
               <div className="flex-1 flex items-center justify-center text-center px-6">
                 <div>
                   <div className="mx-auto h-12 w-12 rounded-2xl bg-blue-50 flex items-center justify-center mb-3">

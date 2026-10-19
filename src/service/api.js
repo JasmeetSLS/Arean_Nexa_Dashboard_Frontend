@@ -47,11 +47,11 @@ export const getPermissionAdmins  = ()       => api.get('/permissions/admins');
 export const getPermissionOptions = (userId) => api.get('/permissions/options', { params: { userId } });
 export const savePermissions      = (payload) => api.post('/permissions', payload);
 
-export const getMe              = ()           => api.get('/chatbot/me');
-export const getUsers           = ()           => api.get('/users');
-export const getConversations   = ()           => api.get('/conversations');
-export const createConversation = (peerId)     => api.post('/conversations', { peerId });
-export const getMessages        = (id, params) => api.get(`/conversations/${id}/messages`, { params });
-export const getTrainerToken    = (trainerId)  => api.post(`/chat/trainer-token/${trainerId}`);
+
+export const getChatUsers   = ()                    => api.get('/chat/users');
+export const getChatMessages = (userId, params = {}) =>
+  api.get(`/chat/messages/${userId}`, { params });
+export const postChatMessage = (peerId, message)    =>
+  api.post('/chat/messages', { peerId, message });
 
 export default api;
