@@ -9,12 +9,11 @@ import {
   getGridTrainer,
   getGridParticipant,
   getFilters,
-  getMyPermissions, // <-- Imported
+  getMyPermissions,
 } from '../service/api.js';
 import { useAuth } from '../service/auth.jsx';
 import ChatBot from './ChatBot.jsx';
 
-const FALLBACK_TRAINER_PHOTO = '/trainers/1.jpeg';
 const GRID_LIMIT   = 5;
 const REGION_LIMIT = 4;
 
@@ -60,6 +59,7 @@ export default function Dashboard() {
   const [error, setError]     = useState(null);
   const [showAlerts, setShowAlerts] = useState(false);
   const [toastOn, setToastOn]       = useState(false);
+  const [imgErrors, setImgErrors]   = useState({});
 
   // Reset pages and sub-filters on project change
   useEffect(() => { 
@@ -217,7 +217,6 @@ export default function Dashboard() {
   }
 
   // Helper to check if a specific UI element should be visible
-  // If 'perms' hasn't loaded yet or doesn't have the key, default to true
   const canSee = (section, field) => {
     if (!perms || !perms[section]) return true; 
     return perms[section][field] !== false;
@@ -486,36 +485,46 @@ export default function Dashboard() {
             </div>
             <div className="flex-1">
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
-                {trainers.map((t, idx) => (
-                  <div
-                    key={t?.id ?? idx}
-                    className="bg-white shadow-sm border border-gray-100 p-3 hover:shadow-md transition cursor-pointer"
-                    onClick={() => { setSelectedTrainer(t); setShowTrainerJourney(true); }}
-                  >
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <img
-                        src={t?.photoUrl || FALLBACK_TRAINER_PHOTO}
-                        alt={t?.name || ''}
-                        className="shrink-0 w-10 h-10 rounded-full object-cover ring-2 ring-gray-100"
-                        loading="lazy"
-                        onError={(e) => { e.target.src = FALLBACK_TRAINER_PHOTO; }}
-                      />
-                      <h3 className="font-bold text-black text-xs tracking-wide truncate">
-                        {String(t?.name || '—').toUpperCase()}
-                      </h3>
-                    </div>
-                    
-                    {canSee('trainerSummary', 'assigned') && (
-                      <p className="text-xs font-semibold text-black">{t?.totalAssigned ?? 0} assigned</p>
-                    )}
+                {trainers.map((t, idx) => {
+                  const key = `summary-${t?.id ?? idx}`;
+                  const hasPhoto = !!t?.photoUrl && !!t?.name && !imgErrors[key];
+                  return (
+                    <div
+                      key={t?.id ?? idx}
+                      className="bg-white shadow-sm border border-gray-100 p-3 hover:shadow-md transition cursor-pointer"
+                      onClick={() => { setSelectedTrainer(t); setShowTrainerJourney(true); }}
+                    >
+                      <div className="flex items-center gap-2 mb-1.5">
+                        {hasPhoto ? (
+                          <img
+                            src={`${import.meta.env.VITE_IMAGE_BASE_URL}${t.photoUrl}`}
+                            alt={t.name}
+                            className="shrink-0 w-10 h-10 rounded-full object-cover ring-2 ring-gray-100"
+                            loading="lazy"
+                            onError={() => setImgErrors(prev => ({ ...prev, [key]: true }))}
+                          />
+                        ) : (
+                          <div className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-indigo-600 text-white font-bold ring-2 ring-gray-100 text-sm">
+                            {t?.name ? t.name.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase() : '?'}
+                          </div>
+                        )}
+                        <h3 className="font-bold text-black text-xs tracking-wide truncate">
+                          {String(t?.name || '—').toUpperCase()}
+                        </h3>
+                      </div>
+                      
+                      {canSee('trainerSummary', 'assigned') && (
+                        <p className="text-xs font-semibold text-black">{t?.totalAssigned ?? 0} assigned</p>
+                      )}
 
-                    <p className="text-xs text-black font-medium mt-0.5">
-                      {canSee('trainerSummary', 'passRate') && <span>{t?.passPercentage ?? 0}% pass</span>}
-                      {canSee('trainerSummary', 'passRate') && canSee('trainerSummary', 'avgTime') && <span> · </span>}
-                      {canSee('trainerSummary', 'avgTime') && <span>{t?.avgTime ?? '00:00:00'}</span>}
-                    </p>
-                  </div>
-                ))}
+                      <p className="text-xs text-black font-medium mt-0.5">
+                        {canSee('trainerSummary', 'passRate') && <span>{t?.passPercentage ?? 0}% pass</span>}
+                        {canSee('trainerSummary', 'passRate') && canSee('trainerSummary', 'avgTime') && <span> · </span>}
+                        {canSee('trainerSummary', 'avgTime') && <span>{t?.avgTime ?? '00:00:00'}</span>}
+                      </p>
+                    </div>
+                  );
+                })}
                 {trainers.length === 0 && (
                   <div className="col-span-5 text-center text-xs text-gray-400 py-4">
                     No trainer data available.
@@ -684,6 +693,8 @@ export default function Dashboard() {
                   <div className="grid grid-cols-5 gap-2 min-w-[860px]">
                     {trainers.map((t, idx) => {
                       const list = trainerParticipants[t.id] || [];
+                      const key = `grid-${t.id ?? idx}`;
+                      const hasPhoto = !!t.photoUrl && !!t.name && !imgErrors[key];
                       return (
                         <div key={t.id ?? idx} className="bg-white border border-gray-200 shadow-sm flex flex-col">
                           
@@ -693,9 +704,19 @@ export default function Dashboard() {
                             onClick={() => { setSelectedTrainer(t); setShowTrainerJourney(true); }}
                           >
                             <div className="flex items-center gap-1.5 mb-1">
-                              <img src={t.photoUrl || FALLBACK_TRAINER_PHOTO} alt={t.name || ''}
-                                className="shrink-0 w-8 h-8 rounded-full object-cover ring-1 ring-white/30"
-                                onError={(e) => { e.target.src = FALLBACK_TRAINER_PHOTO; }} />
+                              {hasPhoto ? (
+                                <img
+                                  src={`${import.meta.env.VITE_IMAGE_BASE_URL}${t.photoUrl}`}
+                                  alt={t.name}
+                                  className="shrink-0 w-8 h-8 rounded-full object-cover ring-1 ring-white/30"
+                                  loading="lazy"
+                                  onError={() => setImgErrors(prev => ({ ...prev, [key]: true }))}
+                                />
+                              ) : (
+                                <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-indigo-600 text-white font-bold ring-1 ring-white/30 text-[10px]">
+                                  {t?.name ? t.name.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase() : '?'}
+                                </div>
+                              )}
                               <span className="text-xs font-bold truncate flex-1">{t.name || '—'}</span>
                               <span className="h-2 w-2 rounded-full shrink-0 bg-emerald-400" />
                             </div>
@@ -778,121 +799,134 @@ export default function Dashboard() {
       </div>
 
       {/* TRAINER POPUP */}
-      {showTrainerJourney && selectedTrainer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="mx-4 w-full max-w-lg overflow-hidden bg-white shadow-2xl flex flex-col max-h-[90vh]">
-            
-            <div className="px-5 py-2.5 bg-gradient-to-r from-purple-700 to-indigo-800 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-3">
-                <img src={selectedTrainer.photoUrl || FALLBACK_TRAINER_PHOTO} alt={selectedTrainer.name || ''}
-                  className="w-12 h-12 rounded-full object-cover ring-2 ring-white/40 shadow-md" 
-                  onError={(e) => { e.target.src = FALLBACK_TRAINER_PHOTO; }} />
-                <div>
-                  <p className="text-[11px] font-bold text-purple-200 uppercase tracking-wider">TRAINER SUMMARY</p>
-                  <h2 className="text-xl font-bold text-white mt-0.5">{selectedTrainer.name || '—'}</h2>
-                </div>
-              </div>
-              <button onClick={() => { setShowTrainerJourney(false); setSelectedTrainer(null); }} className="text-white/70 hover:text-white transition">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3 px-5 py-2.5 border-b border-gray-100 shrink-0">
-              {canSee('trainerJourney', 'assigned') && (
-                <div>
-                  <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Assigned</p>
-                  <p className="text-xl font-extrabold text-gray-900 mt-0.5">{selectedTrainer.totalAssigned ?? 0}</p>
-                </div>
-              )}
-              {canSee('trainerJourney', 'completed') && (
-                <div>
-                  <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Completed</p>
-                  <p className="text-xl font-extrabold text-gray-900 mt-0.5">{selectedTrainer.completedCount ?? 0}</p>
-                </div>
-              )}
-              {canSee('trainerJourney', 'passRate') && (
-                <div>
-                  <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Pass Rate</p>
-                  <p className="text-xl font-extrabold text-gray-900 mt-0.5">{selectedTrainer.passPercentage ?? 0}%</p>
-                </div>
-              )}
-            </div>
-
-            {canSee('trainerJourney', 'roundMilestones') && (
-              <div className="px-5 py-2.5 shrink-0 border-b border-gray-100">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xs font-bold text-black uppercase tracking-wider">Round Milestones</h3>
-                  <span className="text-xs font-medium text-gray-500">
-                    {availableRounds.length} rounds total
-                  </span>
-                </div>
-
-                <div className="flex items-start justify-between gap-1.5">
-                  {availableRounds.map((roundName) => {
-                    const roundLabel = roundName.replace(/^round/i, 'R');
-                    return (
-                      <div key={roundName} className="flex flex-col items-center gap-0.5 flex-1">
-                        <div className="w-full py-1.5 rounded text-center text-xs font-bold text-white bg-purple-600">
-                          {roundLabel}
-                        </div>
-                        <span className="text-[11px] font-bold text-gray-700">
-                          {selectedTrainer.completedCount ?? 0} / {selectedTrainer.totalAssigned ?? 0}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {canSee('trainerJourney', 'recentList') && (
-              <div className="px-5 py-2.5 bg-gray-50 flex-1 overflow-hidden flex flex-col">
-                <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-1.5 shrink-0">
-                  Recent Participants
-                </h3>
-                <div className="space-y-1.5 overflow-y-auto pr-1">
-                  {((trainerParticipants[selectedTrainer.id] || [])).length === 0 ? (
-                    <div className="text-center text-xs text-gray-400 py-2">No participants</div>
+      {showTrainerJourney && selectedTrainer && (() => {
+        const popupKey = `popup-${selectedTrainer.id ?? 'x'}`;
+        const hasPhoto = !!selectedTrainer.photoUrl && !!selectedTrainer.name && !imgErrors[popupKey];
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="mx-4 w-full max-w-lg overflow-hidden bg-white shadow-2xl flex flex-col max-h-[90vh]">
+              
+              <div className="px-5 py-2.5 bg-gradient-to-r from-purple-700 to-indigo-800 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3">
+                  {hasPhoto ? (
+                    <img
+                      src={`${import.meta.env.VITE_IMAGE_BASE_URL}${selectedTrainer.photoUrl}`}
+                      alt={selectedTrainer.name}
+                      className="w-12 h-12 rounded-full object-cover ring-2 ring-white/40 shadow-md"
+                      onError={() => setImgErrors(prev => ({ ...prev, [popupKey]: true }))}
+                    />
                   ) : (
-                    (trainerParticipants[selectedTrainer.id] || []).map((p, idx) => {
-                      const isCompleted = p.roundsStatus === 'Completed';
-                      const isPass = p.status === 'Pass';
-                      const isFail = p.status === 'Fail';
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-indigo-600 text-white font-bold ring-2 ring-white/40 shadow-md text-base">
+                      {selectedTrainer.name ? selectedTrainer.name.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase() : '?'}
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-[11px] font-bold text-purple-200 uppercase tracking-wider">TRAINER SUMMARY</p>
+                    <h2 className="text-xl font-bold text-white mt-0.5">{selectedTrainer.name || '—'}</h2>
+                  </div>
+                </div>
+                <button onClick={() => { setShowTrainerJourney(false); setSelectedTrainer(null); }} className="text-white/70 hover:text-white transition">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
 
+              <div className="grid grid-cols-3 gap-3 px-5 py-2.5 border-b border-gray-100 shrink-0">
+                {canSee('trainerJourney', 'assigned') && (
+                  <div>
+                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Assigned</p>
+                    <p className="text-xl font-extrabold text-gray-900 mt-0.5">{selectedTrainer.totalAssigned ?? 0}</p>
+                  </div>
+                )}
+                {canSee('trainerJourney', 'completed') && (
+                  <div>
+                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Completed</p>
+                    <p className="text-xl font-extrabold text-gray-900 mt-0.5">{selectedTrainer.completedCount ?? 0}</p>
+                  </div>
+                )}
+                {canSee('trainerJourney', 'passRate') && (
+                  <div>
+                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Pass Rate</p>
+                    <p className="text-xl font-extrabold text-gray-900 mt-0.5">{selectedTrainer.passPercentage ?? 0}%</p>
+                  </div>
+                )}
+              </div>
+
+              {canSee('trainerJourney', 'roundMilestones') && (
+                <div className="px-5 py-2.5 shrink-0 border-b border-gray-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-xs font-bold text-black uppercase tracking-wider">Round Milestones</h3>
+                    <span className="text-xs font-medium text-gray-500">
+                      {availableRounds.length} rounds total
+                    </span>
+                  </div>
+
+                  <div className="flex items-start justify-between gap-1.5">
+                    {availableRounds.map((roundName) => {
+                      const roundLabel = roundName.replace(/^round/i, 'R');
                       return (
-                        <div 
-                          key={p.mpin || idx} 
-                          className="flex items-center justify-between text-xs py-1.5 px-2 rounded hover:bg-white cursor-pointer transition-colors"
-                          onClick={() => { setShowTrainerJourney(false); setSelectedParticipant(p); setShowParticipantJourney(true); }}
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-gray-500 font-medium w-20 truncate">{p.mpin || '—'}</span>
-                            <span className="text-gray-800 font-semibold truncate flex-1">{p.name || '—'}</span>
+                        <div key={roundName} className="flex flex-col items-center gap-0.5 flex-1">
+                          <div className="w-full py-1.5 rounded text-center text-xs font-bold text-white bg-purple-600">
+                            {roundLabel}
                           </div>
-                          
-                          <span className={`text-[11px] font-bold tracking-wider ${
-                            !isCompleted ? 'text-purple-600' : 
-                            isPass ? 'text-teal-600' : 
-                            isFail ? 'text-rose-600' : 
-                            'text-gray-500'
-                          }`}>
-                            {!isCompleted ? 'In Progress' : (p.status || '—')}
+                          <span className="text-[11px] font-bold text-gray-700">
+                            {selectedTrainer.completedCount ?? 0} / {selectedTrainer.totalAssigned ?? 0}
                           </span>
                         </div>
                       );
-                    })
-                  )}
+                    })}
+                  </div>
                 </div>
+              )}
+
+              {canSee('trainerJourney', 'recentList') && (
+                <div className="px-5 py-2.5 bg-gray-50 flex-1 overflow-hidden flex flex-col">
+                  <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider mb-1.5 shrink-0">
+                    Recent Participants
+                  </h3>
+                  <div className="space-y-1.5 overflow-y-auto pr-1">
+                    {((trainerParticipants[selectedTrainer.id] || [])).length === 0 ? (
+                      <div className="text-center text-xs text-gray-400 py-2">No participants</div>
+                    ) : (
+                      (trainerParticipants[selectedTrainer.id] || []).map((p, idx) => {
+                        const isCompleted = p.roundsStatus === 'Completed';
+                        const isPass = p.status === 'Pass';
+                        const isFail = p.status === 'Fail';
+
+                        return (
+                          <div 
+                            key={p.mpin || idx} 
+                            className="flex items-center justify-between text-xs py-1.5 px-2 rounded hover:bg-white cursor-pointer transition-colors"
+                            onClick={() => { setShowTrainerJourney(false); setSelectedParticipant(p); setShowParticipantJourney(true); }}
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="text-gray-500 font-medium w-20 truncate">{p.mpin || '—'}</span>
+                              <span className="text-gray-800 font-semibold truncate flex-1">{p.name || '—'}</span>
+                            </div>
+                            
+                            <span className={`text-[11px] font-bold tracking-wider ${
+                              !isCompleted ? 'text-purple-600' : 
+                              isPass ? 'text-teal-600' : 
+                              isFail ? 'text-rose-600' : 
+                              'text-gray-500'
+                            }`}>
+                              {!isCompleted ? 'In Progress' : (p.status || '—')}
+                            </span>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="px-5 py-1.5 text-[11px] text-gray-400 font-medium shrink-0">
+                Last activity · {new Date().toLocaleString('en-IN', { hour: '2-digit', minute: '2-digit' })}
               </div>
-            )}
 
-            <div className="px-5 py-1.5 text-[11px] text-gray-400 font-medium shrink-0">
-              Last activity · {new Date().toLocaleString('en-IN', { hour: '2-digit', minute: '2-digit' })}
             </div>
-
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* PARTICIPANT POPUP */}
       {showParticipantJourney && selectedParticipant && (
