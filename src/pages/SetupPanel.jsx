@@ -42,20 +42,18 @@ export default function SetupPanel() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading]   = useState(true);
 
-  // create project popup
   const [showPopup, setShowPopup] = useState(false);
   const [form, setForm]           = useState(EMPTY_FORM);
   const [saving, setSaving]       = useState(false);
   const [errMsg, setErrMsg]       = useState('');
   const [okMsg, setOkMsg]         = useState('');
 
-  // upload participants popup
-  const [showUpload, setShowUpload]       = useState(false);
-  const [uploadProject, setUploadProject] = useState(null); // { id, projectName }
-  const [selectedFile, setSelectedFile]   = useState(null);
-  const [uploading, setUploading]         = useState(false);
-  const [uploadErr, setUploadErr]         = useState('');
-  const [uploadOk, setUploadOk]           = useState('');
+  // upload popup
+  const [showUpload, setShowUpload] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploading, setUploading]       = useState(false);
+  const [uploadErr, setUploadErr]       = useState('');
+  const [uploadOk, setUploadOk]         = useState('');
   const fileInputRef = useRef(null);
 
   // ---- load list ----
@@ -95,7 +93,6 @@ export default function SetupPanel() {
     });
   };
 
-  // empty row — user fills name + score
   const addRound = () => {
     setForm((f) => ({
       ...f,
@@ -155,7 +152,7 @@ export default function SetupPanel() {
 
   const trainerTimeStr = secsToHms(form.trainerTimeSecs);
 
-  // ---- template download (.xlsx) ----
+  // ---- template download ----
   const handleDownloadTemplate = async () => {
     try {
       const res = await downloadParticipantTemplate();
@@ -175,9 +172,8 @@ export default function SetupPanel() {
     }
   };
 
-  // ---- open upload popup ----
-  const openUpload = (project) => {
-    setUploadProject({ id: project.id, projectName: project.projectName });
+  // ---- global upload popup ----
+  const openUpload = () => {
     setSelectedFile(null);
     setUploadErr('');
     setUploadOk('');
@@ -187,14 +183,12 @@ export default function SetupPanel() {
   const closeUpload = () => {
     if (uploading) return;
     setShowUpload(false);
-    setUploadProject(null);
     setSelectedFile(null);
     setUploadErr('');
     setUploadOk('');
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // ---- file pick ----
   const handleFileChange = (file) => {
     if (!file) return;
     setSelectedFile(file);
@@ -202,14 +196,13 @@ export default function SetupPanel() {
     setUploadOk('');
   };
 
-  // ---- upload to backend ----
   const handleUpload = async () => {
-    if (!selectedFile || !uploadProject) return;
+    if (!selectedFile) return;
     setUploading(true);
     setUploadErr('');
     setUploadOk('');
     try {
-      const { data } = await uploadParticipants(uploadProject.projectName, selectedFile);
+      const { data } = await uploadParticipants(selectedFile);
       if (data?.success) {
         setUploadOk(`✅ Saved ${data.inserted} / ${data.total} rows`);
         await loadProjects();
@@ -263,6 +256,11 @@ export default function SetupPanel() {
               <Download className="h-3.5 w-3.5" />
               Template
             </button>
+            <button onClick={openUpload}
+              className="flex items-center gap-1.5 px-3 py-2 text-[11px] font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition">
+              <Upload className="h-3.5 w-3.5" />
+              Upload Excel
+            </button>
             <button onClick={loadProjects} disabled={loading}
               className="flex items-center gap-1.5 px-3 py-2 text-[11px] font-black text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 transition">
               <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -302,7 +300,6 @@ export default function SetupPanel() {
                     <th className="text-left px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider min-w-[280px]">Round Breakdown</th>
                     <th className="text-center px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-[90px]">Pass %</th>
                     <th className="text-center px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-[120px]">Trainer Time</th>
-                    <th className="text-center px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-[110px]">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -342,13 +339,6 @@ export default function SetupPanel() {
                           {secsToHms(p.trainerTimeSecs)}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-center">
-                        <button onClick={() => openUpload(p)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-md transition">
-                          <Upload className="h-3 w-3" />
-                          Upload
-                        </button>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -358,11 +348,10 @@ export default function SetupPanel() {
         </div>
       </main>
 
-      {/* ===== CREATE PROJECT POPUP (no click-outside close) ===== */}
+      {/* ===== CREATE PROJECT POPUP ===== */}
       {showPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="mx-4 w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden">
-
             <div className="px-5 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="shrink-0 h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center">
@@ -379,8 +368,6 @@ export default function SetupPanel() {
             </div>
 
             <div className="px-6 py-5 max-h-[70vh] overflow-y-auto space-y-5">
-
-              {/* 4 TOP INPUTS */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Field label="Project Name" icon={Building2} required>
                   <input type="text" value={form.projectName}
@@ -389,7 +376,6 @@ export default function SetupPanel() {
                     className="w-full px-3 py-2.5 text-xs font-semibold text-slate-800 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
                   />
                 </Field>
-
                 <Field label="Passing %" icon={Percent} required>
                   <input type="number" min="0" max="100" step="0.01"
                     value={form.passingPercentage}
@@ -398,13 +384,11 @@ export default function SetupPanel() {
                     className="w-full px-3 py-2.5 text-xs font-semibold text-slate-800 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
                   />
                 </Field>
-
                 <Field label="Total Score" icon={Hash}>
                   <input type="text" readOnly value={totalScore}
                     className="w-full px-3 py-2.5 text-sm font-black text-emerald-800 bg-emerald-50 border border-emerald-300 rounded-lg text-center cursor-not-allowed"
                   />
                 </Field>
-
                 <Field label="Trainer Time (HH:MM:SS)" icon={Clock} required>
                   <input type="text" value={trainerTimeStr}
                     onChange={(e) => update({ trainerTimeSecs: hmsToSecs(e.target.value) })}
@@ -417,7 +401,6 @@ export default function SetupPanel() {
                 </Field>
               </div>
 
-              {/* ROUNDS */}
               <div className="pt-3 border-t border-slate-200">
                 <div className="flex items-center justify-between mb-3">
                   <div>
@@ -489,6 +472,10 @@ export default function SetupPanel() {
             )}
 
             <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">
+              <button onClick={closePopup} disabled={saving}
+                className="px-4 py-2 text-xs font-black text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 transition">
+                Cancel
+              </button>
               <button onClick={handleSave} disabled={saving}
                 className="flex items-center gap-1.5 px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-xs font-bold rounded-lg shadow-sm transition">
                 <Save className="h-3.5 w-3.5" />
@@ -499,8 +486,8 @@ export default function SetupPanel() {
         </div>
       )}
 
-      {/* ===== UPLOAD PARTICIPANTS POPUP (no click-outside close) ===== */}
-      {showUpload && uploadProject && (
+      {/* ===== GLOBAL UPLOAD POPUP ===== */}
+      {showUpload && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="mx-4 w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden">
 
@@ -511,7 +498,7 @@ export default function SetupPanel() {
                 </div>
                 <div>
                   <p className="text-[11px] font-bold text-indigo-100 uppercase tracking-wider">UPLOAD PARTICIPANTS</p>
-                  <h2 className="text-lg font-black text-white">{uploadProject.projectName}</h2>
+                  <h2 className="text-lg font-black text-white">Excel Upload</h2>
                 </div>
               </div>
               <button onClick={closeUpload} className="text-white/70 hover:text-white transition">
@@ -541,7 +528,7 @@ export default function SetupPanel() {
                   ))}
                 </div>
                 <p className="text-[10px] font-medium text-slate-500">
-                  ✅ Required: <b>mpin</b>, <b>name</b> · Date: <code>MM/DD/YYYY</code> or <code>YYYY-MM-DD</code>
+                  ✅ Required: <b>project_name</b>, <b>mpin</b>, <b>name</b> · Date: <code>MM/DD/YYYY</code> or <code>YYYY-MM-DD</code>
                   <br />File: <b>.xlsx</b> / <b>.xls</b> / <b>.csv</b> (max 10 MB)
                 </p>
               </div>

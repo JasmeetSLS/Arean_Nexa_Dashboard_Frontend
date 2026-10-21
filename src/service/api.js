@@ -34,10 +34,9 @@ export const addProject  = (payload) => api.post('/projects', payload);
 export const downloadParticipantTemplate = () =>
   api.get('/participants/template', { responseType: 'blob' });
 
-export const uploadParticipants = (projectName, file) => {
+export const uploadParticipants = (file) => {
   const fd = new FormData();
-  fd.append('project', projectName);
-  fd.append('file', file);
+  fd.append('file', file);       // no `project` field anymore
   return api.post('/participants/upload', fd, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
