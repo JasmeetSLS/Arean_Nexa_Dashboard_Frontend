@@ -1,11 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ChevronRight, Save, Check, Plus, RefreshCw, X,
   Building2, Settings2, Clock, Percent,
   AlertCircle, Trophy, Layers, Hash,
+  Upload, Download, FileSpreadsheet,
 } from 'lucide-react';
 import { useAuth } from '../service/auth.jsx';
-import { getProjects, addProject } from '../service/api';
+import {
+  getProjects, addProject,
+  downloadParticipantTemplate, uploadParticipants,
+} from '../service/api';
 
 const EMPTY_FORM = {
   projectName:       '',
@@ -13,6 +17,11 @@ const EMPTY_FORM = {
   trainerTimeSecs:   0,
   rounds:            [],
 };
+
+const COLUMNS = [
+  'project_name','mpin','name','role','region','zone',
+  'city','dealer_name','dealer_code','date',
+];
 
 const secsToHms = (s) => {
   const sec = Number(s) || 0;
@@ -32,12 +41,24 @@ export default function SetupPanel() {
 
   const [projects, setProjects] = useState([]);
   const [loading, setLoading]   = useState(true);
+
+  // create project popup
   const [showPopup, setShowPopup] = useState(false);
   const [form, setForm]           = useState(EMPTY_FORM);
   const [saving, setSaving]       = useState(false);
   const [errMsg, setErrMsg]       = useState('');
   const [okMsg, setOkMsg]         = useState('');
 
+  // upload participants popup
+  const [showUpload, setShowUpload]       = useState(false);
+  const [uploadProject, setUploadProject] = useState(null); // { id, projectName }
+  const [selectedFile, setSelectedFile]   = useState(null);
+  const [uploading, setUploading]         = useState(false);
+  const [uploadErr, setUploadErr]         = useState('');
+  const [uploadOk, setUploadOk]           = useState('');
+  const fileInputRef = useRef(null);
+
+  // ---- load list ----
   const loadProjects = useCallback(async () => {
     try {
       setLoading(true);
@@ -52,6 +73,7 @@ export default function SetupPanel() {
 
   useEffect(() => { loadProjects(); }, [loadProjects]);
 
+  // ---- create project helpers ----
   const openPopup = () => {
     setForm(EMPTY_FORM);
     setErrMsg('');
@@ -73,10 +95,11 @@ export default function SetupPanel() {
     });
   };
 
+  // empty row — user fills name + score
   const addRound = () => {
     setForm((f) => ({
       ...f,
-      rounds: [...f.rounds, { name: `Round ${f.rounds.length + 1}`, score: '' }],
+      rounds: [...f.rounds, { name: '', score: '' }],
     }));
   };
 
@@ -84,7 +107,6 @@ export default function SetupPanel() {
     setForm((f) => ({ ...f, rounds: f.rounds.filter((_, idx) => idx !== i) }));
   };
 
-  // Total Score = sum of all round scores (read-only)
   const totalScore = form.rounds.reduce((a, r) => a + (Number(r.score) || 0), 0);
 
   const handleSave = async () => {
@@ -133,6 +155,75 @@ export default function SetupPanel() {
 
   const trainerTimeStr = secsToHms(form.trainerTimeSecs);
 
+  // ---- template download (.xlsx) ----
+  const handleDownloadTemplate = async () => {
+    try {
+      const res = await downloadParticipantTemplate();
+      const blob = new Blob([res.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'participants_template.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Template download failed');
+    }
+  };
+
+  // ---- open upload popup ----
+  const openUpload = (project) => {
+    setUploadProject({ id: project.id, projectName: project.projectName });
+    setSelectedFile(null);
+    setUploadErr('');
+    setUploadOk('');
+    setShowUpload(true);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+  const closeUpload = () => {
+    if (uploading) return;
+    setShowUpload(false);
+    setUploadProject(null);
+    setSelectedFile(null);
+    setUploadErr('');
+    setUploadOk('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // ---- file pick ----
+  const handleFileChange = (file) => {
+    if (!file) return;
+    setSelectedFile(file);
+    setUploadErr('');
+    setUploadOk('');
+  };
+
+  // ---- upload to backend ----
+  const handleUpload = async () => {
+    if (!selectedFile || !uploadProject) return;
+    setUploading(true);
+    setUploadErr('');
+    setUploadOk('');
+    try {
+      const { data } = await uploadParticipants(uploadProject.projectName, selectedFile);
+      if (data?.success) {
+        setUploadOk(`✅ Saved ${data.inserted} / ${data.total} rows`);
+        await loadProjects();
+        setTimeout(() => closeUpload(), 1200);
+      } else {
+        setUploadErr(data?.error || 'Upload failed');
+      }
+    } catch (err) {
+      setUploadErr(err?.response?.data?.error || 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <div className="h-screen flex flex-col bg-[#F7F8FC] font-sans">
 
@@ -167,6 +258,11 @@ export default function SetupPanel() {
             <p className="text-[11px] font-medium text-slate-500">All projects configured in the system</p>
           </div>
           <div className="flex items-center gap-2">
+            <button onClick={handleDownloadTemplate}
+              className="flex items-center gap-1.5 px-3 py-2 text-[11px] font-black text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition">
+              <Download className="h-3.5 w-3.5" />
+              Template
+            </button>
             <button onClick={loadProjects} disabled={loading}
               className="flex items-center gap-1.5 px-3 py-2 text-[11px] font-black text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 transition">
               <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -203,9 +299,10 @@ export default function SetupPanel() {
                     <th className="text-left px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider">Project Name</th>
                     <th className="text-center px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-[90px]">Rounds</th>
                     <th className="text-center px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-[90px]">Score</th>
-                    <th className="text-left px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider min-w-[300px]">Round Breakdown</th>
+                    <th className="text-left px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider min-w-[280px]">Round Breakdown</th>
                     <th className="text-center px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-[90px]">Pass %</th>
                     <th className="text-center px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-[120px]">Trainer Time</th>
+                    <th className="text-center px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-[110px]">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -245,6 +342,13 @@ export default function SetupPanel() {
                           {secsToHms(p.trainerTimeSecs)}
                         </span>
                       </td>
+                      <td className="px-4 py-3 text-center">
+                        <button onClick={() => openUpload(p)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-md transition">
+                          <Upload className="h-3 w-3" />
+                          Upload
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -254,12 +358,11 @@ export default function SetupPanel() {
         </div>
       </main>
 
-      {/* ===== CREATE PROJECT POPUP ===== */}
+      {/* ===== CREATE PROJECT POPUP (no click-outside close) ===== */}
       {showPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={closePopup}>
-          <div className="mx-4 w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden">
 
-            {/* Popup header */}
             <div className="px-5 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="shrink-0 h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center">
@@ -275,25 +378,20 @@ export default function SetupPanel() {
               </button>
             </div>
 
-            {/* Popup body */}
             <div className="px-6 py-5 max-h-[70vh] overflow-y-auto space-y-5">
 
-              {/* ===== 4 TOP INPUTS ===== */}
+              {/* 4 TOP INPUTS */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Field label="Project Name" icon={Building2} required>
-                  <input
-                    type="text"
-                    value={form.projectName}
+                  <input type="text" value={form.projectName}
                     onChange={(e) => update({ projectName: e.target.value })}
-                    placeholder="e.g. Arena L3"
-                    autoFocus
+                    placeholder="e.g. Arena L3" autoFocus
                     className="w-full px-3 py-2.5 text-xs font-semibold text-slate-800 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
                   />
                 </Field>
 
                 <Field label="Passing %" icon={Percent} required>
-                  <input
-                    type="number" min="0" max="100" step="0.01"
+                  <input type="number" min="0" max="100" step="0.01"
                     value={form.passingPercentage}
                     onChange={(e) => update({ passingPercentage: e.target.value })}
                     placeholder="80"
@@ -302,18 +400,13 @@ export default function SetupPanel() {
                 </Field>
 
                 <Field label="Total Score" icon={Hash}>
-                  <input
-                    type="text"
-                    readOnly
-                    value={totalScore}
+                  <input type="text" readOnly value={totalScore}
                     className="w-full px-3 py-2.5 text-sm font-black text-emerald-800 bg-emerald-50 border border-emerald-300 rounded-lg text-center cursor-not-allowed"
                   />
                 </Field>
 
                 <Field label="Trainer Time (HH:MM:SS)" icon={Clock} required>
-                  <input
-                    type="text"
-                    value={trainerTimeStr}
+                  <input type="text" value={trainerTimeStr}
                     onChange={(e) => update({ trainerTimeSecs: hmsToSecs(e.target.value) })}
                     placeholder="01:20:00"
                     className="w-full px-3 py-2.5 text-xs font-semibold text-slate-800 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
@@ -324,7 +417,7 @@ export default function SetupPanel() {
                 </Field>
               </div>
 
-              {/* ===== ROUNDS ===== */}
+              {/* ROUNDS */}
               <div className="pt-3 border-t border-slate-200">
                 <div className="flex items-center justify-between mb-3">
                   <div>
@@ -333,7 +426,7 @@ export default function SetupPanel() {
                       Rounds &amp; Scores
                     </h3>
                     <p className="text-[10px] font-medium text-slate-500">
-                      Add each round with its score — total score updates automatically
+                      Add each round — enter name &amp; score manually
                     </p>
                   </div>
                   <button type="button" onClick={addRound}
@@ -358,16 +451,12 @@ export default function SetupPanel() {
                         <span className="shrink-0 w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-black">
                           {idx + 1}
                         </span>
-                        <input
-                          type="text"
-                          value={r.name}
+                        <input type="text" value={r.name}
                           onChange={(e) => updateRound(idx, { name: e.target.value })}
-                          placeholder={`Round ${idx + 1}`}
+                          placeholder="Round name"
                           className="flex-1 px-2.5 py-1.5 text-xs font-semibold text-slate-800 bg-white border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
                         />
-                        <input
-                          type="number" min="0"
-                          value={r.score}
+                        <input type="number" min="0" value={r.score}
                           onChange={(e) => updateRound(idx, { score: e.target.value })}
                           placeholder="0"
                           className="w-20 px-2.5 py-1.5 text-xs font-bold text-slate-800 bg-white border border-slate-200 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
@@ -384,7 +473,6 @@ export default function SetupPanel() {
               </div>
             </div>
 
-            {/* Messages */}
             {(okMsg || errMsg) && (
               <div className="px-6 pb-2">
                 {okMsg && (
@@ -400,16 +488,107 @@ export default function SetupPanel() {
               </div>
             )}
 
-            {/* Footer */}
             <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">
-              <button onClick={closePopup} disabled={saving}
-                className="px-4 py-2 text-xs font-black text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 transition">
-                Cancel
-              </button>
               <button onClick={handleSave} disabled={saving}
                 className="flex items-center gap-1.5 px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-xs font-bold rounded-lg shadow-sm transition">
                 <Save className="h-3.5 w-3.5" />
                 {saving ? 'Saving…' : 'Create Project'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== UPLOAD PARTICIPANTS POPUP (no click-outside close) ===== */}
+      {showUpload && uploadProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden">
+
+            <div className="px-5 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="shrink-0 h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center">
+                  <Upload className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold text-indigo-100 uppercase tracking-wider">UPLOAD PARTICIPANTS</p>
+                  <h2 className="text-lg font-black text-white">{uploadProject.projectName}</h2>
+                </div>
+              </div>
+              <button onClick={closeUpload} className="text-white/70 hover:text-white transition">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="px-6 py-5 space-y-4">
+
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[11px] font-black text-slate-700 uppercase tracking-wide flex items-center gap-1.5">
+                    <FileSpreadsheet className="h-3.5 w-3.5 text-indigo-600" />
+                    Excel Format
+                  </p>
+                  <button onClick={handleDownloadTemplate}
+                    className="text-[10px] font-black text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-md transition flex items-center gap-1">
+                    <Download className="h-3 w-3" />
+                    Download Template
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {COLUMNS.map(c => (
+                    <span key={c} className="text-[10px] font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md border border-indigo-100">
+                      {c}
+                    </span>
+                  ))}
+                </div>
+                <p className="text-[10px] font-medium text-slate-500">
+                  ✅ Required: <b>mpin</b>, <b>name</b> · Date: <code>MM/DD/YYYY</code> or <code>YYYY-MM-DD</code>
+                  <br />File: <b>.xlsx</b> / <b>.xls</b> / <b>.csv</b> (max 10 MB)
+                </p>
+              </div>
+
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  onChange={(e) => handleFileChange(e.target.files?.[0])}
+                  className="hidden"
+                />
+                <button onClick={() => fileInputRef.current?.click()}
+                  className="w-full border-2 border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50/40 rounded-xl py-8 flex flex-col items-center gap-1 transition">
+                  <Upload className="h-6 w-6 text-slate-400" />
+                  <p className="text-xs font-bold text-slate-700">
+                    {selectedFile ? selectedFile.name : 'Click to select Excel / CSV'}
+                  </p>
+                  <p className="text-[10px] text-slate-400">
+                    {selectedFile
+                      ? `${(selectedFile.size / 1024).toFixed(1)} KB`
+                      : '.xlsx, .xls, .csv'}
+                  </p>
+                </button>
+              </div>
+
+              {uploadErr && (
+                <p className="text-xs font-bold text-rose-600 flex items-center gap-1.5">
+                  <AlertCircle className="h-3.5 w-3.5" strokeWidth={3} /> {uploadErr}
+                </p>
+              )}
+              {uploadOk && (
+                <p className="text-xs font-bold text-emerald-600 flex items-center gap-1.5">
+                  <Check className="h-3.5 w-3.5" strokeWidth={3} /> {uploadOk}
+                </p>
+              )}
+            </div>
+
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">
+              <button onClick={closeUpload} disabled={uploading}
+                className="px-4 py-2 text-xs font-black text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 transition">
+                Cancel
+              </button>
+              <button onClick={handleUpload} disabled={!selectedFile || uploading}
+                className="flex items-center gap-1.5 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-sm transition">
+                <Upload className="h-3.5 w-3.5" />
+                {uploading ? 'Uploading…' : 'Upload'}
               </button>
             </div>
           </div>

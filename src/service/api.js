@@ -28,7 +28,20 @@ export const login = (username, password, type = 'admin') =>
   api.post('/auth/login', { username, password, type });
 
 export const getProjects  = ()                     => api.get('/projects');
-export const addProject  = (payload) => api.post('/setup/projects', payload);
+export const addProject  = (payload) => api.post('/projects', payload);
+
+// ---- Participants Excel ----
+export const downloadParticipantTemplate = () =>
+  api.get('/participants/template', { responseType: 'blob' });
+
+export const uploadParticipants = (projectName, file) => {
+  const fd = new FormData();
+  fd.append('project', projectName);
+  fd.append('file', file);
+  return api.post('/participants/upload', fd, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
 // Remove getProjects
 export const getFilters = (params = {}) => api.get('/filters', { params });
 
