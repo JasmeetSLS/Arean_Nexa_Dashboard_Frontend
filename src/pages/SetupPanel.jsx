@@ -18,23 +18,24 @@ const EMPTY_FORM = {
   rounds:            [],
 };
 
-const COLUMNS = [
-  'project_name','mpin','name','role','region','zone',
-  'city','dealer_name','dealer_code','date',
-];
-
+// ---- time helpers ----
 const secsToHms = (s) => {
-  const sec = Number(s) || 0;
-  const h  = String(Math.floor(sec / 3600)).padStart(2, '0');
-  const m  = String(Math.floor((sec % 3600) / 60)).padStart(2, '0');
-  const ss = String(sec % 60).padStart(2, '0');
-  return `${h}:${m}:${ss}`;
+  const sec = Math.max(0, Number(s) || 0);
+  return {
+    h: Math.floor(sec / 3600),
+    m: Math.floor((sec % 3600) / 60),
+    s: sec % 60,
+  };
 };
-const hmsToSecs = (hms) => {
-  if (!hms) return 0;
-  const [h = '0', m = '0', s = '0'] = String(hms).split(':');
-  return (Number(h) || 0) * 3600 + (Number(m) || 0) * 60 + (Number(s) || 0);
+const partsToSecs = ({ h, m, s }) =>
+  (Number(h) || 0) * 3600 + (Number(m) || 0) * 60 + (Number(s) || 0);
+
+const fmtHms = (sec) => {
+  const { h, m, s } = secsToHms(sec);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 };
+
+const clamp = (v, max) => Math.min(Math.max(Number(v) || 0, 0), max);
 
 export default function SetupPanel() {
   const { user } = useAuth();
@@ -150,8 +151,6 @@ export default function SetupPanel() {
     }
   };
 
-  const trainerTimeStr = secsToHms(form.trainerTimeSecs);
-
   // ---- template download ----
   const handleDownloadTemplate = async () => {
     try {
@@ -204,7 +203,10 @@ export default function SetupPanel() {
     try {
       const { data } = await uploadParticipants(selectedFile);
       if (data?.success) {
-        setUploadOk(`✅ Saved ${data.inserted} / ${data.total} rows`);
+        const parts = [];
+        if (data.inserted) parts.push(`${data.inserted} inserted`);
+        if (data.updated)  parts.push(`${data.updated} updated`);
+        setUploadOk(`✅ ${parts.join(' · ') || `${data.total} processed`} (${data.total} total)`);
         await loadProjects();
         setTimeout(() => closeUpload(), 1200);
       } else {
@@ -336,7 +338,7 @@ export default function SetupPanel() {
                       <td className="px-4 py-3 text-center">
                         <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-md">
                           <Clock className="h-3 w-3" />
-                          {secsToHms(p.trainerTimeSecs)}
+                          {fmtHms(p.trainerTimeSecs)}
                         </span>
                       </td>
                     </tr>
@@ -389,14 +391,14 @@ export default function SetupPanel() {
                     className="w-full px-3 py-2.5 text-sm font-black text-emerald-800 bg-emerald-50 border border-emerald-300 rounded-lg text-center cursor-not-allowed"
                   />
                 </Field>
-                <Field label="Trainer Time (HH:MM:SS)" icon={Clock} required>
-                  <input type="text" value={trainerTimeStr}
-                    onChange={(e) => update({ trainerTimeSecs: hmsToSecs(e.target.value) })}
-                    placeholder="01:20:00"
-                    className="w-full px-3 py-2.5 text-xs font-semibold text-slate-800 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition"
+                <Field label="Trainer Time" icon={Clock} required>
+                  <TimeField
+                    value={form.trainerTimeSecs}
+                    onChange={(secs) => update({ trainerTimeSecs: secs })}
                   />
                   <p className="text-[10px] font-medium text-slate-400 mt-1">
                     = {form.trainerTimeSecs || 0} seconds
+                    {form.trainerTimeSecs > 0 && ` (${fmtHms(form.trainerTimeSecs)})`}
                   </p>
                 </Field>
               </div>
@@ -520,17 +522,6 @@ export default function SetupPanel() {
                     Download Template
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  {COLUMNS.map(c => (
-                    <span key={c} className="text-[10px] font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md border border-indigo-100">
-                      {c}
-                    </span>
-                  ))}
-                </div>
-                <p className="text-[10px] font-medium text-slate-500">
-                  ✅ Required: <b>project_name</b>, <b>mpin</b>, <b>name</b> · Date: <code>MM/DD/YYYY</code> or <code>YYYY-MM-DD</code>
-                  <br />File: <b>.xlsx</b> / <b>.xls</b> / <b>.csv</b> (max 10 MB)
-                </p>
               </div>
 
               <div>
@@ -585,6 +576,8 @@ export default function SetupPanel() {
   );
 }
 
+/* ---------- small reusable components ---------- */
+
 function Field({ label, icon: Icon, required, children }) {
   return (
     <div className="flex flex-col">
@@ -594,6 +587,58 @@ function Field({ label, icon: Icon, required, children }) {
         {required && <span className="text-rose-500">*</span>}
       </label>
       {children}
+    </div>
+  );
+}
+
+/**
+ * HH:MM:SS picker — three numeric inputs.
+ * Avoids the "typing 20 becomes 20 hours" bug of a single text input.
+ */
+function TimeField({ value, onChange }) {
+  const { h, m, s } = secsToHms(value);
+
+  const set = (patch) => {
+    const next = {
+      h: clamp(patch.h ?? h, 99),
+      m: clamp(patch.m ?? m, 59),
+      s: clamp(patch.s ?? s, 59),
+    };
+    onChange(partsToSecs(next));
+  };
+
+  const inputCls =
+    'w-full px-2 py-2 text-sm font-black text-slate-800 text-center bg-white border border-slate-200 rounded-lg ' +
+    'focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition';
+
+  return (
+    <div className="flex items-start gap-2">
+      <div className="flex-1">
+        <input
+          type="number" min="0" max="99" value={h}
+          onChange={(e) => set({ h: e.target.value })}
+          className={inputCls}
+        />
+        <p className="text-[9px] font-bold text-slate-400 text-center mt-0.5 uppercase">HH</p>
+      </div>
+      <span className="pt-1.5 text-slate-300 font-black">:</span>
+      <div className="flex-1">
+        <input
+          type="number" min="0" max="59" value={m}
+          onChange={(e) => set({ m: e.target.value })}
+          className={inputCls}
+        />
+        <p className="text-[9px] font-bold text-slate-400 text-center mt-0.5 uppercase">MM</p>
+      </div>
+      <span className="pt-1.5 text-slate-300 font-black">:</span>
+      <div className="flex-1">
+        <input
+          type="number" min="0" max="59" value={s}
+          onChange={(e) => set({ s: e.target.value })}
+          className={inputCls}
+        />
+        <p className="text-[9px] font-bold text-slate-400 text-center mt-0.5 uppercase">SS</p>
+      </div>
     </div>
   );
 }

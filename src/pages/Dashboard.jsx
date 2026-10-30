@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  X, Bell, LogOut, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, Search
+  X, Bell, LogOut, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, Search, FileText
 } from 'lucide-react';
 import { Toaster } from '../components/Toaster.jsx';
 import { FaBell, FaBellSlash } from 'react-icons/fa';
@@ -13,6 +13,9 @@ import {
 } from '../service/api.js';
 import { useAuth } from '../service/auth.jsx';
 import ChatBot from './ChatBot.jsx';
+
+// IMPORT THE NEW COMPONENT HERE (Adjust path if necessary)
+import ReportModal from '../components/ReportModal.jsx';
 
 const GRID_LIMIT   = 5;
 const REGION_LIMIT = 4;
@@ -54,6 +57,9 @@ export default function Dashboard() {
   const [showTrainerJourney, setShowTrainerJourney]         = useState(false);
   const [selectedParticipant, setSelectedParticipant]       = useState(null);
   const [showParticipantJourney, setShowParticipantJourney] = useState(false);
+
+  // Report Modal State (Simplified)
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
@@ -254,6 +260,14 @@ export default function Dashboard() {
             className="relative flex items-center justify-center h-8 w-8 bg-white border border-gray-200 text-gray-600 rounded-full shadow-sm hover:shadow-md transition-all">
             <Bell className="h-4 w-4" />
           </button>
+          
+          {/* REPORTS BUTTON */}
+          <button onClick={() => setShowReportModal(true)}
+            className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 border border-indigo-700 text-white rounded-full text-xs font-semibold shadow-sm hover:bg-indigo-700 transition-all">
+            <FileText className="h-3.5 w-3.5" />
+            <span>Reports</span>
+          </button>
+
           <button onClick={logout}
             className="flex items-center gap-1 px-3 py-1.5 bg-white border border-gray-200 text-gray-600 rounded-full text-xs font-semibold shadow-sm hover:shadow-md transition-all">
             <LogOut className="h-3.5 w-3.5" />
@@ -1008,6 +1022,14 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* REPORT MODAL COMPONENT */}
+      <ReportModal 
+        isOpen={showReportModal} 
+        onClose={() => setShowReportModal(false)} 
+        project={filters.project} 
+        date={filters.date} 
+      />
 
       <Toaster enabled={toastOn} />
       <ChatBot embedded={true} />

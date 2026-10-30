@@ -66,4 +66,14 @@ export const getChatMessages = (userId, params = {}) =>
 export const postChatMessage = (peerId, message)    =>
   api.post('/chat/messages', { peerId, message });
 
+// REPORTS (Arena)
+export const exportArenaMorning = (params) => 
+  api.get('/export-arena-morning', { params, responseType: 'blob' });
+export const exportArenaAttendance = (params = {}) => 
+  api.get('/export-arena-attendance', { params, responseType: 'blob' });
+export const exportArenaOverallResult = (params) => 
+  api.get('/export-arena-overall-result', { params, responseType: 'blob' });
+export const exportArenaWinner = (params) => 
+  api.get('/export-arena-winner', { params, responseType: 'blob' });
+
 export default api;
