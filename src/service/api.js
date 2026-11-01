@@ -67,13 +67,39 @@ export const postChatMessage = (peerId, message)    =>
   api.post('/chat/messages', { peerId, message });
 
 // REPORTS (Arena)
-export const exportArenaMorning = (params) => 
-  api.get('/export-arena-morning', { params, responseType: 'blob' });
-export const exportArenaAttendance = (params = {}) => 
-  api.get('/export-arena-attendance', { params, responseType: 'blob' });
-export const exportArenaOverallResult = (params) => 
+
+export const getArenaFilters = (params = {}) =>
+  api.get('/arena-filters', { params });
+
+export const exportArenaDailyReport = (params = {}) =>
+  api.get('/export-arena-daily-report', { params, responseType: 'blob' });
+
+export const exportArenaOverallAttendance = (params = {}) =>
+  api.get('/arena-overall-attendance', { params, responseType: 'blob' });
+
+export const exportArenaOverallResult = (params = {}) =>
   api.get('/export-arena-overall-result', { params, responseType: 'blob' });
-export const exportArenaWinner = (params) => 
+
+export const exportArenaWinner = (params = {}) =>
   api.get('/export-arena-winner', { params, responseType: 'blob' });
+
+// REPORTS (TV)
+export const exportTVMorning = (params = {}) =>
+  api.get('/export-tv-morning', { params, responseType: 'blob' });
+
+export const exportTVOverallAttendance = (params = {}) =>
+  api.get('/export-tv-overall-attendance', { params, responseType: 'blob' });
+
+export const exportTVOverallResult = (params = {}) =>
+  api.get('/export-tv-overall-result', { params, responseType: 'blob' });
+
+export const exportTVWinner = (params = {}) =>
+  api.get('/export-tv-winner', { params, responseType: 'blob' });
+
+// ZIP of all winner files — name it explicitly so it doesn't clash with the single-winner export
+export const exportTVWinnersZIP = (params = {}) =>
+  api.get('/export-tv-winners-zip', { params, responseType: 'blob' });
+
+export const getTVFilters = () => api.get('/tv-filters');
 
 export default api;
