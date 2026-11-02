@@ -452,7 +452,8 @@ export default function Dashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
                 {regionSummary.map((r, idx) => (
                   <div key={`${r?.region || 'x'}|${r?.zone || 'x'}|${idx}`} className="bg-white text-black shadow-sm border-2 border-purple-500 p-3 text-center">
-                    <h3 className="font-bold text-sm mb-1">{r?.region || '—'} – {r?.zone || '—'}</h3>
+                    {/* <h3 className="font-bold text-sm mb-1">{r?.region || '—'} – {r?.zone || '—'}</h3> */}
+                    <h3 className="font-bold text-sm mb-1">{r?.region || '—'}</h3>
                     
                     {canSee('regionSummary', 'completed') && (
                       <p className="text-xs font-semibold">{r?.completed ?? 0} completed</p>
