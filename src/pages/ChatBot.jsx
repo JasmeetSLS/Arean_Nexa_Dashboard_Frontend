@@ -82,7 +82,8 @@ export default function ChatBot() {
       setConvs((prev) => {
         const next = prev.map((c) =>
           Number(c.peerId) === peerId && c.peerType === peerType
-            ? { ...c, lastMessage: msg, unread: c.unread + (isActive ? 0 : 1) }
+            // ✅ FIXED: Do not increment unread if the message is yours (isMine)
+            ? { ...c, lastMessage: msg, unread: (isActive || isMine) ? c.unread : c.unread + 1 }
             : c
         );
         next.sort((a, b) => new Date(b.lastMessage?.created_at || 0) - new Date(a.lastMessage?.created_at || 0));
@@ -239,27 +240,27 @@ export default function ChatBot() {
                 </header>
 
                 <div ref={listRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-1.5">
-{messages.map((m) => {
-  const mine =
-    me?.userId != null &&
-    Number(m.sender_id) === Number(me.userId) &&
-    m.sender_type === me.type;
+                  {messages.map((m) => {
+                    const mine =
+                      me?.userId != null &&
+                      Number(m.sender_id) === Number(me.userId) &&
+                      m.sender_type === me.type;
 
-  return (
-    <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-      <div className={`max-w-[70%] px-3 py-2 text-[12px] shadow-sm ${
-        mine
-          ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-2xl rounded-br-md'
-          : 'bg-white text-slate-800 rounded-2xl rounded-bl-md'
-      }`}>
-        <p className="whitespace-pre-wrap break-words">{m.message}</p>
-        <p className={`text-[9px] mt-0.5 text-right ${mine ? 'text-blue-100' : 'text-slate-400'}`}>
-          {time(m.created_at)} {mine && m.is_read && '✓✓'}
-        </p>
-      </div>
-    </div>
-  );
-})}
+                    return (
+                      <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[70%] px-3 py-2 text-[12px] shadow-sm ${
+                          mine
+                            ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-2xl rounded-br-md'
+                            : 'bg-white text-slate-800 rounded-2xl rounded-bl-md'
+                        }`}>
+                          <p className="whitespace-pre-wrap break-words">{m.message}</p>
+                          <p className={`text-[9px] mt-0.5 text-right ${mine ? 'text-blue-100' : 'text-slate-400'}`}>
+                            {time(m.created_at)} {mine && m.is_read && '✓✓'}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <form onSubmit={send} className="p-2.5 bg-white border-t border-slate-200 flex items-center gap-2">

@@ -25,19 +25,18 @@ export default function useChatSocket({ onMessage, onTyping, onRead } = {}) {
 
     const socket = io(SOCKET_URL, {
       auth: { token },
-      transports: ['websocket'], // ❌ do NOT force websocket
+      // ✅ REMOVED: transports: ['websocket'] 
+      // This allows Socket.IO to fallback to HTTP polling first, 
+      // preventing the browser error when React StrictMode unmounts mid-handshake.
     });
 
     socket.on('receive_message', (m) => {
-      console.log('[socket] ⬅️ receive_message raw:', m);
       cbMsg.current?.(m);
     });
     socket.on('typing', (t) => {
-      console.log('[socket] ⬅️ typing:', t);
       cbTyping.current?.(t);
     });
     socket.on('message_read', (r) => {
-      console.log('[socket] ⬅️ message_read:', r);
       cbRead.current?.(r);
     });
 
@@ -45,16 +44,10 @@ export default function useChatSocket({ onMessage, onTyping, onRead } = {}) {
       console.log('[socket] ✅ connected', socket.id, '| transport =', socket.io.engine.transport.name);
     });
     socket.on('connect_error', (e) => {
-      console.error('[socket] ❌ connect_error:', e.message, e);
+      console.error('[socket] ❌ connect_error:', e.message);
     });
     socket.on('disconnect', (r) => {
       console.warn('[socket] ❌ disconnected:', r);
-    });
-    socket.on('reconnect_attempt', (n) => {
-      console.log('[socket] reconnecting attempt', n);
-    });
-    socket.io.on('upgrade', () => {
-      console.log('[socket] upgraded transport =', socket.io.engine.transport.name);
     });
 
     socketRef.current = socket;
@@ -67,8 +60,14 @@ export default function useChatSocket({ onMessage, onTyping, onRead } = {}) {
       socket.off('connect');
       socket.off('connect_error');
       socket.off('disconnect');
-      socket.off('reconnect_attempt');
-      socket.disconnect();
+      
+      // ✅ Safe disconnect: If still connecting, wait for connection then disconnect
+      if (socket.connected) {
+        socket.disconnect();
+      } else {
+        socket.on('connect', () => socket.disconnect());
+      }
+      
       socketRef.current = null;
     };
   }, []);
