@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 
 const SOCKET_URL =
-  (import.meta.env.VITE_API_BASE_URL || '').replace('/api', '');
+  (import.meta.env.VITE_SOCKET_URL || '');
 
 export default function useChatSocket({ onMessage, onTyping, onRead } = {}) {
   const socketRef = useRef(null);
