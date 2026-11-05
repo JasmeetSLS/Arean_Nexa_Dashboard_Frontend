@@ -252,14 +252,14 @@ export default function Dashboard() {
             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
             <span className="text-xs font-bold text-gray-700">DATA · {dashData?.todayLive?.date || '—'}</span>
           </div>
-          <button onClick={() => setToastOn(!toastOn)}
+          {/* <button onClick={() => setToastOn(!toastOn)}
             className={`flex items-center justify-center h-8 w-8 rounded-full border transition ${toastOn ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm' : 'bg-white border-gray-200 text-gray-400 hover:shadow-md'}`}>
             {toastOn ? <FaBell className="h-4 w-4" /> : <FaBellSlash className="h-4 w-4" />}
           </button>
           <button onClick={() => setShowAlerts(true)}
             className="relative flex items-center justify-center h-8 w-8 bg-white border border-gray-200 text-gray-600 rounded-full shadow-sm hover:shadow-md transition-all">
             <Bell className="h-4 w-4" />
-          </button>
+          </button> */}
           
           {/* REPORTS BUTTON */}
           <button onClick={() => setShowReportModal(true)}
