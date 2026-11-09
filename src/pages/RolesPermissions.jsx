@@ -12,131 +12,49 @@ import {
   savePermissions,
 } from '../service/api';
 
-// =====================================================================
-// STATIC SECTIONS (Ordered to match backend)
-// =====================================================================
 const STATIC_SECTIONS = [
-  {
-    key: 'liveData', icon: Radio,
-    title: 'Live Data',
-    subtitle: 'Metrics shown in the live data section',
+  { key: 'liveData', icon: Radio, title: 'Live Data', subtitle: 'Metrics shown in the live data section',
     fields: [
-      { field_key: 'scheduled'      },
-      { field_key: 'attempted'      },
-      { field_key: 'absentees'      },
-      { field_key: 'delayed'        },
-      { field_key: 'passRate'       },
-      { field_key: 'avgTime'        },
+      { field_key: 'scheduled' }, { field_key: 'attempted' }, { field_key: 'absentees' },
+      { field_key: 'delayed' }, { field_key: 'passRate' }, { field_key: 'avgTime' },
       { field_key: 'activeTrainers' },
-    ],
-  },
-  {
-    key: 'regionSummary', icon: Globe2,
-    title: 'Region Wise Summary',
-    subtitle: 'Region, completed, pass rate, avg time',
+    ] },
+  { key: 'regionSummary', icon: Globe2, title: 'Region Wise Summary', subtitle: 'Region, completed, pass rate, avg time',
+    fields: [{ field_key: 'completed' }, { field_key: 'passRate' }, { field_key: 'avgTime' }] },
+  { key: 'trainerSummary', icon: UserCircle2, title: 'Trainer Summary', subtitle: 'Assigned, pass rate, avg time',
+    fields: [{ field_key: 'assigned' }, { field_key: 'passRate' }, { field_key: 'avgTime' }] },
+  { key: 'contestTotals', icon: Trophy, title: 'Contest Totals', subtitle: 'Overall contest metrics',
     fields: [
-      { field_key: 'completed' },
-      { field_key: 'passRate'  },
-      { field_key: 'avgTime'   },
-    ],
-  },
-  {
-    key: 'trainerSummary', icon: UserCircle2,
-    title: 'Trainer Summary',
-    subtitle: 'Assigned, pass rate, avg time',
+      { field_key: 'totalScheduled' }, { field_key: 'totalAttempted' }, { field_key: 'totalAbsentees' },
+      { field_key: 'totalDelayed' }, { field_key: 'overallPass' }, { field_key: 'overallAvgTime' },
+    ] },
+  { key: 'metricGrid', icon: BarChart3, title: 'Metric Grid', subtitle: 'Participant details',
+    fields: [{ field_key: 'yes' }] },
+  { key: 'participantJourney', icon: Route, title: 'Participant Journey', subtitle: 'Fields shown in participant popup',
     fields: [
-      { field_key: 'assigned' },
-      { field_key: 'passRate' },
-      { field_key: 'avgTime'  },
-    ],
-  },
-  {
-    key: 'contestTotals', icon: Trophy,
-    title: 'Contest Totals',
-    subtitle: 'Overall contest metrics',
+      { field_key: 'percentage' }, { field_key: 'totalTime' },
+      { field_key: 'status' }, { field_key: 'rounds' },
+    ] },
+  { key: 'trainerJourney', icon: UserCircle2, title: 'Trainer Journey', subtitle: 'Fields shown in trainer popup',
     fields: [
-      { field_key: 'totalScheduled' },
-      { field_key: 'totalAttempted' },
-      { field_key: 'totalAbsentees' },
-      { field_key: 'totalDelayed'   },
-      { field_key: 'overallPass'    },
-      { field_key: 'overallAvgTime' },
-    ],
-  },
-  {
-    key: 'metricGrid', icon: BarChart3,
-    title: 'Metric Grid',
-    subtitle: 'Participant details',
-    fields: [
-      { field_key: 'yes' },
-    ],
-  },
-  {
-    key: 'participantJourney', icon: Route,
-    title: 'Participant Journey',
-    subtitle: 'Fields shown in participant popup',
-    fields: [
-      { field_key: 'percentage' },
-      { field_key: 'totalTime'  },
-      { field_key: 'status'     },
-      { field_key: 'rounds'     },
-    ],
-  },
-  {
-    key: 'trainerJourney', icon: UserCircle2,
-    title: 'Trainer Journey',
-    subtitle: 'Fields shown in trainer popup',
-    fields: [
-      { field_key: 'assigned'        },
-      { field_key: 'completed'       },
-      { field_key: 'passRate'        },
-      { field_key: 'avgTime'         },
-      { field_key: 'roundMilestones' },
-      { field_key: 'recentList'      },
-    ],
-  },
+      { field_key: 'assigned' }, { field_key: 'completed' }, { field_key: 'passRate' },
+      { field_key: 'avgTime' }, { field_key: 'roundMilestones' }, { field_key: 'recentList' },
+    ] },
 ];
 
-// =====================================================================
-// STATIC PERMISSION GROUPS  (Role / Region / Project)
-// =====================================================================
 const STATIC_PERMISSION_GROUPS = [
-  {
-    kind: 'single',
-    groupKey: 'role',
-    icon: Users,
-    title: 'Role',
-    subtitle: 'Job roles this user can access',
-  },
-  {
-    kind: 'single',
-    groupKey: 'region',
-    icon: Globe2,
-    title: 'Region',
-    subtitle: 'Regions this user can access',
-  },
-  {
-    kind: 'single',
-    groupKey: 'project',
-    icon: Trophy,
-    title: 'Project',
-    subtitle: 'Projects this user can access',
-  },
+  { kind: 'single', groupKey: 'project', icon: Trophy,  title: 'Project', subtitle: 'Projects this user can access' },
+  { kind: 'single', groupKey: 'role',    icon: Users,   title: 'Role',    subtitle: 'Job roles this user can access' },
+  { kind: 'single', groupKey: 'region',  icon: Globe2,  title: 'Region',  subtitle: 'Regions this user can access' },
 ];
 
-const prettify = (k) => {
-  if (k === 'yes') return 'Yes';
-  return k.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
-};
+const prettify = (k) => k === 'yes' ? 'Yes' : k.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
 
-// =====================================================================
-// PAGE
-// =====================================================================
 export default function RolesPermissions() {
   const { user } = useAuth();
 
-  const [admins, setAdmins]   = useState([]);
-  const [search, setSearch]   = useState('');
+  const [admins, setAdmins] = useState([]);
+  const [search, setSearch] = useState('');
   const [showResults, setShowResults] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
 
@@ -144,22 +62,17 @@ export default function RolesPermissions() {
   const [regions, setRegions]   = useState([]);
   const [projects, setProjects] = useState([]);
 
-  const [selected, setSelected] = useState({
-    role: {}, region: {}, project: {},
-  });
-
+  const [selected, setSelected] = useState({ role: {}, region: {}, project: {} });
   const [savedMsg, setSavedMsg] = useState('');
   const searchWrapRef = useRef(null);
 
-  // ---- load admin list once ----
+  // ---- load admin list ----
   useEffect(() => {
     (async () => {
       try {
         const { data } = await getPermissionAdmins();
         if (data?.success) setAdmins(data.admins || []);
-      } catch (err) {
-        console.error('[perm admins]', err);
-      }
+      } catch (err) { console.error(err); }
     })();
   }, []);
 
@@ -171,46 +84,42 @@ export default function RolesPermissions() {
         const { data } = await getPermissionOptions(selectedUserId);
         if (!data?.success) return;
 
-        setRoles(data.roles       || []);
-        setRegions(data.regions   || []);
-        setProjects(data.projects || []);
+        const projList   = data.projects || [];
+        const roleList   = data.roles    || [];
+        const regionList = data.regions  || [];
+        const ex         = data.existing;
 
         const base = {
-          role:    Object.fromEntries((data.roles    || []).map((r) => [r, false])),
-          region:  Object.fromEntries((data.regions  || []).map((r) => [r, false])),
-          project: Object.fromEntries((data.projects || []).map((p) => [p, false])),
+          role:    Object.fromEntries(roleList.map((r)   => [r, false])),
+          region:  Object.fromEntries(regionList.map((r) => [r, false])),
+          project: Object.fromEntries(projList.map((p)   => [p, false])),
         };
         STATIC_SECTIONS.forEach((s) => {
           base[s.key] = Object.fromEntries(s.fields.map((f) => [f.field_key, false]));
         });
 
-        const ex = data.existing;
         if (ex) {
           (ex.allowed_roles    || []).forEach((r) => { if (r in base.role)    base.role[r]    = true; });
           (ex.allowed_regions  || []).forEach((r) => { if (r in base.region)  base.region[r]  = true; });
           (ex.allowed_projects || []).forEach((p) => { if (p in base.project) base.project[p] = true; });
-
-          const perms = ex.permissions || {};
-          Object.entries(perms).forEach(([grp, obj]) => {
+          Object.entries(ex.permissions || {}).forEach(([grp, obj]) => {
             if (!base[grp]) base[grp] = {};
-            Object.entries(obj).forEach(([k, v]) => {
-              if (k in base[grp]) base[grp][k] = !!v;
-            });
+            Object.entries(obj).forEach(([k, v]) => { if (k in base[grp]) base[grp][k] = !!v; });
           });
         }
 
         setSelected(base);
-      } catch (err) {
-        console.error('[perm options]', err);
-      }
+        setRoles(roleList);
+        setRegions(regionList);
+        setProjects(projList);
+      } catch (err) { console.error(err); }
     })();
   }, [selectedUserId]);
 
+  // ---- click outside search ----
   useEffect(() => {
     const onClick = (e) => {
-      if (searchWrapRef.current && !searchWrapRef.current.contains(e.target)) {
-        setShowResults(false);
-      }
+      if (searchWrapRef.current && !searchWrapRef.current.contains(e.target)) setShowResults(false);
     };
     document.addEventListener('mousedown', onClick);
     return () => document.removeEventListener('mousedown', onClick);
@@ -225,14 +134,46 @@ export default function RolesPermissions() {
   const selectedUser = admins.find((a) => a.id === selectedUserId);
   const current      = selectedUserId ? selected : null;
 
-  const toggleItem = (groupKey, itemKey) => {
+  // ---- Project toggle → refetch roles ----
+  const handleProjectToggle = async (projectSel) => {
+    const activeProjects = Object.keys(projectSel).filter((k) => projectSel[k]);
+    if (activeProjects.length === 0) {
+      setRoles([]);
+      setSelected((prev) => ({ ...prev, role: {} }));
+      return;
+    }
+    const { data } = await getPermissionOptions(selectedUserId, activeProjects);
+    if (!data?.success) return;
+    const newRoles = data.roles || [];
+    setRoles(newRoles);
+    setSelected((prev) => ({
+      ...prev,
+      role: Object.fromEntries(newRoles.map((r) => [r, !!prev.role[r]])),
+    }));
+  };
+
+  const toggleItem = async (groupKey, itemKey) => {
+    if (groupKey === 'project') {
+      const newSel = { ...selected.project, [itemKey]: !selected.project[itemKey] };
+      setSelected((prev) => ({ ...prev, project: newSel }));
+      await handleProjectToggle(newSel);
+      return;
+    }
     setSelected((prev) => ({
       ...prev,
       [groupKey]: { ...prev[groupKey], [itemKey]: !prev[groupKey]?.[itemKey] },
     }));
   };
 
-  const toggleAllKeys = (groupKey, keys) => {
+  const toggleAllKeys = async (groupKey, keys) => {
+    if (groupKey === 'project') {
+      const allOn = keys.every((k) => selected.project[k]);
+      const newSel = { ...selected.project };
+      keys.forEach((k) => { newSel[k] = !allOn; });
+      setSelected((prev) => ({ ...prev, project: newSel }));
+      await handleProjectToggle(newSel);
+      return;
+    }
     setSelected((prev) => {
       const g = prev[groupKey] || {};
       const allOn = keys.every((k) => g[k]);
@@ -260,20 +201,15 @@ export default function RolesPermissions() {
     const permissions = {};
     STATIC_SECTIONS.forEach((s) => {
       permissions[s.key] = {};
-      s.fields.forEach((f) => {
-        permissions[s.key][f.field_key] = !!current[s.key]?.[f.field_key];
-      });
+      s.fields.forEach((f) => { permissions[s.key][f.field_key] = !!current[s.key]?.[f.field_key]; });
     });
-
-    const allowedRoles    = Object.keys(current.role   ).filter((k) => current.role[k]);
-    const allowedRegions  = Object.keys(current.region ).filter((k) => current.region[k]);
-    const allowedProjects = Object.keys(current.project).filter((k) => current.project[k]);
 
     try {
       const { data } = await savePermissions({
         userId: selectedUserId,
-        allowedRoles, allowedRegions,
-        allowedProjects,
+        allowedRoles:    Object.keys(current.role).filter((k) => current.role[k]),
+        allowedRegions:  Object.keys(current.region).filter((k) => current.region[k]),
+        allowedProjects: Object.keys(current.project).filter((k) => current.project[k]),
         permissions,
       });
       setSavedMsg(data?.success ? 'Saved' : (data?.error || 'Save failed'));
@@ -292,22 +228,11 @@ export default function RolesPermissions() {
             g.groupKey === 'role'    ? roles    :
             g.groupKey === 'region'  ? regions  :
             g.groupKey === 'project' ? projects : [];
-
-          return {
-            ...g,
-            options: optSource.map((v) => ({ key: v, label: v })),
-          };
+          return { ...g, options: optSource.map((v) => ({ key: v, label: v })) };
         }),
         ...STATIC_SECTIONS.map((s) => ({
-          kind: 'group',
-          icon: s.icon,
-          title: s.title,
-          subtitle: s.subtitle,
-          groupKey: s.key,
-          options: s.fields.map((f) => ({
-            key: f.field_key,
-            label: prettify(f.field_key),
-          })),
+          kind: 'group', icon: s.icon, title: s.title, subtitle: s.subtitle, groupKey: s.key,
+          options: s.fields.map((f) => ({ key: f.field_key, label: prettify(f.field_key) })),
         })),
       ]
     : [];
@@ -320,9 +245,7 @@ export default function RolesPermissions() {
             <ShieldCheck className="h-5 w-5 text-blue-600" />
             Roles & Permissions
           </h1>
-          <p className="text-[11px] font-medium text-slate-500">
-            Search a user and toggle their permissions
-          </p>
+          <p className="text-[11px] font-medium text-slate-500">Search a user and toggle their permissions</p>
         </div>
         <div className="flex items-center gap-2.5 pl-3 pr-2 py-1 bg-white border border-gray-200 rounded-full">
           <div className="h-7 w-7 rounded-full bg-blue-600 flex items-center justify-center text-white text-[11px] font-black">
@@ -354,10 +277,7 @@ export default function RolesPermissions() {
                 className="w-full pl-10 pr-9 py-2.5 text-sm font-medium text-slate-800 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
               />
               {search && (
-                <button
-                  onClick={clearSelection}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
-                >
+                <button onClick={clearSelection} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700">
                   <X className="h-4 w-4" />
                 </button>
               )}
@@ -366,9 +286,7 @@ export default function RolesPermissions() {
             {showResults && (
               <div className="absolute left-0 right-0 mt-2 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden max-h-72 overflow-y-auto z-40">
                 {results.length === 0 ? (
-                  <div className="text-center text-xs text-slate-400 py-6">
-                    No users match your search
-                  </div>
+                  <div className="text-center text-xs text-slate-400 py-6">No users match your search</div>
                 ) : (
                   results.map((u) => {
                     const active = u.id === selectedUserId;
@@ -398,9 +316,7 @@ export default function RolesPermissions() {
             <div className="h-16 w-16 rounded-2xl bg-blue-50 flex items-center justify-center mb-3">
               <UserCog className="h-7 w-7 text-blue-600" />
             </div>
-            <h3 className="text-sm font-black text-slate-900 mb-1">
-              Select a user to configure permissions
-            </h3>
+            <h3 className="text-sm font-black text-slate-900 mb-1">Select a user to configure permissions</h3>
             <p className="text-xs font-medium text-slate-500 max-w-xs">
               Use the search box above to find a user, then toggle their permissions below.
             </p>
@@ -427,9 +343,7 @@ export default function RolesPermissions() {
                   return (
                     <tr
                       key={row.groupKey}
-                      className={`align-top ${
-                        idx !== ROWS.length - 1 ? 'border-b border-slate-100' : ''
-                      } hover:bg-blue-50/30 transition`}
+                      className={`align-top ${idx !== ROWS.length - 1 ? 'border-b border-slate-100' : ''} hover:bg-blue-50/30 transition`}
                     >
                       <td className="px-5 py-4">
                         <div className="flex items-start gap-3">
@@ -514,7 +428,6 @@ export default function RolesPermissions() {
   );
 }
 
-// =====================================================================
 function Pill({ label, active, onClick }) {
   return (
     <button
@@ -526,11 +439,7 @@ function Pill({ label, active, onClick }) {
           : 'bg-white border-slate-200 text-slate-500 hover:bg-blue-50/60'
       }`}
     >
-      {active ? (
-        <CheckCircle2 className="h-3 w-3" strokeWidth={2.5} />
-      ) : (
-        <XCircle className="h-3 w-3" strokeWidth={2.5} />
-      )}
+      {active ? <CheckCircle2 className="h-3 w-3" strokeWidth={2.5} /> : <XCircle className="h-3 w-3" strokeWidth={2.5} />}
       {label}
     </button>
   );
