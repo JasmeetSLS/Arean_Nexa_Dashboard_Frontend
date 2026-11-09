@@ -28,10 +28,10 @@ export default function Dashboard() {
 
   // Filters State
   const [filters, setFilters] = useState({
-    project: '', date: '', zone: '', region: '', dealerName: '', dealerCode: '', trainer: '', role: ''
+    project: '', date: '', region: '', dealerName: '', dealerCode: '', trainer: '', role: ''
   });
   const [filterOptions, setFilterOptions] = useState({
-    projects: [], dates: [], zones: [], regions: [], dealerNames: [], dealerCodes: [], trainers: [], roles: []
+    projects: [], dates: [], regions: [], dealerNames: [], dealerCodes: [], trainers: [], roles: []
   });
 
   // Search State
@@ -74,7 +74,7 @@ export default function Dashboard() {
     setRegionPage(0);
     setSearchTrainer('');
     setSearchParticipant('');
-    setFilters(prev => ({ ...prev, date: '', zone: '', region: '', dealerName: '', dealerCode: '', trainer: '', role: '' }));
+    setFilters(prev => ({ ...prev, date: '', region: '', dealerName: '', dealerCode: '', trainer: '', role: '' }));
   }, [filters.project]);
 
   // Reset trainer page when searching
@@ -96,7 +96,6 @@ export default function Dashboard() {
       try {
         const { data } = await getFilters({
           project: filters.project,
-          zone: filters.zone,
           region: filters.region,
           dealerName: filters.dealerName
         });
@@ -106,7 +105,6 @@ export default function Dashboard() {
             ...prev,
             projects: data.projects || prev.projects,
             dates: data.dates || [],
-            zones: data.zones || [],
             regions: data.regions || [],
             dealerNames: data.dealerNames || [],
             dealerCodes: data.dealerCodes || [],
@@ -120,7 +118,7 @@ export default function Dashboard() {
         }
       } catch (err) { console.error('Filter fetch failed:', err); }
     })();
-  }, [filters.project, filters.zone, filters.region, filters.dealerName]);
+  }, [filters.project, filters.region, filters.dealerName]);
 
   // 2. Fetch Dashboard API
   useEffect(() => {
@@ -251,7 +249,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-200">
             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
             <span className="text-xs font-bold text-gray-700">DATA · {dashData?.todayLive?.date || '—'}</span>
-          </div>
+          </div>   
           {/* <button onClick={() => setToastOn(!toastOn)}
             className={`flex items-center justify-center h-8 w-8 rounded-full border transition ${toastOn ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm' : 'bg-white border-gray-200 text-gray-400 hover:shadow-md'}`}>
             {toastOn ? <FaBell className="h-4 w-4" /> : <FaBellSlash className="h-4 w-4" />}
@@ -295,17 +293,6 @@ export default function Dashboard() {
               className="border border-gray-300 rounded px-2 py-1 text-xs bg-white w-32">
               <option value="">All</option>
               {filterOptions.dates.map(d => <option key={d} value={d}>{d}</option>)}
-            </select>
-          </div>
-
-          {/* Zone */}
-          <div className="flex flex-col gap-0.5">
-            <label className="text-[11px] font-bold text-indigo-900 uppercase">Zone</label>
-            <select value={filters.zone} onChange={(e) => {
-              setFilters({...filters, zone: e.target.value, region: '', dealerName: '', dealerCode: ''});
-            }} className="border border-gray-300 rounded px-2 py-1 text-xs bg-white w-24">
-              <option value="">All</option>
-              {filterOptions.zones.map(z => <option key={z} value={z}>{z}</option>)}
             </select>
           </div>
 
@@ -451,8 +438,7 @@ export default function Dashboard() {
             <div className="flex-1">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
                 {regionSummary.map((r, idx) => (
-                  <div key={`${r?.region || 'x'}|${r?.zone || 'x'}|${idx}`} className="bg-white text-black shadow-sm border-2 border-purple-500 p-3 text-center">
-                    {/* <h3 className="font-bold text-sm mb-1">{r?.region || '—'} – {r?.zone || '—'}</h3> */}
+                  <div key={`${r?.region || 'x'}|${idx}`} className="bg-white text-black shadow-sm border-2 border-purple-500 p-3 text-center">
                     <h3 className="font-bold text-sm mb-1">{r?.region || '—'}</h3>
                     
                     {canSee('regionSummary', 'completed') && (
