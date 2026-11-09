@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   ChevronRight, Save, Check, ShieldCheck, Search, X, UserCog,
   Radio, Trophy, BarChart3, Route, UserCircle2,
-  Users, MapPin, Globe2,
+  Users, Globe2,
   CheckCircle2, XCircle,
 } from 'lucide-react';
 import { useAuth } from '../service/auth.jsx';
@@ -98,7 +98,7 @@ const STATIC_SECTIONS = [
 ];
 
 // =====================================================================
-// STATIC PERMISSION GROUPS  (Role / Zone / Region / Project)
+// STATIC PERMISSION GROUPS  (Role / Region / Project)
 // =====================================================================
 const STATIC_PERMISSION_GROUPS = [
   {
@@ -107,13 +107,6 @@ const STATIC_PERMISSION_GROUPS = [
     icon: Users,
     title: 'Role',
     subtitle: 'Job roles this user can access',
-  },
-  {
-    kind: 'single',
-    groupKey: 'zone',
-    icon: MapPin,
-    title: 'Zone',
-    subtitle: 'Zones this user can access',
   },
   {
     kind: 'single',
@@ -148,12 +141,11 @@ export default function RolesPermissions() {
   const [selectedUserId, setSelectedUserId] = useState(null);
 
   const [roles, setRoles]       = useState([]);
-  const [zones, setZones]       = useState([]);
   const [regions, setRegions]   = useState([]);
   const [projects, setProjects] = useState([]);
 
   const [selected, setSelected] = useState({
-    role: {}, zone: {}, region: {}, project: {},
+    role: {}, region: {}, project: {},
   });
 
   const [savedMsg, setSavedMsg] = useState('');
@@ -180,13 +172,11 @@ export default function RolesPermissions() {
         if (!data?.success) return;
 
         setRoles(data.roles       || []);
-        setZones(data.zones       || []);
         setRegions(data.regions   || []);
         setProjects(data.projects || []);
 
         const base = {
           role:    Object.fromEntries((data.roles    || []).map((r) => [r, false])),
-          zone:    Object.fromEntries((data.zones    || []).map((z) => [z, false])),
           region:  Object.fromEntries((data.regions  || []).map((r) => [r, false])),
           project: Object.fromEntries((data.projects || []).map((p) => [p, false])),
         };
@@ -197,7 +187,6 @@ export default function RolesPermissions() {
         const ex = data.existing;
         if (ex) {
           (ex.allowed_roles    || []).forEach((r) => { if (r in base.role)    base.role[r]    = true; });
-          (ex.allowed_zones    || []).forEach((z) => { if (z in base.zone)    base.zone[z]    = true; });
           (ex.allowed_regions  || []).forEach((r) => { if (r in base.region)  base.region[r]  = true; });
           (ex.allowed_projects || []).forEach((p) => { if (p in base.project) base.project[p] = true; });
 
@@ -277,14 +266,13 @@ export default function RolesPermissions() {
     });
 
     const allowedRoles    = Object.keys(current.role   ).filter((k) => current.role[k]);
-    const allowedZones    = Object.keys(current.zone   ).filter((k) => current.zone[k]);
     const allowedRegions  = Object.keys(current.region ).filter((k) => current.region[k]);
     const allowedProjects = Object.keys(current.project).filter((k) => current.project[k]);
 
     try {
       const { data } = await savePermissions({
         userId: selectedUserId,
-        allowedRoles, allowedZones, allowedRegions,
+        allowedRoles, allowedRegions,
         allowedProjects,
         permissions,
       });
@@ -302,7 +290,6 @@ export default function RolesPermissions() {
         ...STATIC_PERMISSION_GROUPS.map((g) => {
           const optSource =
             g.groupKey === 'role'    ? roles    :
-            g.groupKey === 'zone'    ? zones    :
             g.groupKey === 'region'  ? regions  :
             g.groupKey === 'project' ? projects : [];
 
