@@ -67,6 +67,9 @@ export default function Dashboard() {
   const [toastOn, setToastOn]       = useState(false);
   const [imgErrors, setImgErrors]   = useState({});
 
+  // Auto-refresh tick
+  const [refreshTick, setRefreshTick] = useState(0);
+
   // Reset pages and sub-filters on project change
   useEffect(() => { 
     setTrainerPage(0); 
@@ -79,6 +82,12 @@ export default function Dashboard() {
 
   // Reset trainer page when searching
   useEffect(() => { setTrainerPage(0); }, [searchTrainer, searchParticipant]);
+
+  // Auto-refresh every 60 seconds
+  // useEffect(() => {
+  //   const id = setInterval(() => setRefreshTick(t => t + 1), 60_000);
+  //   return () => clearInterval(id);
+  // }, []);
 
   // 0. Fetch My Permissions
   useEffect(() => {
@@ -139,7 +148,7 @@ export default function Dashboard() {
     load();
 
     return () => { cancelled = true; };
-  }, [filters, regionPage]);
+  }, [filters, regionPage, refreshTick]);
 
   // 3. Fetch Trainers + Participants
   useEffect(() => {
@@ -197,7 +206,7 @@ export default function Dashboard() {
     load();
 
     return () => { cancelled = true; };
-  }, [filters, trainerPage, participantPage, searchTrainer, searchParticipant]);
+  }, [filters, trainerPage, participantPage, searchTrainer, searchParticipant, refreshTick]);
 
   const regionSummary     = dashData?.regionSummary || [];
   const regionPagination  = dashData?.regionPagination || { page: 0, totalPages: 1, total: 0, limit: REGION_LIMIT };
@@ -249,7 +258,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-200">
             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
             <span className="text-xs font-bold text-gray-700">DATA · {dashData?.todayLive?.date || '—'}</span>
-          </div>   
+          </div>    
           {/* <button onClick={() => setToastOn(!toastOn)}
             className={`flex items-center justify-center h-8 w-8 rounded-full border transition ${toastOn ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm' : 'bg-white border-gray-200 text-gray-400 hover:shadow-md'}`}>
             {toastOn ? <FaBell className="h-4 w-4" /> : <FaBellSlash className="h-4 w-4" />}
@@ -346,11 +355,6 @@ export default function Dashboard() {
               <option value="">All</option>
               {filterOptions.roles.map(r => <option key={r} value={r}>{r}</option>)}
             </select>
-          </div>
-
-          <div className="ml-auto text-xs font-bold text-indigo-400 pb-1">
-            <span className="inline-block w-2 h-2 rounded-full bg-indigo-500 mr-1.5 align-middle"></span>
-            Manual refresh required
           </div>
         </div>
       </div>
