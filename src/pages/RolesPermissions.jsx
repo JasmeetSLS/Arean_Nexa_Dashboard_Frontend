@@ -6,7 +6,7 @@ import {
   CheckCircle2, XCircle,
 } from 'lucide-react';
 import { useAuth } from '../service/auth.jsx';
-import { usePermissions } from '../context/PermissionContext'; 
+import { usePermissions } from '../context/PermissionContext.jsx'; 
 import {
   getPermissionAdmins,
   getPermissionOptions,
@@ -22,7 +22,10 @@ const STATIC_SECTIONS = [
     fields: [
       { field_key: 'dashboard' }, 
       { field_key: 'setup' }, 
-      { field_key: 'role' }
+      { field_key: 'role' },
+      { field_key: 'report_arena' }, // ✅ Added
+      { field_key: 'report_nexa' },  // ✅ Added
+      { field_key: 'report_tv' }     // ✅ Added
     ] 
   },
   { key: 'liveData', icon: Radio, title: 'Live Data', subtitle: 'Metrics shown in the live data section',
@@ -223,8 +226,8 @@ export default function RolesPermissions() {
       });
       
       if (data?.success) {
-        setSavedMsg('Saved');
-        await refreshPermissions(); // ✅ INSTANT UPDATE
+       alert('Permissions Saved Successfully!');
+        await refreshPermissions(); 
       } else {
         setSavedMsg(data?.error || 'Save failed');
       }

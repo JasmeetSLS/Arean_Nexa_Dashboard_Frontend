@@ -278,11 +278,14 @@ export default function Dashboard() {
             <Bell className="h-4 w-4" />
           </button> */}          
           {/* REPORTS BUTTON */}
-          <button onClick={() => setShowReportModal(true)}
-            className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 border border-indigo-700 text-white rounded-full text-xs font-semibold shadow-sm hover:bg-indigo-700 transition-all">
-            <FileText className="h-3.5 w-3.5" />
-            <span>Reports</span>
-          </button>
+     {/* REPORTS BUTTON */}
+{(canSee('pages', 'report_arena') || canSee('pages', 'report_nexa') || canSee('pages', 'report_tv')) && (
+  <button onClick={() => setShowReportModal(true)}
+    className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 border border-indigo-700 text-white rounded-full text-xs font-semibold shadow-sm hover:bg-indigo-700 transition-all">
+    <FileText className="h-3.5 w-3.5" />
+    <span>Reports</span>
+  </button>
+)}
 
           <button onClick={logout}
             className="flex items-center gap-1 px-3 py-1.5 bg-white border border-gray-200 text-gray-600 rounded-full text-xs font-semibold shadow-sm hover:shadow-md transition-all">

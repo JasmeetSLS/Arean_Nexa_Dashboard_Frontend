@@ -108,4 +108,17 @@ export const exportTVWinnersZIP = (params = {}) =>
 
 export const getTVFilters = () => api.get('/tv-filters');
 
+// REPORTS (NEXA)
+export const getNexaFilters = (params = {}) =>
+  api.get('/nexa-filters', { params });
+
+export const exportNexaDailyReport = (params = {}) =>
+  api.get('/export-nexa-daily-report', { params, responseType: 'blob' });
+
+export const exportNexaOverallAttendance = (params = {}) =>
+  api.get('/nexa-overall-attendance', { params, responseType: 'blob' });
+
+export const exportNexaOverallResult = (params = {}) =>
+  api.get('/export-nexa-overall-result', { params, responseType: 'blob' });
+
 export default api;
