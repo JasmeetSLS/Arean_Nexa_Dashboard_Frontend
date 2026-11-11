@@ -1,35 +1,43 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import { getMyPermissions } from '../service/api';
+import { useAuth } from '../service/auth'; 
 
-// Create the Context
 const PermissionContext = createContext(null);
 
-// Create the Provider Component
 export function PermissionProvider({ children }) {
+  const { user } = useAuth(); 
   const [perms, setPerms] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await getMyPermissions();
-        if (data?.success) {
-          setPerms(data.permissions || {});
-        }
-      } catch (err) {
-        console.error('Failed to fetch permissions:', err);
-      } finally {
-        setLoading(false);
+  const fetchPermissions = useCallback(async () => {
+    if (!user) {
+      setPerms(null);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data } = await getMyPermissions();
+      if (data?.success) {
+        setPerms(data.permissions || {});
       }
-    })();
-  }, []);
+    } catch (err) {
+      console.error('Failed to fetch permissions:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchPermissions();
+  }, [fetchPermissions]);
 
   return (
-    <PermissionContext.Provider value={{ perms, loading }}>
+    <PermissionContext.Provider value={{ perms, loading, refreshPermissions: fetchPermissions }}>
       {children}
     </PermissionContext.Provider>
   );
 }
 
-// Custom hook to easily use the context in any component
 export const usePermissions = () => useContext(PermissionContext);

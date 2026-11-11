@@ -2,10 +2,11 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   ChevronRight, Save, Check, ShieldCheck, Search, X, UserCog,
   Radio, Trophy, BarChart3, Route, UserCircle2,
-  Users, Globe2, LayoutDashboard, // ✅ Added LayoutDashboard
+  Users, Globe2, LayoutDashboard, 
   CheckCircle2, XCircle,
 } from 'lucide-react';
 import { useAuth } from '../service/auth.jsx';
+import { usePermissions } from '../context/PermissionContext'; 
 import {
   getPermissionAdmins,
   getPermissionOptions,
@@ -13,7 +14,6 @@ import {
 } from '../service/api';
 
 const STATIC_SECTIONS = [
-  // ✅ NEW PAGE ACCESS SECTION
   {
     key: 'pages', 
     icon: LayoutDashboard, 
@@ -25,7 +25,6 @@ const STATIC_SECTIONS = [
       { field_key: 'role' }
     ] 
   },
-  
   { key: 'liveData', icon: Radio, title: 'Live Data', subtitle: 'Metrics shown in the live data section',
     fields: [
       { field_key: 'scheduled' }, { field_key: 'attempted' }, { field_key: 'absentees' },
@@ -65,6 +64,7 @@ const prettify = (k) => k === 'yes' ? 'Yes' : k.replace(/([A-Z])/g, ' $1').repla
 
 export default function RolesPermissions() {
   const { user } = useAuth();
+  const { refreshPermissions } = usePermissions(); 
 
   const [admins, setAdmins] = useState([]);
   const [search, setSearch] = useState('');
@@ -79,7 +79,6 @@ export default function RolesPermissions() {
   const [savedMsg, setSavedMsg] = useState('');
   const searchWrapRef = useRef(null);
 
-  // ---- load admin list ----
   useEffect(() => {
     (async () => {
       try {
@@ -89,7 +88,6 @@ export default function RolesPermissions() {
     })();
   }, []);
 
-  // ---- load options when admin changes ----
   useEffect(() => {
     if (!selectedUserId) return;
     (async () => {
@@ -129,7 +127,6 @@ export default function RolesPermissions() {
     })();
   }, [selectedUserId]);
 
-  // ---- click outside search ----
   useEffect(() => {
     const onClick = (e) => {
       if (searchWrapRef.current && !searchWrapRef.current.contains(e.target)) setShowResults(false);
@@ -147,7 +144,6 @@ export default function RolesPermissions() {
   const selectedUser = admins.find((a) => a.id === selectedUserId);
   const current      = selectedUserId ? selected : null;
 
-  // ---- Project toggle → refetch roles ----
   const handleProjectToggle = async (projectSel) => {
     const activeProjects = Object.keys(projectSel).filter((k) => projectSel[k]);
     if (activeProjects.length === 0) {
@@ -225,7 +221,13 @@ export default function RolesPermissions() {
         allowedProjects: Object.keys(current.project).filter((k) => current.project[k]),
         permissions,
       });
-      setSavedMsg(data?.success ? 'Saved' : (data?.error || 'Save failed'));
+      
+      if (data?.success) {
+        setSavedMsg('Saved');
+        await refreshPermissions(); // ✅ INSTANT UPDATE
+      } else {
+        setSavedMsg(data?.error || 'Save failed');
+      }
     } catch (err) {
       console.error('[perm save]', err);
       setSavedMsg(err?.response?.data?.error || 'Save failed');
@@ -272,9 +274,7 @@ export default function RolesPermissions() {
       <main className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
           <div className="relative w-full max-w-md" ref={searchWrapRef}>
-            <label className="block text-[11px] font-black text-slate-700 uppercase tracking-wide mb-1.5">
-              Search User
-            </label>
+            <label className="block text-[11px] font-black text-slate-700 uppercase tracking-wide mb-1.5">Search User</label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
               <input
@@ -311,9 +311,7 @@ export default function RolesPermissions() {
                           active ? 'bg-blue-50 border-blue-500' : 'border-transparent hover:bg-slate-50'
                         }`}
                       >
-                        <span className={`text-xs font-bold truncate ${active ? 'text-blue-800' : 'text-slate-800'}`}>
-                          {u.username}
-                        </span>
+                        <span className={`text-xs font-bold truncate ${active ? 'text-blue-800' : 'text-slate-800'}`}>{u.username}</span>
                         {active && <Check className="h-4 w-4 text-blue-600 shrink-0" strokeWidth={3} />}
                       </button>
                     );
@@ -330,9 +328,7 @@ export default function RolesPermissions() {
               <UserCog className="h-7 w-7 text-blue-600" />
             </div>
             <h3 className="text-sm font-black text-slate-900 mb-1">Select a user to configure permissions</h3>
-            <p className="text-xs font-medium text-slate-500 max-w-xs">
-              Use the search box above to find a user, then toggle their permissions below.
-            </p>
+            <p className="text-xs font-medium text-slate-500 max-w-xs">Use the search box above to find a user, then toggle their permissions below.</p>
           </div>
         ) : (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -354,10 +350,7 @@ export default function RolesPermissions() {
                   const allOn         = selectedCount === totalCount && totalCount > 0;
 
                   return (
-                    <tr
-                      key={row.groupKey}
-                      className={`align-top ${idx !== ROWS.length - 1 ? 'border-b border-slate-100' : ''} hover:bg-blue-50/30 transition`}
-                    >
+                    <tr key={row.groupKey} className={`align-top ${idx !== ROWS.length - 1 ? 'border-b border-slate-100' : ''} hover:bg-blue-50/30 transition`}>
                       <td className="px-5 py-4">
                         <div className="flex items-start gap-3">
                           <div className="shrink-0 h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center">
@@ -376,21 +369,14 @@ export default function RolesPermissions() {
                         ) : (
                           <div className="flex flex-wrap gap-1.5">
                             {row.options.map((o) => (
-                              <Pill
-                                key={o.key}
-                                label={o.label}
-                                active={!!value[o.key]}
-                                onClick={() => toggleItem(row.groupKey, o.key)}
-                              />
+                              <Pill key={o.key} label={o.label} active={!!value[o.key]} onClick={() => toggleItem(row.groupKey, o.key)} />
                             ))}
                           </div>
                         )}
                       </td>
 
                       <td className="px-5 py-4 text-center">
-                        <span className="inline-block text-[11px] font-black px-2 py-1 rounded-md bg-blue-50 text-blue-700">
-                          {selectedCount} / {totalCount}
-                        </span>
+                        <span className="inline-block text-[11px] font-black px-2 py-1 rounded-md bg-blue-50 text-blue-700">{selectedCount} / {totalCount}</span>
                       </td>
 
                       <td className="px-5 py-4 text-center">
@@ -447,9 +433,7 @@ function Pill({ label, active, onClick }) {
       type="button"
       onClick={onClick}
       className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-bold border transition ${
-        active
-          ? 'bg-blue-600 border-blue-600 text-white'
-          : 'bg-white border-slate-200 text-slate-500 hover:bg-blue-50/60'
+        active ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-500 hover:bg-blue-50/60'
       }`}
     >
       {active ? <CheckCircle2 className="h-3 w-3" strokeWidth={2.5} /> : <XCircle className="h-3 w-3" strokeWidth={2.5} />}

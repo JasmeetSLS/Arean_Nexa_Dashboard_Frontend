@@ -13,7 +13,6 @@ import {
 import { useAuth } from '../service/auth.jsx';
 import ChatBot from './ChatBot.jsx';
 
-// IMPORT THE NEW COMPONENT HERE (Adjust path if necessary)
 import ReportModal from '../components/ReportModal.jsx';
 import { usePermissions } from '../context/PermissionContext.jsx';
 
@@ -23,7 +22,9 @@ const REGION_LIMIT = 4;
 export default function Dashboard() {
   const { user, logout } = useAuth();
 
-const { perms } = usePermissions(); 
+  // ✅ Get loading state and permissions from Context
+  const { perms, loading: permsLoading } = usePermissions(); 
+
   // Filters State
   const [filters, setFilters] = useState({
     project: '', date: '', region: '', dealerName: '', dealerCode: '', trainer: '', role: ''
@@ -56,7 +57,7 @@ const { perms } = usePermissions();
   const [selectedParticipant, setSelectedParticipant]       = useState(null);
   const [showParticipantJourney, setShowParticipantJourney] = useState(false);
 
-  // Report Modal State (Simplified)
+  // Report Modal State
   const [showReportModal, setShowReportModal] = useState(false);
 
   const [loading, setLoading] = useState(true);
@@ -80,13 +81,12 @@ const { perms } = usePermissions();
 
   // Reset trainer page when searching
   useEffect(() => { setTrainerPage(0); }, [searchTrainer, searchParticipant]);
-
-  // Auto-refresh every 60 seconds
+  
+  // ✅ AUTO-REFRESH EVERY 10 SECONDS
   // useEffect(() => {
-  //   const id = setInterval(() => setRefreshTick(t => t + 1), 60_000);
+  //   const id = setInterval(() => setRefreshTick(t => t + 1), 10_000);
   //   return () => clearInterval(id);
   // }, []);
-
 
   // 1. Fetch Filter Options
   useEffect(() => {
@@ -137,7 +137,7 @@ const { perms } = usePermissions();
     load();
 
     return () => { cancelled = true; };
-  }, [filters, regionPage, refreshTick]);
+  }, [filters, regionPage, refreshTick]); // ✅ refreshTick triggers re-fetch
 
   // 3. Fetch Trainers + Participants
   useEffect(() => {
@@ -195,7 +195,7 @@ const { perms } = usePermissions();
     load();
 
     return () => { cancelled = true; };
-  }, [filters, trainerPage, participantPage, searchTrainer, searchParticipant, refreshTick]);
+  }, [filters, trainerPage, participantPage, searchTrainer, searchParticipant, refreshTick]); // ✅ refreshTick triggers re-fetch
 
   const regionSummary     = dashData?.regionSummary || [];
   const regionPagination  = dashData?.regionPagination || { page: 0, totalPages: 1, total: 0, limit: REGION_LIMIT };
@@ -210,6 +210,26 @@ const { perms } = usePermissions();
     };
   }, [trainerParticipants]);
 
+  // ✅ 1. Show spinner while permissions are loading
+  if (permsLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-[#F3F4F6]">
+        <div className="h-10 w-10 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin" />
+      </div>
+    );
+  }
+
+  // ✅ 2. Block the page if they don't have dashboard permission
+  if (perms?.pages?.dashboard === false) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-[#F3F4F6]">
+        <h1 className="text-2xl font-black text-rose-600 mb-2">Access Denied</h1>
+        <p className="text-gray-600 font-medium">You do not have permission to view the Dashboard.</p>
+      </div>
+    );
+  }
+
+  // 3. Normal Data Loading
   if (loading && trainers.length === 0 && !filters.project) {
     return (
       <div className="h-screen flex items-center justify-center bg-[#F3F4F6]">
@@ -218,9 +238,10 @@ const { perms } = usePermissions();
     );
   }
 
-  // Helper to check if a specific UI element should be visible
+  // ✅ 4. Helper to check if a specific UI element should be visible
   const canSee = (section, field) => {
-    if (!perms || !perms[section]) return true; 
+    if (!perms) return false; 
+    if (!perms[section]) return true; 
     return perms[section][field] !== false;
   };
 
@@ -255,8 +276,7 @@ const { perms } = usePermissions();
           <button onClick={() => setShowAlerts(true)}
             className="relative flex items-center justify-center h-8 w-8 bg-white border border-gray-200 text-gray-600 rounded-full shadow-sm hover:shadow-md transition-all">
             <Bell className="h-4 w-4" />
-          </button> */}
-          
+          </button> */}          
           {/* REPORTS BUTTON */}
           <button onClick={() => setShowReportModal(true)}
             className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 border border-indigo-700 text-white rounded-full text-xs font-semibold shadow-sm hover:bg-indigo-700 transition-all">
