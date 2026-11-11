@@ -27,6 +27,8 @@ api.interceptors.response.use(
 export const login = (username, password, type = 'admin') =>
   api.post('/auth/login', { username, password, type });
 
+export const getMe = () => api.get('/me');
+
 export const getProjects  = ()                     => api.get('/projects');
 export const addProject  = (payload) => api.post('/projects', payload);
 

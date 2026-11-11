@@ -1,8 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { MessageCircle, X, Send } from 'lucide-react';
-import { getChatUsers, getChatMessages, postChatMessage } from '../service/api';
+import { getChatUsers, getChatMessages, postChatMessage, getMe } from '../service/api'; // ✅ Import getMe
 import useChatSocket from '../hooks/useChatSocket';
-import { useAuth } from '../service/auth';
 
 function Avatar({ name = '', photoUrl, size = 'sm' }) {
   const dim = size === 'lg' ? 'h-10 w-10 text-[12px]' : 'h-8 w-8 text-[10px]';
@@ -24,7 +23,8 @@ function Avatar({ name = '', photoUrl, size = 'sm' }) {
 }
 
 export default function ChatBot() {
-  const { user: me } = useAuth();
+  const [me, setMe] = useState(null); // ✅ Fetched via API
+
   const [open, setOpen]               = useState(false);
   const [convs, setConvs]             = useState([]);
   const [active, setActive]           = useState(null);
@@ -36,19 +36,30 @@ export default function ChatBot() {
   const listRef     = useRef(null);
   const typingTimer = useRef(null);
   const activeRef   = useRef(null);
+  
   useEffect(() => { activeRef.current = active; }, [active]);
+
+  // ✅ Fetch user details on mount
+  useEffect(() => {
+    const fetchMyDetails = async () => {
+      try {
+        const { data } = await getMe();
+        if (data.success) {
+          setMe(data.user);
+        }
+      } catch (err) {
+        console.error('Failed to load my details:', err);
+      }
+    };
+    fetchMyDetails();
+  }, []);
 
   const scrollDown = useCallback(() => {
     setTimeout(() => listRef.current?.scrollTo({ top: 1e9, behavior: 'smooth' }), 30);
   }, []);
 
+  // ✅ REMOVED localStorage from loadUsers
   const loadUsers = useCallback(async () => {
-    try {
-      const cached = JSON.parse(localStorage.getItem('chat:users') || '[]');
-      setConvs(cached);
-      setUnreadTotal(cached.reduce((s, c) => s + (c.unread || 0), 0));
-    } catch {}
-
     try {
       const { data } = await getChatUsers();
       if (data.success) {
@@ -58,14 +69,14 @@ export default function ChatBot() {
         }));
         setConvs(list);
         setUnreadTotal(list.reduce((s, c) => s + (c.unread || 0), 0));
-        localStorage.setItem('chat:users', JSON.stringify(list));
       }
     } catch (err) { console.error(err); }
   }, []);
 
   const socketRef = useChatSocket({
     onMessage: (msg) => {
-      const myId = Number(me?.userId), myType = me?.type;
+      if (!me) return;
+      const myId = Number(me.userId), myType = me.type;
       const isMine = Number(msg.sender_id) === myId && msg.sender_type === myType;
       const peerId = isMine ? Number(msg.receiver_id) : Number(msg.sender_id);
       const peerType = isMine ? msg.receiver_type : msg.sender_type;
@@ -82,7 +93,6 @@ export default function ChatBot() {
       setConvs((prev) => {
         const next = prev.map((c) =>
           Number(c.peerId) === peerId && c.peerType === peerType
-            // ✅ FIXED: Do not increment unread if the message is yours (isMine)
             ? { ...c, lastMessage: msg, unread: (isActive || isMine) ? c.unread : c.unread + 1 }
             : c
         );
@@ -101,10 +111,11 @@ export default function ChatBot() {
       }
     },
     onRead: (r) => {
+      if (!me) return;
       setMessages((prev) =>
         prev.map((m) =>
           Number(m.receiver_id) === Number(r.byId) && m.receiver_type === r.byType
-            && Number(m.sender_id) === Number(me?.userId) && m.sender_type === me?.type
+            && Number(m.sender_id) === Number(me.userId) && m.sender_type === me.type
             ? { ...m, is_read: 1 } : m
         )
       );
@@ -117,12 +128,11 @@ export default function ChatBot() {
     setActive({ ...peer, unread: 0 });
   }, []);
 
+  // ✅ REMOVED localStorage from messages loading
   useEffect(() => {
     if (!active) return;
-    try {
-      const cached = JSON.parse(localStorage.getItem(`chat:msgs:${active.peerId}`) || '[]');
-      setMessages(cached); scrollDown();
-    } catch { setMessages([]); }
+    
+    setMessages([]); // Clear old messages immediately
 
     (async () => {
       try {
@@ -165,7 +175,6 @@ export default function ChatBot() {
 
   const time = (d) => new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-  // ==================== UI ====================
   return (
     <>
       <button
@@ -183,11 +192,19 @@ export default function ChatBot() {
       {open && (
         <div className="fixed bottom-24 right-6 z-[60] w-[720px] h-[540px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex overflow-hidden">
 
-          {/* ===== Sidebar ===== */}
           <aside className="w-64 shrink-0 border-r border-slate-200 flex flex-col bg-white">
-            <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
-              <p className="text-sm font-black text-slate-900 truncate">{me?.username}</p>
+            
+            {/* ✅ DISPLAY LOGGED IN USER */}
+            <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center gap-2.5">
+              <Avatar name={me?.username || ''} photoUrl={me?.photoUrl} />
+              <div className="min-w-0">
+                <p className="text-sm font-black text-slate-900 truncate">
+                  {me?.username || 'Loading...'}
+                </p>
+                <p className="text-[10px] text-slate-500 capitalize">{me?.type || '...'}</p>
+              </div>
             </div>
+
             <div className="flex-1 overflow-y-auto">
               {convs.map((c) => {
                 const isActive = active?.peerId === c.peerId && active?.peerType === c.peerType;
@@ -220,7 +237,6 @@ export default function ChatBot() {
             </div>
           </aside>
 
-          {/* ===== Chat panel ===== */}
           <section className="flex-1 flex flex-col min-w-0 bg-[#F0F2F5]">
             {active ? (
               <>
