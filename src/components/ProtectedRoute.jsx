@@ -21,7 +21,7 @@ const ProtectedRoute = ({ children, isAdmin = false }) => {
   // 3. Role guard for admin-only routes
   if (isAdmin && user?.type !== 'admin') {
     // a trainer trying to open /, /setup, /role → send them to /trainer
-    return <Navigate to="/trainer" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return children;

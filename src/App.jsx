@@ -6,11 +6,10 @@ import { PermissionProvider, usePermissions } from './context/PermissionContext'
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import ChatBot from './pages/ChatBot';
+import ChatBotPage from './pages/ChatBot';      // new public page
 import RolesPermissions from './pages/RolesPermissions';
 import SetupPanel from './pages/SetupPanel';
 import Layout from './components/Layout';
-import TrainerHome from './pages/TrainerHome';
 
 function PageGuard({ pageKey, children }) {
   const { perms, loading } = usePermissions();
@@ -42,8 +41,8 @@ export default function App() {
             <Route path="/setup" element={<ProtectedRoute isAdmin={true}><PageGuard pageKey="setup"><Layout><SetupPanel /></Layout></PageGuard></ProtectedRoute>} />
             <Route path="/role" element={<ProtectedRoute isAdmin={true}><PageGuard pageKey="role"><Layout><RolesPermissions /></Layout></PageGuard></ProtectedRoute>} />
             
-            <Route path="/chatbot" element={<ProtectedRoute isAdmin={true}><ChatBot /></ProtectedRoute>} />
-            <Route path="/trainer" element={<ProtectedRoute><TrainerHome /></ProtectedRoute>} />
+            {/* Public chat route – full‑screen, token‑based */}
+            <Route path="/chatbot" element={<ChatBotPage />} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
