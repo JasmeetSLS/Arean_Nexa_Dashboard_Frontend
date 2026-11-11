@@ -65,7 +65,8 @@ export const getPermissionOptions = (userId, projects = []) =>
 export const savePermissions      = (payload) => api.post('/permissions', payload);
 
 
-export const getChatUsers   = ()                    => api.get('/chat/users');
+
+export const getChatUsers = (params = {}) => api.get('/chat/users', { params });
 export const getChatMessages = (userId, params = {}) =>
   api.get(`/chat/messages/${userId}`, { params });
 export const postChatMessage = (peerId, message)    =>

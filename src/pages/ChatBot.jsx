@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { MessageCircle, X, Send } from 'lucide-react';
-import { getChatUsers, getChatMessages, postChatMessage, getMe } from '../service/api'; // ✅ Import getMe
+import { MessageCircle, X, Send, Search } from 'lucide-react';
+import { getChatUsers, getChatMessages, postChatMessage, getMe } from '../service/api';
 import useChatSocket from '../hooks/useChatSocket';
 
 function Avatar({ name = '', photoUrl, size = 'sm' }) {
@@ -23,8 +23,7 @@ function Avatar({ name = '', photoUrl, size = 'sm' }) {
 }
 
 export default function ChatBot() {
-  const [me, setMe] = useState(null); // ✅ Fetched via API
-
+  const [me, setMe] = useState(null);
   const [open, setOpen]               = useState(false);
   const [convs, setConvs]             = useState([]);
   const [active, setActive]           = useState(null);
@@ -32,6 +31,9 @@ export default function ChatBot() {
   const [input, setInput]             = useState('');
   const [typing, setTyping]           = useState(false);
   const [unreadTotal, setUnreadTotal] = useState(0);
+  
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
 
   const listRef     = useRef(null);
   const typingTimer = useRef(null);
@@ -39,14 +41,12 @@ export default function ChatBot() {
   
   useEffect(() => { activeRef.current = active; }, [active]);
 
-  // ✅ Fetch user details on mount
+  // 1. Fetch logged-in user details (No localStorage)
   useEffect(() => {
     const fetchMyDetails = async () => {
       try {
         const { data } = await getMe();
-        if (data.success) {
-          setMe(data.user);
-        }
+        if (data.success) setMe(data.user);
       } catch (err) {
         console.error('Failed to load my details:', err);
       }
@@ -58,21 +58,28 @@ export default function ChatBot() {
     setTimeout(() => listRef.current?.scrollTo({ top: 1e9, behavior: 'smooth' }), 30);
   }, []);
 
-  // ✅ REMOVED localStorage from loadUsers
-  const loadUsers = useCallback(async () => {
+  // 2. Load Users API (Accepts search term)
+  const loadUsers = useCallback(async (search = '') => {
     try {
-      const { data } = await getChatUsers();
+      const { data } = await getChatUsers({ search });
       if (data.success) {
         const list = data.users.map((u) => ({
-          peerId: u.userId, peerName: u.username, peerType: u.type,
-          photoUrl: u.photoUrl, lastMessage: u.lastMessage, unread: u.unread || 0,
+          peerId: u.userId, 
+          peerName: u.username, 
+          peerType: u.type,
+          photoUrl: u.photoUrl, 
+          lastMessage: u.lastMessage, 
+          unread: u.unread || 0,
         }));
         setConvs(list);
         setUnreadTotal(list.reduce((s, c) => s + (c.unread || 0), 0));
       }
-    } catch (err) { console.error(err); }
+    } catch (err) { 
+      console.error(err); 
+    }
   }, []);
 
+  // 3. Socket Integration
   const socketRef = useChatSocket({
     onMessage: (msg) => {
       if (!me) return;
@@ -84,12 +91,14 @@ export default function ChatBot() {
         && Number(activeRef.current.peerId) === peerId
         && activeRef.current.peerType === peerType;
 
+      // If chat is open with this person, append message and mark read
       if (isActive) {
         setMessages((prev) => prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]);
         scrollDown();
         socketRef.current?.emit('message_read', { peerId });
       }
 
+      // Update sidebar conversation list
       setConvs((prev) => {
         const next = prev.map((c) =>
           Number(c.peerId) === peerId && c.peerType === peerType
@@ -122,17 +131,26 @@ export default function ChatBot() {
     },
   });
 
-  useEffect(() => { loadUsers(); }, [loadUsers]);
+  // 4. Debounced Search Effect (Runs on mount and when searchQuery changes)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadUsers(searchQuery);
+    }, 300);
 
+    return () => clearTimeout(timer);
+  }, [searchQuery, loadUsers]);
+
+  // 5. Open Conversation
   const openConversation = useCallback((peer) => {
     setActive({ ...peer, unread: 0 });
+    setSearchQuery(''); // Clear search when opening a chat
   }, []);
 
-  // ✅ REMOVED localStorage from messages loading
+  // 6. Load Messages when conversation changes
   useEffect(() => {
     if (!active) return;
     
-    setMessages([]); // Clear old messages immediately
+    setMessages([]); // Clear previous messages
 
     (async () => {
       try {
@@ -141,42 +159,56 @@ export default function ChatBot() {
           setMessages(data.messages || []);
           scrollDown();
           socketRef.current?.emit('message_read', { peerId: active.peerId });
-          loadUsers();
+          loadUsers(searchQuery); // refresh list to clear unread badge
         }
-      } catch (err) { console.error(err); }
+      } catch (err) { 
+        console.error(err); 
+      }
     })();
-  }, [active, scrollDown, loadUsers, socketRef]);
+  }, [active, scrollDown, loadUsers, socketRef, searchQuery]);
 
+  // 7. Send Message
   const send = async (e) => {
     e.preventDefault();
     const text = input.trim();
     if (!text || !active || !me) return;
+    
     setInput('');
     const socket = socketRef.current;
+    
     if (socket?.connected) {
       socket.emit('send_message', { peerId: active.peerId, message: text });
       socket.emit('typing', { peerId: active.peerId, isTyping: false });
       return;
     }
+    
+    // Fallback to REST API if socket fails
     try {
       const { data } = await postChatMessage(active.peerId, text);
       if (data.success) setMessages((prev) => [...prev, data.data]);
-    } catch (err) { console.error(err); }
+    } catch (err) { 
+      console.error(err); 
+    }
   };
 
+  // 8. Handle Typing
   const handleChange = (e) => {
     setInput(e.target.value);
     const socket = socketRef.current;
     if (!active || !socket) return;
+    
     socket.emit('typing', { peerId: active.peerId, isTyping: true });
     clearTimeout(typingTimer.current);
-    typingTimer.current = setTimeout(() => socket.emit('typing', { peerId: active.peerId, isTyping: false }), 1200);
+    typingTimer.current = setTimeout(() => {
+      socket.emit('typing', { peerId: active.peerId, isTyping: false });
+    }, 1200);
   };
 
   const time = (d) => new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   return (
     <>
+      {/* Floating Chat Button */}
       <button
         onClick={() => setOpen((v) => !v)}
         className="fixed bottom-6 right-6 z-[60] h-14 w-14 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-2xl flex items-center justify-center hover:scale-105 transition"
@@ -189,12 +221,14 @@ export default function ChatBot() {
         )}
       </button>
 
+      {/* Chat Window */}
       {open && (
         <div className="fixed bottom-24 right-6 z-[60] w-[720px] h-[540px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex overflow-hidden">
-
+          
+          {/* Sidebar */}
           <aside className="w-64 shrink-0 border-r border-slate-200 flex flex-col bg-white">
             
-            {/* ✅ DISPLAY LOGGED IN USER */}
+            {/* User Profile Header */}
             <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center gap-2.5">
               <Avatar name={me?.username || ''} photoUrl={me?.photoUrl} />
               <div className="min-w-0">
@@ -205,6 +239,21 @@ export default function ChatBot() {
               </div>
             </div>
 
+            {/* Search Input */}
+            <div className="px-3 py-2 border-b border-slate-100">
+              <div className="relative group">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 group-focus-within:text-blue-500 transition pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search person..."
+                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-100 border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white transition"
+                />
+              </div>
+            </div>
+
+            {/* Conversation List */}
             <div className="flex-1 overflow-y-auto">
               {convs.map((c) => {
                 const isActive = active?.peerId === c.peerId && active?.peerType === c.peerType;
@@ -231,15 +280,20 @@ export default function ChatBot() {
                   </button>
                 );
               })}
+              
               {convs.length === 0 && (
-                <p className="px-3 py-6 text-[11px] italic text-slate-400 text-center">No conversations</p>
+                <p className="px-3 py-6 text-[11px] italic text-slate-400 text-center">
+                  {searchQuery ? 'No person found' : 'No conversations'}
+                </p>
               )}
             </div>
           </aside>
 
+          {/* Chat Panel */}
           <section className="flex-1 flex flex-col min-w-0 bg-[#F0F2F5]">
             {active ? (
               <>
+                {/* Active Chat Header */}
                 <header className="px-4 py-2.5 border-b border-slate-200 bg-white flex items-center justify-between">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <Avatar name={active.peerName} photoUrl={active.photoUrl} size="lg" />
@@ -255,6 +309,7 @@ export default function ChatBot() {
                   </button>
                 </header>
 
+                {/* Messages Area */}
                 <div ref={listRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-1.5">
                   {messages.map((m) => {
                     const mine =
@@ -279,6 +334,7 @@ export default function ChatBot() {
                   })}
                 </div>
 
+                {/* Input Area */}
                 <form onSubmit={send} className="p-2.5 bg-white border-t border-slate-200 flex items-center gap-2">
                   <input
                     value={input}
@@ -295,6 +351,7 @@ export default function ChatBot() {
                 </form>
               </>
             ) : (
+              /* Empty State */
               <div className="flex-1 flex items-center justify-center text-center px-6">
                 <div>
                   <div className="mx-auto h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center mb-3">
