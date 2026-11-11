@@ -9,13 +9,13 @@ import {
   getGridTrainer,
   getGridParticipant,
   getFilters,
-  getMyPermissions,
 } from '../service/api.js';
 import { useAuth } from '../service/auth.jsx';
 import ChatBot from './ChatBot.jsx';
 
 // IMPORT THE NEW COMPONENT HERE (Adjust path if necessary)
 import ReportModal from '../components/ReportModal.jsx';
+import { usePermissions } from '../context/PermissionContext.jsx';
 
 const GRID_LIMIT   = 5;
 const REGION_LIMIT = 4;
@@ -23,9 +23,7 @@ const REGION_LIMIT = 4;
 export default function Dashboard() {
   const { user, logout } = useAuth();
 
-  // Permissions State
-  const [perms, setPerms] = useState(null);
-
+const { perms } = usePermissions(); 
   // Filters State
   const [filters, setFilters] = useState({
     project: '', date: '', region: '', dealerName: '', dealerCode: '', trainer: '', role: ''
@@ -89,15 +87,6 @@ export default function Dashboard() {
   //   return () => clearInterval(id);
   // }, []);
 
-  // 0. Fetch My Permissions
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await getMyPermissions();
-        if (data?.success) setPerms(data.permissions || {});
-      } catch (err) { console.error('Permission fetch failed:', err); }
-    })();
-  }, []);
 
   // 1. Fetch Filter Options
   useEffect(() => {

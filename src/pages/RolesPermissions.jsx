@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   ChevronRight, Save, Check, ShieldCheck, Search, X, UserCog,
   Radio, Trophy, BarChart3, Route, UserCircle2,
-  Users, Globe2,
+  Users, Globe2, LayoutDashboard, // ✅ Added LayoutDashboard
   CheckCircle2, XCircle,
 } from 'lucide-react';
 import { useAuth } from '../service/auth.jsx';
@@ -13,6 +13,19 @@ import {
 } from '../service/api';
 
 const STATIC_SECTIONS = [
+  // ✅ NEW PAGE ACCESS SECTION
+  {
+    key: 'pages', 
+    icon: LayoutDashboard, 
+    title: 'Page Access', 
+    subtitle: 'Control which main navigation pages this user can access',
+    fields: [
+      { field_key: 'dashboard' }, 
+      { field_key: 'setup' }, 
+      { field_key: 'role' }
+    ] 
+  },
+  
   { key: 'liveData', icon: Radio, title: 'Live Data', subtitle: 'Metrics shown in the live data section',
     fields: [
       { field_key: 'scheduled' }, { field_key: 'attempted' }, { field_key: 'absentees' },

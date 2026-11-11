@@ -1,50 +1,29 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  X,
-  LogOut,
-  LayoutDashboard,
-  Users,
-  MessageSquare,
-  ShieldCheck,
-  Settings,
-  BarChart3,
-  UserCog,
+  X, LogOut, LayoutDashboard, ShieldCheck, Settings, UserCog,
 } from 'lucide-react';
 import { useAuth } from '../service/auth.jsx';
+import { usePermissions } from '../context/PermissionContext'; // ✅ Import Context
 
 const Sidebar = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const { logout } = useAuth();
+  
+  // ✅ Get permissions from Context (No API call here!)
+  const { perms, loading } = usePermissions(); 
 
-  const navItems = [
-    {
-      path: '/',
-      name: 'Dashboard',
-      icon: <LayoutDashboard className="w-5 h-5" />,
-    },
-    {
-      path: '/setup',
-      name: 'Setup Panel',
-      icon: <Settings className="w-5 h-5" />,
-    },
-        {
-      path: '/role',
-      name: 'Roles & Permissions',
-      icon: <ShieldCheck className="w-5 h-5" />,
-    },
-    // Add more items here as your portal grows, e.g.:
-    // {
-    //   path: '/analytics',
-    //   name: 'Analytics',
-    //   icon: <BarChart3 className="w-5 h-5" />,
-    // },
-    // {
-    //   path: '/trainers',
-    //   name: 'Trainers',
-    //   icon: <Users className="w-5 h-5" />,
-    // },
+  const allNavItems = [
+    { path: '/', name: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" />, key: 'dashboard' },
+    { path: '/setup', name: 'Setup Panel', icon: <Settings className="w-5 h-5" />, key: 'setup' },
+    { path: '/role', name: 'Roles & Permissions', icon: <ShieldCheck className="w-5 h-5" />, key: 'role' },
   ];
+
+  // ✅ Filter links based on Context permissions
+  const navItems = allNavItems.filter((item) => {
+    if (!perms || !perms.pages) return true; // Show by default if not set
+    return perms.pages[item.key] !== false;  // Hide if explicitly false
+  });
 
   const handleLogout = () => {
     onClose?.();
@@ -67,19 +46,10 @@ const Sidebar = ({ isOpen, onClose }) => {
         className={`
           fixed top-0 left-0 h-screen z-50
           bg-black border-r border-white/20
-          shadow-xl
-          flex flex-col
-
-          transition-all duration-300 ease-in-out
-          group
-
+          shadow-xl flex flex-col
+          transition-all duration-300 ease-in-out group
           w-20 hover:w-72
-
-          ${
-            isOpen
-              ? 'translate-x-0'
-              : '-translate-x-full lg:translate-x-0'
-          }
+          ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
         {/* Header */}
@@ -90,25 +60,12 @@ const Sidebar = ({ isOpen, onClose }) => {
               <div className="min-w-[40px] h-10 flex items-center justify-center rounded-lg bg-gradient-to-r from-red-600 to-orange-400 hover:from-red-700 hover:to-orange-500 text-white px-5 py-2 text-sm rounded-md shadow-sm">
                 <UserCog size={20} />
               </div>
-              <div
-                className="
-                  opacity-0 max-w-0 overflow-hidden
-                  group-hover:opacity-100
-                  group-hover:max-w-[200px]
-                  transition-all duration-300
-                  whitespace-nowrap
-                "
-              >
-                <h1 className="text-xl font-bold text-white">
-                  Contest Panel
-                </h1>
+              <div className="opacity-0 max-w-0 overflow-hidden group-hover:opacity-100 group-hover:max-w-[200px] transition-all duration-300 whitespace-nowrap">
+                <h1 className="text-xl font-bold text-white">Contest Panel</h1>
               </div>
             </div>
 
-            <button
-              onClick={onClose}
-              className="lg:hidden p-2 hover:bg-white/10 rounded-lg"
-            >
+            <button onClick={onClose} className="lg:hidden p-2 hover:bg-white/10 rounded-lg">
               <X className="w-5 h-5 text-white" />
             </button>
           </div>
@@ -116,42 +73,24 @@ const Sidebar = ({ isOpen, onClose }) => {
 
         {/* Menu */}
         <nav className="flex-1 p-3 space-y-2 overflow-y-auto">
-          {navItems.map((item) => (
+          {!loading && navItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
               end={item.path === '/'}
               onClick={() => onClose?.()}
               className={({ isActive }) =>
-                `
-                flex items-center
-                gap-3
-                px-4
-                py-3
-                rounded-xl
-                transition-all duration-200
-
-                ${
+                `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                   isActive
                     ? 'bg-white/20 border border-white/20 text-white'
                     : 'text-white/70 hover:bg-white/10 hover:text-white'
-                }
-              `
+                }`
               }
             >
               <span className="min-w-[20px] flex justify-center">
                 {item.icon}
               </span>
-
-              <span
-                className="
-                  opacity-0 max-w-0 overflow-hidden
-                  group-hover:opacity-100
-                  group-hover:max-w-[200px]
-                  transition-all duration-300
-                  whitespace-nowrap
-                "
-              >
+              <span className="opacity-0 max-w-0 overflow-hidden group-hover:opacity-100 group-hover:max-w-[200px] transition-all duration-300 whitespace-nowrap">
                 {item.name}
               </span>
             </NavLink>
@@ -162,29 +101,10 @@ const Sidebar = ({ isOpen, onClose }) => {
         <div className="p-3 border-t border-white/20">
           <button
             onClick={handleLogout}
-            className="
-              w-full
-              flex items-center
-              gap-3
-              px-4
-              py-3
-              rounded-xl
-              text-red-400
-              hover:bg-red-500/10
-              transition-all
-            "
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-all"
           >
             <LogOut className="w-5 h-5 min-w-[20px]" />
-
-            <span
-              className="
-                opacity-0 max-w-0 overflow-hidden
-                group-hover:opacity-100
-                group-hover:max-w-[200px]
-                transition-all duration-300
-                whitespace-nowrap
-              "
-            >
+            <span className="opacity-0 max-w-0 overflow-hidden group-hover:opacity-100 group-hover:max-w-[200px] transition-all duration-300 whitespace-nowrap">
               Logout
             </span>
           </button>
