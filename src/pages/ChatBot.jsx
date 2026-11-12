@@ -85,14 +85,16 @@ export default function ChatBot({ fullScreen = false }) {
       const peerUsername = isMine ? msg.receiver_username : msg.sender_username;
       const peerType     = isMine ? msg.receiver_type    : msg.sender_type;
 
-      const isActive = activeRef.current
+      // ✅ FIX: Check if the chat window is actually OPEN
+      const isChatOpen = fullScreen || open;
+      const isActive = isChatOpen
+        && activeRef.current
         && activeRef.current.peerUsername === peerUsername
         && activeRef.current.peerType     === peerType;
 
-      // Update Messages List
+      // Update Messages List (Only if window is open)
       if (isActive) {
         setMessages((prev) => {
-          // ✅ OPTIMISTIC UI FIX: Replace temp message with real DB message
           if (isMine) {
             const tempIndex = prev.findIndex(
               m => typeof m.id === 'string' && m.id.startsWith('temp-') && m.message === msg.message
@@ -103,14 +105,13 @@ export default function ChatBot({ fullScreen = false }) {
               return next;
             }
           }
-          // Otherwise just append (or ignore if already exists)
           return prev.some((m) => m.id === msg.id) ? prev : [...prev, msg];
         });
         scrollDown();
         socketRef.current?.emit('message_read', { peerUsername });
       }
 
-      // Update Conversations List
+      // Update Conversations List (Always update the badge count)
       setConvs((prev) => {
         const exists = prev.some(c => c.peerUsername === peerUsername && c.peerType === peerType);
         
@@ -166,6 +167,7 @@ export default function ChatBot({ fullScreen = false }) {
   const openConversation = useCallback((peer) => {
     setActive({ ...peer, unread: 0 });
     setSearchQuery('');
+    setOpen(true); // ✅ Ensure it opens if clicked from somewhere
     
     setConvs(prev => prev.map(c => 
       c.peerUsername === peer.peerUsername && c.peerType === peer.peerType
@@ -174,9 +176,18 @@ export default function ChatBot({ fullScreen = false }) {
     ));
   }, []);
 
-  /* 7. Load messages when active changes */
+  /* ✅ 7. Clear typing state when closing window */
   useEffect(() => {
-    if (!active) return;
+    if (!open && !fullScreen) {
+      setTyping(false);
+    }
+  }, [open, fullScreen]);
+
+  /* 8. Load messages when active changes OR chat window opens */
+  useEffect(() => {
+    const isChatOpen = fullScreen || open;
+    if (!active || !isChatOpen) return;
+
     setMessages([]);
     (async () => {
       try {
@@ -184,14 +195,15 @@ export default function ChatBot({ fullScreen = false }) {
         if (data.success) {
           setMessages(data.messages || []);
           scrollDown();
+          // ✅ When opening the chat, mark all new messages as read
           socketRef.current?.emit('message_read', { peerUsername: active.peerUsername });
-          loadUsers(searchQuery);
+          loadUsers(searchQuery); 
         }
       } catch (err) { console.error(err); }
     })();
-  }, [active, scrollDown, loadUsers, socketRef, searchQuery]);
+  }, [active, open, fullScreen, scrollDown, loadUsers, socketRef, searchQuery]);
 
-  /* 8. Send Message (Optimistic UI) */
+  /* 9. Send Message (Optimistic UI) */
   const send = async (e) => {
     e.preventDefault();
     const text = input.trim();
@@ -200,7 +212,6 @@ export default function ChatBot({ fullScreen = false }) {
     setInput('');
     const tempId = `temp-${Date.now()}`;
     
-    // ✅ Create a temporary message for instant UI rendering
     const optimisticMsg = {
       id: tempId,
       sender_username: me.username,
@@ -212,7 +223,6 @@ export default function ChatBot({ fullScreen = false }) {
       created_at: new Date().toISOString(),
     };
 
-    // Immediately add to screen
     setMessages((prev) => [...prev, optimisticMsg]);
     scrollDown();
 
@@ -223,21 +233,18 @@ export default function ChatBot({ fullScreen = false }) {
       return;
     }
     
-    // REST API Fallback
     try {
       const { data } = await postChatMessage(active.peerUsername, text);
       if (data.success) {
-        // Replace temp msg with the actual server response
         setMessages((prev) => prev.map(m => m.id === tempId ? data.data : m));
       }
     } catch (err) { 
       console.error(err); 
-      // Remove the temp message if the network request fails
       setMessages((prev) => prev.filter(m => m.id !== tempId));
     }
   };
 
-  /* 9. Typing Indicator */
+  /* 10. Typing Indicator */
   const handleChange = (e) => {
     setInput(e.target.value);
     const socket = socketRef.current;
@@ -349,7 +356,6 @@ export default function ChatBot({ fullScreen = false }) {
                     }`}>
                       <p className="whitespace-pre-wrap break-words">{m.message}</p>
                       <p className={`text-[9px] mt-0.5 text-right ${mine ? 'text-blue-100' : 'text-slate-400'}`}>
-                        {/* Single tick for temp/unread, double for read */}
                         {time(m.created_at)} {mine && (m.is_read ? '✓✓' : '✓')}
                       </p>
                     </div>
