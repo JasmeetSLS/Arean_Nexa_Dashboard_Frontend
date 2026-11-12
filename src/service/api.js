@@ -27,7 +27,14 @@ api.interceptors.response.use(
 export const login = (username, password, type = 'admin') =>
   api.post('/auth/login', { username, password, type });
 
-export const getMe = () => api.get('/me');
+export const getMe = () => api.get('/chat/me');
+export const getChatUsers = (params) => api.get('/chat/users', { params });
+
+export const getChatMessages = (peerUsername, params) =>
+  api.get(`/chat/messages/${encodeURIComponent(peerUsername)}`, { params });
+
+export const postChatMessage = (peerUsername, message) =>
+  api.post('/chat/messages', { peerUsername, message });
 
 export const getProjects  = ()                     => api.get('/projects');
 export const addProject  = (payload) => api.post('/projects', payload);
@@ -65,12 +72,6 @@ export const getPermissionOptions = (userId, projects = []) =>
 export const savePermissions      = (payload) => api.post('/permissions', payload);
 
 
-
-export const getChatUsers = (params = {}) => api.get('/chat/users', { params });
-export const getChatMessages = (userId, params = {}) =>
-  api.get(`/chat/messages/${userId}`, { params });
-export const postChatMessage = (peerId, message)    =>
-  api.post('/chat/messages', { peerId, message });
 
 // REPORTS (Arena)
 

@@ -23,7 +23,7 @@ function Avatar({ name = '', photoUrl, size = 'sm' }) {
 }
 
 export default function ChatBot({ fullScreen = false }) {
-  const [me, setMe] = useState(null);
+  const [me, setMe]                   = useState(null);
   const [open, setOpen]               = useState(false);
   const [convs, setConvs]             = useState([]);
   const [active, setActive]           = useState(null);
@@ -31,85 +31,83 @@ export default function ChatBot({ fullScreen = false }) {
   const [input, setInput]             = useState('');
   const [typing, setTyping]           = useState(false);
   const [unreadTotal, setUnreadTotal] = useState(0);
-  
-  // Search state
   const [searchQuery, setSearchQuery] = useState('');
 
   const listRef     = useRef(null);
   const typingTimer = useRef(null);
   const activeRef   = useRef(null);
-  
+
   useEffect(() => { activeRef.current = active; }, [active]);
 
-  // 1. Fetch logged-in user details
+  /* 1. me */
   useEffect(() => {
-    const fetchMyDetails = async () => {
+    (async () => {
       try {
         const { data } = await getMe();
         if (data.success) setMe(data.user);
-      } catch (err) {
-        console.error('Failed to load my details:', err);
-      }
-    };
-    fetchMyDetails();
+      } catch (err) { console.error('Failed to load my details:', err); }
+    })();
   }, []);
 
   const scrollDown = useCallback(() => {
     setTimeout(() => listRef.current?.scrollTo({ top: 1e9, behavior: 'smooth' }), 30);
   }, []);
 
-  // 2. Load Users API
+  /* 2. users */
   const loadUsers = useCallback(async (search = '') => {
     try {
       const { data } = await getChatUsers({ search });
       if (data.success) {
         const list = data.users.map((u) => ({
-          peerId: u.userId, 
-          peerName: u.username, 
-          peerType: u.type,
-          photoUrl: u.photoUrl, 
-          lastMessage: u.lastMessage, 
-          unread: u.unread || 0,
+          peerUsername: u.peerUsername,
+          peerName:     u.peerName,
+          peerType:     u.type,
+          photoUrl:     u.photoUrl,
+          lastMessage:  u.lastMessage,
+          unread:       u.unread || 0,
         }));
         setConvs(list);
         setUnreadTotal(list.reduce((s, c) => s + (c.unread || 0), 0));
       }
-    } catch (err) { 
-      console.error(err); 
-    }
+    } catch (err) { console.error(err); }
   }, []);
 
-  // 3. Socket Integration
+  /* 3. socket */
   const socketRef = useChatSocket({
     onMessage: (msg) => {
       if (!me) return;
-      const myId = Number(me.userId), myType = me.type;
-      const isMine = Number(msg.sender_id) === myId && msg.sender_type === myType;
-      const peerId = isMine ? Number(msg.receiver_id) : Number(msg.sender_id);
-      const peerType = isMine ? msg.receiver_type : msg.sender_type;
+      const isMine =
+        msg.sender_username === me.username && msg.sender_type === me.type;
+
+      const peerUsername = isMine ? msg.receiver_username : msg.sender_username;
+      const peerType     = isMine ? msg.receiver_type    : msg.sender_type;
+
       const isActive = activeRef.current
-        && Number(activeRef.current.peerId) === peerId
-        && activeRef.current.peerType === peerType;
+        && activeRef.current.peerUsername === peerUsername
+        && activeRef.current.peerType     === peerType;
 
       if (isActive) {
         setMessages((prev) => prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]);
         scrollDown();
-        socketRef.current?.emit('message_read', { peerId });
+        socketRef.current?.emit('message_read', { peerUsername });
       }
 
       setConvs((prev) => {
         const next = prev.map((c) =>
-          Number(c.peerId) === peerId && c.peerType === peerType
+          c.peerUsername === peerUsername && c.peerType === peerType
             ? { ...c, lastMessage: msg, unread: (isActive || isMine) ? c.unread : c.unread + 1 }
             : c
         );
-        next.sort((a, b) => new Date(b.lastMessage?.created_at || 0) - new Date(a.lastMessage?.created_at || 0));
+        next.sort((a, b) =>
+          new Date(b.lastMessage?.created_at || 0) - new Date(a.lastMessage?.created_at || 0)
+        );
         setUnreadTotal(next.reduce((s, c) => s + (c.unread || 0), 0));
         return next;
       });
     },
+
     onTyping: (t) => {
-      if (activeRef.current && Number(t.fromId) === Number(activeRef.current.peerId)) {
+      if (activeRef.current && t.fromUsername === activeRef.current.peerUsername) {
         setTyping(t.isTyping);
         if (t.isTyping) {
           clearTimeout(typingTimer.current);
@@ -117,103 +115,93 @@ export default function ChatBot({ fullScreen = false }) {
         }
       }
     },
+
     onRead: (r) => {
       if (!me) return;
       setMessages((prev) =>
         prev.map((m) =>
-          Number(m.receiver_id) === Number(r.byId) && m.receiver_type === r.byType
-            && Number(m.sender_id) === Number(me.userId) && m.sender_type === me.type
-            ? { ...m, is_read: 1 } : m
+          m.receiver_username === r.byUsername &&
+          m.receiver_type     === r.byType &&
+          m.sender_username   === me.username &&
+          m.sender_type       === me.type
+            ? { ...m, is_read: 1 }
+            : m
         )
       );
     },
   });
 
-  // 4. Debounced Search
+  /* 4. debounce search */
   useEffect(() => {
-    const timer = setTimeout(() => {
-      loadUsers(searchQuery);
-    }, 300);
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => loadUsers(searchQuery), 300);
+    return () => clearTimeout(t);
   }, [searchQuery, loadUsers]);
 
-  // 5. Open Conversation
+  /* 5. open conversation */
   const openConversation = useCallback((peer) => {
     setActive({ ...peer, unread: 0 });
     setSearchQuery('');
   }, []);
 
-  // 6. Load Messages
+  /* 6. load messages */
   useEffect(() => {
     if (!active) return;
-    
     setMessages([]);
-
     (async () => {
       try {
-        const { data } = await getChatMessages(active.peerId, { limit: 100 });
+        const { data } = await getChatMessages(active.peerUsername, { limit: 100 });
         if (data.success) {
           setMessages(data.messages || []);
           scrollDown();
-          socketRef.current?.emit('message_read', { peerId: active.peerId });
+          socketRef.current?.emit('message_read', { peerUsername: active.peerUsername });
           loadUsers(searchQuery);
         }
-      } catch (err) { 
-        console.error(err); 
-      }
+      } catch (err) { console.error(err); }
     })();
   }, [active, scrollDown, loadUsers, socketRef, searchQuery]);
 
-  // 7. Send Message
+  /* 7. send */
   const send = async (e) => {
     e.preventDefault();
     const text = input.trim();
     if (!text || !active || !me) return;
-    
+
     setInput('');
     const socket = socketRef.current;
-    
     if (socket?.connected) {
-      socket.emit('send_message', { peerId: active.peerId, message: text });
-      socket.emit('typing', { peerId: active.peerId, isTyping: false });
+      socket.emit('send_message', { peerUsername: active.peerUsername, message: text });
+      socket.emit('typing',       { peerUsername: active.peerUsername, isTyping: false });
       return;
     }
-    
     try {
-      const { data } = await postChatMessage(active.peerId, text);
+      const { data } = await postChatMessage(active.peerUsername, text);
       if (data.success) setMessages((prev) => [...prev, data.data]);
-    } catch (err) { 
-      console.error(err); 
-    }
+    } catch (err) { console.error(err); }
   };
 
-  // 8. Handle Typing
+  /* 8. typing */
   const handleChange = (e) => {
     setInput(e.target.value);
     const socket = socketRef.current;
     if (!active || !socket) return;
-    
-    socket.emit('typing', { peerId: active.peerId, isTyping: true });
+    socket.emit('typing', { peerUsername: active.peerUsername, isTyping: true });
     clearTimeout(typingTimer.current);
     typingTimer.current = setTimeout(() => {
-      socket.emit('typing', { peerId: active.peerId, isTyping: false });
+      socket.emit('typing', { peerUsername: active.peerUsername, isTyping: false });
     }, 1200);
   };
 
   const time = (d) => new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-  // -----------------------------------------------------------------
-  // Shared inner content (sidebar + chat panel)
-  // -----------------------------------------------------------------
+  /* ───────────── UI ───────────── */
   const innerContent = (
     <div className="flex h-full w-full overflow-hidden">
-      {/* Sidebar */}
       <aside className="w-64 shrink-0 border-r border-slate-200 flex flex-col bg-white">
         <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center gap-2.5">
-          <Avatar name={me?.username || ''} photoUrl={me?.photoUrl} />
+          <Avatar name={me?.displayName || me?.username || ''} photoUrl={me?.photoUrl} />
           <div className="min-w-0">
             <p className="text-sm font-black text-slate-900 truncate">
-              {me?.username || 'Loading...'}
+              {me?.displayName || me?.username || 'Loading...'}
             </p>
             <p className="text-[10px] text-slate-500 capitalize">{me?.type || '...'}</p>
           </div>
@@ -234,10 +222,11 @@ export default function ChatBot({ fullScreen = false }) {
 
         <div className="flex-1 overflow-y-auto">
           {convs.map((c) => {
-            const isActive = active?.peerId === c.peerId && active?.peerType === c.peerType;
+            const isActive =
+              active?.peerUsername === c.peerUsername && active?.peerType === c.peerType;
             return (
               <button
-                key={`${c.peerType}:${c.peerId}`}
+                key={`${c.peerType}:${c.peerUsername}`}
                 onClick={() => openConversation(c)}
                 className={`w-full text-left px-3 py-2.5 flex items-center gap-2.5 hover:bg-slate-50 transition border-l-2 ${
                   isActive ? 'bg-blue-50 border-blue-500' : 'border-transparent'
@@ -258,7 +247,6 @@ export default function ChatBot({ fullScreen = false }) {
               </button>
             );
           })}
-          
           {convs.length === 0 && (
             <p className="px-3 py-6 text-[11px] italic text-slate-400 text-center">
               {searchQuery ? 'No person found' : 'No conversations'}
@@ -267,7 +255,6 @@ export default function ChatBot({ fullScreen = false }) {
         </div>
       </aside>
 
-      {/* Chat Panel */}
       <section className="flex-1 flex flex-col min-w-0 bg-[#F0F2F5]">
         {active ? (
           <>
@@ -291,9 +278,9 @@ export default function ChatBot({ fullScreen = false }) {
             <div ref={listRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-1.5">
               {messages.map((m) => {
                 const mine =
-                  me?.userId != null &&
-                  Number(m.sender_id) === Number(me.userId) &&
-                  m.sender_type === me.type;
+                  me?.username != null &&
+                  m.sender_username === me.username &&
+                  m.sender_type     === me.type;
 
                 return (
                   <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
@@ -344,16 +331,8 @@ export default function ChatBot({ fullScreen = false }) {
     </div>
   );
 
-  // -----------------------------------------------------------------
-  // Full‑screen mode
-  // -----------------------------------------------------------------
-  if (fullScreen) {
-    return <div className="h-screen w-screen bg-white">{innerContent}</div>;
-  }
+  if (fullScreen) return <div className="h-screen w-screen bg-white">{innerContent}</div>;
 
-  // -----------------------------------------------------------------
-  // Floating widget mode (original)
-  // -----------------------------------------------------------------
   return (
     <>
       <button
