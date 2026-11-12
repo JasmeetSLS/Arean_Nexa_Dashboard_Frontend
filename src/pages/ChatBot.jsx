@@ -39,7 +39,12 @@ export default function ChatBot({ fullScreen = false }) {
 
   useEffect(() => { activeRef.current = active; }, [active]);
 
-  /* 1. me */
+  /* 1. Automatically calculate total unread */
+  useEffect(() => {
+    setUnreadTotal(convs.reduce((sum, c) => sum + (c.unread || 0), 0));
+  }, [convs]);
+
+  /* 2. Fetch my details */
   useEffect(() => {
     (async () => {
       try {
@@ -53,7 +58,7 @@ export default function ChatBot({ fullScreen = false }) {
     setTimeout(() => listRef.current?.scrollTo({ top: 1e9, behavior: 'smooth' }), 30);
   }, []);
 
-  /* 2. users */
+  /* 3. Fetch users */
   const loadUsers = useCallback(async (search = '') => {
     try {
       const { data } = await getChatUsers({ search });
@@ -67,17 +72,15 @@ export default function ChatBot({ fullScreen = false }) {
           unread:       u.unread || 0,
         }));
         setConvs(list);
-        setUnreadTotal(list.reduce((s, c) => s + (c.unread || 0), 0));
       }
     } catch (err) { console.error(err); }
   }, []);
 
-  /* 3. socket */
+  /* 4. Socket Integration */
   const socketRef = useChatSocket({
     onMessage: (msg) => {
       if (!me) return;
-      const isMine =
-        msg.sender_username === me.username && msg.sender_type === me.type;
+      const isMine = msg.sender_username === me.username && msg.sender_type === me.type;
 
       const peerUsername = isMine ? msg.receiver_username : msg.sender_username;
       const peerType     = isMine ? msg.receiver_type    : msg.sender_type;
@@ -86,13 +89,36 @@ export default function ChatBot({ fullScreen = false }) {
         && activeRef.current.peerUsername === peerUsername
         && activeRef.current.peerType     === peerType;
 
+      // Update Messages List
       if (isActive) {
-        setMessages((prev) => prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]);
+        setMessages((prev) => {
+          // ✅ OPTIMISTIC UI FIX: Replace temp message with real DB message
+          if (isMine) {
+            const tempIndex = prev.findIndex(
+              m => typeof m.id === 'string' && m.id.startsWith('temp-') && m.message === msg.message
+            );
+            if (tempIndex !== -1) {
+              const next = [...prev];
+              next[tempIndex] = msg;
+              return next;
+            }
+          }
+          // Otherwise just append (or ignore if already exists)
+          return prev.some((m) => m.id === msg.id) ? prev : [...prev, msg];
+        });
         scrollDown();
         socketRef.current?.emit('message_read', { peerUsername });
       }
 
+      // Update Conversations List
       setConvs((prev) => {
+        const exists = prev.some(c => c.peerUsername === peerUsername && c.peerType === peerType);
+        
+        if (!exists && !isMine) {
+          loadUsers(searchQuery);
+          return prev; 
+        }
+
         const next = prev.map((c) =>
           c.peerUsername === peerUsername && c.peerType === peerType
             ? { ...c, lastMessage: msg, unread: (isActive || isMine) ? c.unread : c.unread + 1 }
@@ -101,7 +127,6 @@ export default function ChatBot({ fullScreen = false }) {
         next.sort((a, b) =>
           new Date(b.lastMessage?.created_at || 0) - new Date(a.lastMessage?.created_at || 0)
         );
-        setUnreadTotal(next.reduce((s, c) => s + (c.unread || 0), 0));
         return next;
       });
     },
@@ -131,19 +156,25 @@ export default function ChatBot({ fullScreen = false }) {
     },
   });
 
-  /* 4. debounce search */
+  /* 5. Debounce search */
   useEffect(() => {
     const t = setTimeout(() => loadUsers(searchQuery), 300);
     return () => clearTimeout(t);
   }, [searchQuery, loadUsers]);
 
-  /* 5. open conversation */
+  /* 6. Open conversation */
   const openConversation = useCallback((peer) => {
     setActive({ ...peer, unread: 0 });
     setSearchQuery('');
+    
+    setConvs(prev => prev.map(c => 
+      c.peerUsername === peer.peerUsername && c.peerType === peer.peerType
+        ? { ...c, unread: 0 }
+        : c
+    ));
   }, []);
 
-  /* 6. load messages */
+  /* 7. Load messages when active changes */
   useEffect(() => {
     if (!active) return;
     setMessages([]);
@@ -160,26 +191,53 @@ export default function ChatBot({ fullScreen = false }) {
     })();
   }, [active, scrollDown, loadUsers, socketRef, searchQuery]);
 
-  /* 7. send */
+  /* 8. Send Message (Optimistic UI) */
   const send = async (e) => {
     e.preventDefault();
     const text = input.trim();
     if (!text || !active || !me) return;
 
     setInput('');
+    const tempId = `temp-${Date.now()}`;
+    
+    // ✅ Create a temporary message for instant UI rendering
+    const optimisticMsg = {
+      id: tempId,
+      sender_username: me.username,
+      sender_type: me.type,
+      receiver_username: active.peerUsername,
+      receiver_type: active.peerType,
+      message: text,
+      is_read: 0,
+      created_at: new Date().toISOString(),
+    };
+
+    // Immediately add to screen
+    setMessages((prev) => [...prev, optimisticMsg]);
+    scrollDown();
+
     const socket = socketRef.current;
     if (socket?.connected) {
       socket.emit('send_message', { peerUsername: active.peerUsername, message: text });
       socket.emit('typing',       { peerUsername: active.peerUsername, isTyping: false });
       return;
     }
+    
+    // REST API Fallback
     try {
       const { data } = await postChatMessage(active.peerUsername, text);
-      if (data.success) setMessages((prev) => [...prev, data.data]);
-    } catch (err) { console.error(err); }
+      if (data.success) {
+        // Replace temp msg with the actual server response
+        setMessages((prev) => prev.map(m => m.id === tempId ? data.data : m));
+      }
+    } catch (err) { 
+      console.error(err); 
+      // Remove the temp message if the network request fails
+      setMessages((prev) => prev.filter(m => m.id !== tempId));
+    }
   };
 
-  /* 8. typing */
+  /* 9. Typing Indicator */
   const handleChange = (e) => {
     setInput(e.target.value);
     const socket = socketRef.current;
@@ -291,7 +349,8 @@ export default function ChatBot({ fullScreen = false }) {
                     }`}>
                       <p className="whitespace-pre-wrap break-words">{m.message}</p>
                       <p className={`text-[9px] mt-0.5 text-right ${mine ? 'text-blue-100' : 'text-slate-400'}`}>
-                        {time(m.created_at)} {mine && m.is_read && '✓✓'}
+                        {/* Single tick for temp/unread, double for read */}
+                        {time(m.created_at)} {mine && (m.is_read ? '✓✓' : '✓')}
                       </p>
                     </div>
                   </div>
@@ -308,7 +367,8 @@ export default function ChatBot({ fullScreen = false }) {
               />
               <button
                 type="submit"
-                className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white flex items-center justify-center shadow-md"
+                disabled={!input.trim()}
+                className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 disabled:opacity-50 text-white flex items-center justify-center shadow-md transition"
               >
                 <Send className="h-4 w-4" />
               </button>
