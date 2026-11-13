@@ -44,7 +44,7 @@ export default function App() {
             
             {/* Public chat route – full‑screen, token‑based */}
             <Route path="/chatbot" element={<ChatBotPage />} />
-              <Route path="/chatbot/iframe" element={<ChatBotWithoutIframe />} />
+              <Route path="/trainer/chatbot" element={<ChatBotWithoutIframe />} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
