@@ -152,6 +152,17 @@ export default function ChatBot({ fullScreen = false }) {
         )
       );
     },
+
+    // ✅ NEW: Sync unread badges across multiple tabs/windows
+    onReadSync: (data) => {
+      setConvs((prev) =>
+        prev.map((c) =>
+          c.peerUsername === data.peerUsername
+            ? { ...c, unread: 0 }
+            : c
+        )
+      );
+    },
   });
 
   /* 5. Debounce search */

@@ -188,6 +188,17 @@ export default function ChatBotWithoutIframe() {
         )
       );
     },
+
+    // ✅ ADDED: Sync unread badges across multiple tabs/windows
+    onReadSync: (data) => {
+      setConvs((prev) =>
+        prev.map((c) =>
+          c.peerUsername === data.peerUsername
+            ? { ...c, unread: 0 }
+            : c
+        )
+      );
+    },
   });
 
   /* 4. Debounced search */
@@ -287,7 +298,6 @@ export default function ChatBotWithoutIframe() {
 
   /* ─────────────────────────── UI ─────────────────────────── */
   return (
-    // Adjust 64px to your app-shell header height (or use h-full inside a sized parent)
     <div className="h-[calc(100dvh-64px)] w-full overflow-hidden bg-white">
       <div className="flex h-full w-full flex-col overflow-hidden md:flex-row">
         {/* ── Left: conversation list ── */}
@@ -369,7 +379,6 @@ export default function ChatBotWithoutIframe() {
                     </p>
                   </div>
                 </div>
-                {/* No close (X) button by design */}
               </header>
 
               <div ref={listRef} className="flex-1 space-y-1.5 overflow-y-auto px-4 py-3">
