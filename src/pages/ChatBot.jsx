@@ -85,14 +85,12 @@ export default function ChatBot({ fullScreen = false }) {
       const peerUsername = isMine ? msg.receiver_username : msg.sender_username;
       const peerType     = isMine ? msg.receiver_type    : msg.sender_type;
 
-      // ✅ FIX: Check if the chat window is actually OPEN
       const isChatOpen = fullScreen || open;
       const isActive = isChatOpen
         && activeRef.current
         && activeRef.current.peerUsername === peerUsername
         && activeRef.current.peerType     === peerType;
 
-      // Update Messages List (Only if window is open)
       if (isActive) {
         setMessages((prev) => {
           if (isMine) {
@@ -111,7 +109,6 @@ export default function ChatBot({ fullScreen = false }) {
         socketRef.current?.emit('message_read', { peerUsername });
       }
 
-      // Update Conversations List (Always update the badge count)
       setConvs((prev) => {
         const exists = prev.some(c => c.peerUsername === peerUsername && c.peerType === peerType);
         
@@ -167,7 +164,7 @@ export default function ChatBot({ fullScreen = false }) {
   const openConversation = useCallback((peer) => {
     setActive({ ...peer, unread: 0 });
     setSearchQuery('');
-    setOpen(true); // ✅ Ensure it opens if clicked from somewhere
+    setOpen(true);
     
     setConvs(prev => prev.map(c => 
       c.peerUsername === peer.peerUsername && c.peerType === peer.peerType
@@ -176,7 +173,7 @@ export default function ChatBot({ fullScreen = false }) {
     ));
   }, []);
 
-  /* ✅ 7. Clear typing state when closing window */
+  /* 7. Clear typing state when closing window */
   useEffect(() => {
     if (!open && !fullScreen) {
       setTyping(false);
@@ -195,7 +192,6 @@ export default function ChatBot({ fullScreen = false }) {
         if (data.success) {
           setMessages(data.messages || []);
           scrollDown();
-          // ✅ When opening the chat, mark all new messages as read
           socketRef.current?.emit('message_read', { peerUsername: active.peerUsername });
           loadUsers(searchQuery); 
         }
@@ -260,8 +256,8 @@ export default function ChatBot({ fullScreen = false }) {
 
   /* ───────────── UI ───────────── */
   const innerContent = (
-    <div className="flex h-full w-full overflow-hidden">
-      <aside className="w-64 shrink-0 border-r border-slate-200 flex flex-col bg-white">
+    <div className="flex flex-col md:flex-row h-full w-full overflow-hidden">
+      <aside className="w-full md:w-64 shrink-0 border-b md:border-b-0 md:border-r border-slate-200 flex flex-col bg-white max-h-[40vh] md:max-h-full">
         <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center gap-2.5">
           <Avatar name={me?.displayName || me?.username || ''} photoUrl={me?.photoUrl} />
           <div className="min-w-0">
@@ -320,10 +316,10 @@ export default function ChatBot({ fullScreen = false }) {
         </div>
       </aside>
 
-      <section className="flex-1 flex flex-col min-w-0 bg-[#F0F2F5]">
+      <section className="flex-1 flex flex-col min-w-0 min-h-0 bg-[#F0F2F5]">
         {active ? (
           <>
-            <header className="px-4 py-2.5 border-b border-slate-200 bg-white flex items-center justify-between">
+            <header className="px-4 py-2.5 border-b border-slate-200 bg-white flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2.5 min-w-0">
                 <Avatar name={active.peerName} photoUrl={active.photoUrl} size="lg" />
                 <div className="min-w-0">
@@ -364,7 +360,7 @@ export default function ChatBot({ fullScreen = false }) {
               })}
             </div>
 
-            <form onSubmit={send} className="p-2.5 bg-white border-t border-slate-200 flex items-center gap-2">
+            <form onSubmit={send} className="p-2.5 bg-white border-t border-slate-200 flex items-center gap-2 shrink-0">
               <input
                 value={input}
                 onChange={handleChange}
@@ -397,11 +393,17 @@ export default function ChatBot({ fullScreen = false }) {
     </div>
   );
 
-  if (fullScreen) return <div className="h-screen w-screen bg-white">{innerContent}</div>;
+  if (fullScreen) {
+    return (
+      <div className="fixed inset-0 z-[9999] bg-white flex flex-col">
+        {innerContent}
+      </div>
+    );
+  }
 
   return (
     <>
-          <button
+      <button
         onClick={() => setOpen((v) => !v)}
         className={`chat-toggle-btn fixed bottom-6 right-6 z-[60] h-14 w-14 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-2xl flex items-center justify-center hover:scale-105 transition ${open ? 'current' : ''}`}
       >
