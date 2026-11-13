@@ -21,7 +21,7 @@ export default function useChatSocket({ onMessage, onTyping, onRead } = {}) {
       return;
     }
 
-    const socket = io(SOCKET_URL, { auth: { token } });
+    const socket = io(SOCKET_URL, { auth: { token } , transports: ["websocket"]});
 
     socket.on('receive_message', (m) => cbMsg.current?.(m));
     socket.on('typing',          (t) => cbTyping.current?.(t));
