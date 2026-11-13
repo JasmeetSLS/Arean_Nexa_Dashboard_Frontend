@@ -401,9 +401,9 @@ export default function ChatBot({ fullScreen = false }) {
 
   return (
     <>
-      <button
+          <button
         onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-6 right-6 z-[60] h-14 w-14 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-2xl flex items-center justify-center hover:scale-105 transition"
+        className={`chat-toggle-btn fixed bottom-6 right-6 z-[60] h-14 w-14 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-2xl flex items-center justify-center hover:scale-105 transition ${open ? 'current' : ''}`}
       >
         {open ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
         {!open && unreadTotal > 0 && (
