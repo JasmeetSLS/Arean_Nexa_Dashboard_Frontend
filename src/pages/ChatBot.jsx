@@ -39,6 +39,16 @@ export default function ChatBot({ fullScreen = false }) {
 
   useEffect(() => { activeRef.current = active; }, [active]);
 
+  // ✅ NEW: Notify parent window when chat opens/closes to resize iframe
+  useEffect(() => {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({
+        type: 'CHATBOT_STATE',
+        isOpen: open
+      }, '*'); 
+    }
+  }, [open]);
+
   /* 1. Automatically calculate total unread */
   useEffect(() => {
     setUnreadTotal(convs.reduce((sum, c) => sum + (c.unread || 0), 0));
@@ -153,7 +163,6 @@ export default function ChatBot({ fullScreen = false }) {
       );
     },
 
-    // ✅ NEW: Sync unread badges across multiple tabs/windows
     onReadSync: (data) => {
       setConvs((prev) =>
         prev.map((c) =>
