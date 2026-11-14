@@ -24,6 +24,7 @@ function Avatar({ name = '', photoUrl, size = 'sm' }) {
 
 export default function ChatBot({ fullScreen = false }) {
   const [me, setMe]                   = useState(null);
+   const [error, setError]             = useState(false);
   const [open, setOpen]               = useState(false);
   const [convs, setConvs]             = useState([]);
   const [active, setActive]           = useState(null);
@@ -60,7 +61,9 @@ export default function ChatBot({ fullScreen = false }) {
       try {
         const { data } = await getMe();
         if (data.success) setMe(data.user);
-      } catch (err) { console.error('Failed to load my details:', err); }
+      } catch (err) { console.error('Failed to load my details:', err);
+        setError(true); // ✅ ADD THIS
+       }
     })();
   }, []);
 
@@ -273,6 +276,15 @@ export default function ChatBot({ fullScreen = false }) {
   };
 
   const time = (d) => new Date(d).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+   if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full w-full min-h-[300px] bg-white p-6 text-center">
+        <h2 className="text-xl font-bold text-rose-600 mb-2">Invalid Token</h2>
+        <p className="text-sm text-gray-500">The token is invalid or expired.</p>
+      </div>
+    );
+  }
 
   /* ───────────── UI ───────────── */
   const innerContent = (

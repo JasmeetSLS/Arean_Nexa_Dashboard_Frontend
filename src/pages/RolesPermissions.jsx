@@ -23,9 +23,10 @@ const STATIC_SECTIONS = [
       { field_key: 'dashboard' }, 
       { field_key: 'setup' }, 
       { field_key: 'role' },
-      { field_key: 'report_arena' }, // ✅ Added
-      { field_key: 'report_nexa' },  // ✅ Added
-      { field_key: 'report_tv' }     // ✅ Added
+      { field_key: 'report_arena' },
+      { field_key: 'report_nexa' }, 
+      { field_key: 'report_tv' } ,
+      { field_key: 'trainer_summary' }
     ] 
   },
   { key: 'liveData', icon: Radio, title: 'Live Data', subtitle: 'Metrics shown in the live data section',

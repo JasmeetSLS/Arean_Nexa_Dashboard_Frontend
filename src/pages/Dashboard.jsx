@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  X, Bell, LogOut, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, Search, FileText
+  X, Bell, LogOut, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, Search, FileText, Download
 } from 'lucide-react';
 import { Toaster } from '../components/Toaster.jsx';
 import { FaBell, FaBellSlash } from 'react-icons/fa';
@@ -9,6 +9,7 @@ import {
   getGridTrainer,
   getGridParticipant,
   getFilters,
+  exportTrainerSummary // ✅ Imported new API
 } from '../service/api.js';
 import { useAuth } from '../service/auth.jsx';
 import ChatBot from './ChatBot.jsx';
@@ -59,6 +60,9 @@ export default function Dashboard() {
 
   // Report Modal State
   const [showReportModal, setShowReportModal] = useState(false);
+
+  // ✅ Loading state for Trainer Summary Download
+  const [downloadingTrainerSummary, setDownloadingTrainerSummary] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState(null);
@@ -210,6 +214,42 @@ export default function Dashboard() {
     };
   }, [trainerParticipants]);
 
+  const handleDownloadTrainerSummary = async () => {
+    if (!filters.project) {
+      alert("Please select a project first.");
+      return;
+    }
+    try {
+      setDownloadingTrainerSummary(true);
+      
+      // ✅ Pass both project and date (if selected)
+      const res = await exportTrainerSummary({ 
+        project: filters.project,
+        date: filters.date 
+      });
+      
+      let filename = `Trainer_Summary_${filters.project.replace(/[^a-z0-9]/gi, '_')}.xlsx`;
+      const disposition = res.headers['content-disposition'];
+      if (disposition && disposition.includes('filename=')) {
+        filename = disposition.split('filename=')[1].replace(/"/g, '');
+      }
+
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Failed to download trainer summary:", err);
+      alert("Failed to download trainer summary. Please try again.");
+    } finally {
+      setDownloadingTrainerSummary(false);
+    }
+  };
+
   // ✅ 1. Show spinner while permissions are loading
   if (permsLoading) {
     return (
@@ -269,23 +309,27 @@ export default function Dashboard() {
             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
             <span className="text-xs font-bold text-gray-700">DATA · {dashData?.todayLive?.date || '—'}</span>
           </div>    
-          {/* <button onClick={() => setToastOn(!toastOn)}
-            className={`flex items-center justify-center h-8 w-8 rounded-full border transition ${toastOn ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm' : 'bg-white border-gray-200 text-gray-400 hover:shadow-md'}`}>
-            {toastOn ? <FaBell className="h-4 w-4" /> : <FaBellSlash className="h-4 w-4" />}
-          </button>
-          <button onClick={() => setShowAlerts(true)}
-            className="relative flex items-center justify-center h-8 w-8 bg-white border border-gray-200 text-gray-600 rounded-full shadow-sm hover:shadow-md transition-all">
-            <Bell className="h-4 w-4" />
-          </button> */}          
+          
+          {/* ✅ NEW: Trainer Summary Download Button */}
+          {filters.project && canSee('pages', 'trainer_summary') && (
+            <button 
+              onClick={handleDownloadTrainerSummary}
+              disabled={downloadingTrainerSummary}
+              className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 border border-emerald-700 text-white rounded-full text-xs font-semibold shadow-sm hover:bg-emerald-700 disabled:opacity-50 transition-all"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span>{downloadingTrainerSummary ? 'Generating...' : 'Trainer Summary'}</span>
+            </button>
+          )}
+
           {/* REPORTS BUTTON */}
-     {/* REPORTS BUTTON */}
-{(canSee('pages', 'report_arena') || canSee('pages', 'report_nexa') || canSee('pages', 'report_tv')) && (
-  <button onClick={() => setShowReportModal(true)}
-    className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 border border-indigo-700 text-white rounded-full text-xs font-semibold shadow-sm hover:bg-indigo-700 transition-all">
-    <FileText className="h-3.5 w-3.5" />
-    <span>Reports</span>
-  </button>
-)}
+          {(canSee('pages', 'report_arena') || canSee('pages', 'report_nexa') || canSee('pages', 'report_tv')) && (
+            <button onClick={() => setShowReportModal(true)}
+              className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 border border-indigo-700 text-white rounded-full text-xs font-semibold shadow-sm hover:bg-indigo-700 transition-all">
+              <FileText className="h-3.5 w-3.5" />
+              <span>Reports</span>
+            </button>
+          )}
 
           <button onClick={logout}
             className="flex items-center gap-1 px-3 py-1.5 bg-white border border-gray-200 text-gray-600 rounded-full text-xs font-semibold shadow-sm hover:shadow-md transition-all">

@@ -10,7 +10,6 @@ import ChatBotPage from './pages/ChatBot';      // new public page
 import RolesPermissions from './pages/RolesPermissions';
 import SetupPanel from './pages/SetupPanel';
 import Layout from './components/Layout';
-import ChatBotWithoutIframe from './pages/ChatBotWithoutIframe';
 
 function PageGuard({ pageKey, children }) {
   const { perms, loading } = usePermissions();
@@ -44,7 +43,6 @@ export default function App() {
             
             {/* Public chat route – full‑screen, token‑based */}
             <Route path="/chatbot" element={<ChatBotPage />} />
-              <Route path="/trainer/chatbot" element={<ChatBotWithoutIframe />} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

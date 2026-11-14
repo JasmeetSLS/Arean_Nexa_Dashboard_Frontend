@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, FileText, Download, Loader2, ArrowLeft } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import { usePermissions } from '../context/PermissionContext.jsx'; // ✅ Import Context
+import { usePermissions } from '../context/PermissionContext.jsx';
 import {
   // Arena
   exportArenaDailyReport,
@@ -46,17 +46,14 @@ export default function ReportModal({
   project: initialProject,
   date: initialDate,
 }) {
-  // ✅ Get permissions
   const { perms } = usePermissions();
   
-  // ✅ Check what they are allowed to see
   const allowedArena = perms?.pages?.report_arena !== false;
   const allowedNexa  = perms?.pages?.report_nexa !== false;
   const allowedTV    = perms?.pages?.report_tv !== false;
 
   const [activeTab, setActiveTab] = useState('morning');
   
-  // ✅ Set default report type based on what they have access to
   const [reportType, setReportType] = useState(
     allowedArena ? 'arena' : allowedNexa ? 'nexa' : 'tv'
   );
@@ -252,16 +249,13 @@ export default function ReportModal({
 
       const { ext, mime } = fileMetaFor(type);
       
-      let baseName = '';
-      if (reportType === 'arena') {
-        baseName = ['arena', type, String(selectedProject).replace(/[^a-z0-9]/gi, '_'), type === 'morning' ? selectedDate : ''].filter(Boolean).join('_');
-      } else if (reportType === 'nexa') {
-        baseName = ['nexa', type, String(selectedNexaProject).replace(/[^a-z0-9]/gi, '_'), type === 'morning' ? selectedNexaDate : ''].filter(Boolean).join('_');
-      } else {
-        baseName = ['tv', type, type === 'morning' ? selectedTVDate : '', (type === 'winner' || type === 'winner-zip') ? selectedTVLevel : ''].filter(Boolean).join('_');
+      // ✅ FIX: Read the filename directly from the backend headers
+      let filename = `Report_${Date.now()}.${ext}`; // Fallback
+      const disposition = res.headers['content-disposition'];
+      if (disposition && disposition.includes('filename=')) {
+        filename = disposition.split('filename=')[1].replace(/"/g, '');
       }
-      
-      const filename = `${baseName}.${ext}`;
+
       const blob = new Blob([res.data], { type: mime });
 
       if (ext === 'zip') {
@@ -304,7 +298,7 @@ export default function ReportModal({
   };
 
   const allTabs = [
-    { id: 'morning', label: 'Daily Hourly' },
+    { id: 'morning', label: 'Hourly' },
     { id: 'attendance', label: 'Attendance' },
     { id: 'overall', label: 'Overall Result' },
     { id: 'winner', label: 'Winners' },
@@ -342,7 +336,6 @@ export default function ReportModal({
             </h2>
             <div className="flex bg-white/15 rounded-lg p-0.5">
               
-              {/* ✅ Only show buttons for allowed reports */}
               {allowedArena && (
                 <button
                   onClick={() => setReportType('arena')}
@@ -403,25 +396,22 @@ export default function ReportModal({
               </div>
             ) : (
               <>
-                {/* sheet tabs */}
                 <div className="flex border-b border-gray-200 bg-gray-50 overflow-x-auto">
                   {preview.sheets.map((s, i) => (
                     <button
                       key={s.name}
                       onClick={() => {
                         setActiveSheet(i);
-                        setVisibleRowCount(500); // reset pagination
+                        setVisibleRowCount(500);
                       }}
                       className={`px-4 py-2 text-xs font-bold whitespace-nowrap border-b-2 transition-colors ${
                         activeSheet === i
                           ? 'border-indigo-600 text-indigo-700 bg-white'
                           : 'border-transparent text-gray-500 hover:text-gray-700'
-                      }`}
-                    >{s.name}</button>
+                      }`}>{s.name}</button>
                   ))}
                 </div>
 
-                {/* table */}
                 <div className="overflow-auto max-h-[55vh] p-3 bg-white">
                   {previewRows.length === 0 ? (
                     <div className="text-xs italic text-slate-500 p-6 text-center">
@@ -443,7 +433,6 @@ export default function ReportModal({
                         </tbody>
                       </table>
                       
-                      {/* Load More Button */}
                       {combined.length > previewRows.length && (
                         <div className="mt-4 text-center">
                           <button
@@ -484,7 +473,6 @@ export default function ReportModal({
 
               {!showLoader && (
                 <>
-                  {/* Arena Project Selector */}
                   {reportType === 'arena' && needsProject && (
                     <div className="flex flex-col gap-1 w-1/2">
                       <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider">Project</label>
@@ -499,7 +487,6 @@ export default function ReportModal({
                     </div>
                   )}
 
-                  {/* Nexa Project Selector */}
                   {reportType === 'nexa' && needsProject && (
                     <div className="flex flex-col gap-1 w-1/2">
                       <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider">Nexa Project</label>
@@ -587,8 +574,7 @@ export default function ReportModal({
                     activeTab === tab.id
                       ? 'border-indigo-600 text-indigo-700 bg-gray-50'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                  }`}
-                >{tab.label}</button>
+                  }`}>{tab.label}</button>
               ))}
             </div>
 
@@ -597,16 +583,6 @@ export default function ReportModal({
               {/* --- MORNING --- */}
               {activeTab === 'morning' && (
                 <div className="text-center space-y-4">
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-left">
-                    <h3 className="font-bold text-slate-800 mb-1">
-                      {isTV ? 'TV Daily Hourly Report (ZIP)' : isNexa ? 'Nexa Daily Hourly Report' : 'Arena Daily Hourly Report'}
-                    </h3>
-                    <p className="text-xs text-slate-600 mb-2">
-                      {isTV
-                        ? 'Downloads a ZIP containing the Main Round Status and Attendance Excel files for the selected date.'
-                        : 'Generates a multi-sheet Excel file (Summary & Status) for the selected project and date.'}
-                    </p>
-                  </div>
                   <button
                     onClick={() => handleDownload('morning')}
                     disabled={downloading || (isTV ? !selectedTVDate : isNexa ? (!selectedNexaDate || !selectedNexaProject) : (!selectedDate || !selectedProject))}
@@ -616,8 +592,8 @@ export default function ReportModal({
                     {downloading
                       ? 'Generating...'
                       : isTV
-                      ? 'Download Morning Report (ZIP)'
-                      : 'Preview / Download Morning Report'}
+                      ? 'Download Hourly Report (ZIP)'
+                      : 'Preview Hourly Report'}
                   </button>
                 </div>
               )}
@@ -625,25 +601,13 @@ export default function ReportModal({
               {/* --- ATTENDANCE --- */}
               {activeTab === 'attendance' && (
                 <div className="text-center space-y-4">
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-left">
-                    <h3 className="font-bold text-slate-800 mb-1">
-                      {isTV ? 'TV Overall Attendance' : isNexa ? 'Nexa Overall Attendance' : 'Arena Overall Attendance'}
-                    </h3>
-                    <p className="text-xs text-slate-600 mb-2">
-                      {isTV
-                        ? 'Generates an Excel file with overall attendance across all TV dates.'
-                        : isNexa
-                        ? 'Generates an Excel file with overall attendance for Nexa as of today.'
-                        : 'Generates an Excel file split by L1 and L2 tabs with attendance (Appeared / Pending / Absent) as of today.'}
-                    </p>
-                  </div>
                   <button
                     onClick={() => handleDownload('attendance')}
                     disabled={downloading}
                     className="flex items-center justify-center gap-2 w-full py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 disabled:opacity-50 transition"
                   >
                     <Download className="h-4 w-4" />{' '}
-                    {downloading ? 'Generating...' : 'Preview / Download Attendance Report'}
+                    {downloading ? 'Generating...' : 'Preview Attendance Report'}
                   </button>
                 </div>
               )}
@@ -651,25 +615,13 @@ export default function ReportModal({
               {/* --- OVERALL --- */}
               {activeTab === 'overall' && (
                 <div className="text-center space-y-4">
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-left">
-                    <h3 className="font-bold text-slate-800 mb-1">
-                      {isTV ? 'TV Overall Result' : isNexa ? 'Nexa Overall Result' : 'Arena Overall Result'}
-                    </h3>
-                    <p className="text-xs text-slate-600 mb-2">
-                      {isTV
-                        ? 'Generates a Summary and detailed Status sheet with TV R1 and Main Round aggregated stats.'
-                        : isNexa
-                        ? 'Generates a Summary and detailed Status sheet showing R1 and Main Round aggregated stats for Nexa.'
-                        : 'Generates a Summary and detailed Status sheet showing R1 and Main Round aggregated stats for the selected project.'}
-                    </p>
-                  </div>
                   <button
                     onClick={() => handleDownload('overall')}
                     disabled={downloading || (needsProject && reportType === 'arena' && !selectedProject) || (needsProject && reportType === 'nexa' && !selectedNexaProject)}
                     className="flex items-center justify-center gap-2 w-full py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 disabled:opacity-50 transition"
                   >
                     <Download className="h-4 w-4" />{' '}
-                    {downloading ? 'Generating...' : 'Preview / Download Overall Result'}
+                    {downloading ? 'Generating...' : 'Preview Overall Result'}
                   </button>
                 </div>
               )}
@@ -677,24 +629,13 @@ export default function ReportModal({
               {/* --- WINNER --- */}
               {activeTab === 'winner' && (
                 <div className="text-center space-y-4">
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-left">
-                    <h3 className="font-bold text-slate-800 mb-1">
-                      {isTV ? 'TV Winners Report' : 'Arena Winners Report'}
-                    </h3>
-                    <p className="text-xs text-slate-600 mb-2">
-                      {isTV
-                        ? 'Download a single consolidated winners Excel (per role sheets), or a ZIP with one Excel per region.'
-                        : 'Generates a Winner Summary with dynamic category scores and ranks (1, 2, 3) for the selected project.'}
-                    </p>
-                  </div>
-
                   <button
                     onClick={() => handleDownload('winner')}
                     disabled={downloading || (isTV ? !selectedTVLevel : !selectedProject)}
                     className="flex items-center justify-center gap-2 w-full py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 disabled:opacity-50 transition"
                   >
                     <Download className="h-4 w-4" />{' '}
-                    {downloading ? 'Generating...' : 'Preview / Download Winners Report'}
+                    {downloading ? 'Generating...' : 'Preview Winners Report'}
                   </button>
 
                   {isTV && (

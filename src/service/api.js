@@ -18,7 +18,9 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      if (window.location.pathname !== '/login') window.location.href = '/login';
+      if (window.location.pathname !== '/login' && !window.location.pathname.includes('/chatbot')) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
@@ -121,5 +123,9 @@ export const exportNexaOverallAttendance = (params = {}) =>
 
 export const exportNexaOverallResult = (params = {}) =>
   api.get('/export-nexa-overall-result', { params, responseType: 'blob' });
+
+// REPORTS (Trainer)
+export const exportTrainerSummary = (params = {}) =>
+  api.get('/export-trainer-summary', { params, responseType: 'blob' });
 
 export default api;
