@@ -921,21 +921,20 @@ export default function Dashboard() {
                     </span>
                   </div>
 
-                  <div className="flex items-start justify-between gap-1.5">
-                    {availableRounds.map((roundName) => {
-                      const roundLabel = roundName.replace(/^round/i, 'R');
-                      return (
-                        <div key={roundName} className="flex flex-col items-center gap-0.5 flex-1">
-                          <div className="w-full py-1.5 rounded text-center text-xs font-bold text-white bg-purple-600">
-                            {roundLabel}
-                          </div>
-                          <span className="text-[11px] font-bold text-gray-700">
-                            {selectedTrainer.completedCount ?? 0} / {selectedTrainer.totalAssigned ?? 0}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
+<div className="flex items-start justify-between gap-1.5">
+  {availableRounds.map((roundName) => {
+    return (
+      <div key={roundName} className="flex flex-col items-center gap-0.5 flex-1">
+        <div className="w-full py-1.5 rounded text-center text-xs font-bold text-white bg-purple-600">
+          {roundName} {/* ✅ Uses exact name (e.g., "Round 2A") */}
+        </div>
+        <span className="text-[11px] font-bold text-gray-700">
+          {selectedTrainer.completedCount ?? 0} / {selectedTrainer.totalAssigned ?? 0}
+        </span>
+      </div>
+    );
+  })}
+</div>
                 </div>
               )}
 
