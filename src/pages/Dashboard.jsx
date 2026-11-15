@@ -953,11 +953,10 @@ export default function Dashboard() {
                         const isFail = p.status === 'Fail';
 
                         return (
-                          <div 
-                            key={p.mpin || idx} 
-                            className="flex items-center justify-between text-xs py-1.5 px-2 rounded hover:bg-white cursor-pointer transition-colors"
-                            onClick={() => { setShowTrainerJourney(false); setSelectedParticipant(p); setShowParticipantJourney(true); }}
-                          >
+                        <div 
+  key={p.mpin || idx} 
+  className="flex items-center justify-between text-xs py-1.5 px-2 rounded transition-colors"
+>
                             <div className="flex items-center gap-2 min-w-0">
                               <span className="text-gray-500 font-medium w-20 truncate">{p.mpin || '—'}</span>
                               <span className="text-gray-800 font-semibold truncate flex-1">{p.name || '—'}</span>
