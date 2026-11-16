@@ -40,6 +40,9 @@ export const postChatMessage = (peerUsername, message) =>
 
 export const getProjects  = ()                     => api.get('/projects');
 export const addProject  = (payload) => api.post('/projects', payload);
+export const getProjectById  = (id)               => api.get(`/projects/${id}`);
+export const updateProject   = (id, payload)      => api.put(`/projects/${id}`, payload);
+export const deleteProject   = (id)               => api.delete(`/projects/${id}`);
 
 // ---- Participants Excel ----
 export const downloadParticipantTemplate = () =>
@@ -49,6 +52,18 @@ export const uploadParticipants = (file) => {
   const fd = new FormData();
   fd.append('file', file);       // no `project` field anymore
   return api.post('/participants/upload', fd, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
+
+export const downloadRound1Template = () =>
+  api.get('/download-template-round1', { responseType: 'blob' });
+
+// 2. Import Excel API
+export const importRound1 = (file) => {
+  const fd = new FormData();
+  fd.append('file', file);
+  return api.post('/import-round1', fd, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
 };

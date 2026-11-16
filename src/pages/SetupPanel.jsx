@@ -3,12 +3,15 @@ import {
   ChevronRight, Save, Check, Plus, RefreshCw, X,
   Building2, Settings2, Clock, Percent,
   AlertCircle, Trophy, Layers, Hash,
-  Upload, Download, FileSpreadsheet,
+  Upload, Download, FileSpreadsheet, FileUp,
+  Pencil, Trash2,
 } from 'lucide-react';
 import { useAuth } from '../service/auth.jsx';
 import {
   getProjects, addProject,
+  getProjectById, updateProject, deleteProject,
   downloadParticipantTemplate, uploadParticipants,
+  downloadRound1Template, importRound1,
 } from '../service/api';
 
 const EMPTY_FORM = {
@@ -49,8 +52,13 @@ export default function SetupPanel() {
   const [errMsg, setErrMsg]       = useState('');
   const [okMsg, setOkMsg]         = useState('');
 
+  // ---- NEW: edit / delete state ----
+  const [editingId, setEditingId]   = useState(null);   // null = create, number = edit
+  const [deletingId, setDeletingId] = useState(null);   // row-level delete spinner
+
   // upload popup
   const [showUpload, setShowUpload] = useState(false);
+  const [uploadType, setUploadType] = useState('participant'); // 'participant' | 'round1'
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading]       = useState(false);
   const [uploadErr, setUploadErr]       = useState('');
@@ -75,6 +83,7 @@ export default function SetupPanel() {
   // ---- create project helpers ----
   const openPopup = () => {
     setForm(EMPTY_FORM);
+    setEditingId(null);
     setErrMsg('');
     setOkMsg('');
     setShowPopup(true);
@@ -82,6 +91,52 @@ export default function SetupPanel() {
   const closePopup = () => {
     if (saving) return;
     setShowPopup(false);
+    setEditingId(null);
+  };
+
+  // ---- NEW: open edit popup (prefills form) ----
+  const openEdit = async (id) => {
+    try {
+      setErrMsg('');
+      setOkMsg('');
+      const { data } = await getProjectById(id);
+      if (!data?.success || !data.project) {
+        alert(data?.error || 'Could not load project');
+        return;
+      }
+      const p = data.project;
+      setEditingId(p.id);
+      setForm({
+        projectName:       p.projectName,
+        passingPercentage: String(p.passingPercentage),
+        trainerTimeSecs:   p.trainerTimeSecs,
+        rounds:            (p.rounds || []).map((r) => ({
+          name:  r.name,
+          score: String(r.score),
+        })),
+      });
+      setShowPopup(true);
+    } catch (err) {
+      alert(err?.response?.data?.error || 'Failed to load project');
+    }
+  };
+
+  // ---- NEW: delete project ----
+  const handleDelete = async (id, name) => {
+    if (!window.confirm(`Delete project "${name}"? This cannot be undone.`)) return;
+    setDeletingId(id);
+    try {
+      const { data } = await deleteProject(id);
+      if (data?.success) {
+        setProjects((prev) => prev.filter((p) => p.id !== id));
+      } else {
+        alert(data?.error || 'Delete failed');
+      }
+    } catch (err) {
+      alert(err?.response?.data?.error || 'Delete failed');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const update = (patch) => setForm((f) => ({ ...f, ...patch }));
@@ -124,7 +179,8 @@ export default function SetupPanel() {
 
     try {
       setSaving(true);
-      const { data } = await addProject({
+
+      const payload = {
         projectName:       form.projectName.trim(),
         rounds:            form.rounds.map((r) => ({
           name:  r.name.trim(),
@@ -132,11 +188,16 @@ export default function SetupPanel() {
         })),
         passingPercentage: Number(form.passingPercentage),
         trainerTimeSecs:   Number(form.trainerTimeSecs),
-      });
+      };
+
+      const { data } = editingId
+        ? await updateProject(editingId, payload)
+        : await addProject(payload);
 
       if (data?.success) {
-        setOkMsg(`Project created (id ${data.id})`);
+        setOkMsg(editingId ? 'Project updated' : `Project created (id ${data.id})`);
         setForm(EMPTY_FORM);
+        setEditingId(null);
         await loadProjects();
         setTimeout(() => setShowPopup(false), 800);
       } else {
@@ -154,14 +215,17 @@ export default function SetupPanel() {
   // ---- template download ----
   const handleDownloadTemplate = async () => {
     try {
-      const res = await downloadParticipantTemplate();
+      const res = uploadType === 'participant'
+        ? await downloadParticipantTemplate()
+        : await downloadRound1Template();
+
       const blob = new Blob([res.data], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'participants_template.xlsx';
+      a.download = uploadType === 'participant' ? 'participants_template.xlsx' : 'Round_1_Template.xlsx';
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -172,13 +236,15 @@ export default function SetupPanel() {
   };
 
   // ---- global upload popup ----
-  const openUpload = () => {
+  const openUpload = (type) => {
+    setUploadType(type);
     setSelectedFile(null);
     setUploadErr('');
     setUploadOk('');
     setShowUpload(true);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
+
   const closeUpload = () => {
     if (uploading) return;
     setShowUpload(false);
@@ -200,14 +266,30 @@ export default function SetupPanel() {
     setUploading(true);
     setUploadErr('');
     setUploadOk('');
+
     try {
-      const { data } = await uploadParticipants(selectedFile);
+      let data;
+      if (uploadType === 'participant') {
+        const res = await uploadParticipants(selectedFile);
+        data = res.data;
+      } else {
+        const res = await importRound1(selectedFile);
+        data = res.data;
+      }
+
       if (data?.success) {
-        const parts = [];
-        if (data.inserted) parts.push(`${data.inserted} inserted`);
-        if (data.updated)  parts.push(`${data.updated} updated`);
-        setUploadOk(`✅ ${parts.join(' · ') || `${data.total} processed`} (${data.total} total)`);
-        await loadProjects();
+        let msg = 'Upload successful';
+        if (uploadType === 'participant') {
+          const parts = [];
+          if (data.inserted) parts.push(`${data.inserted} inserted`);
+          if (data.updated)  parts.push(`${data.updated} updated`);
+          msg = `✅ ${parts.join(' · ') || `${data.total} processed`} (${data.total} total)`;
+          await loadProjects();
+        } else {
+          msg = `✅ ${data.message || 'Round 1 data imported successfully'}`;
+        }
+
+        setUploadOk(msg);
         setTimeout(() => closeUpload(), 1200);
       } else {
         setUploadErr(data?.error || 'Upload failed');
@@ -253,15 +335,17 @@ export default function SetupPanel() {
             <p className="text-[11px] font-medium text-slate-500">All projects configured in the system</p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={handleDownloadTemplate}
-              className="flex items-center gap-1.5 px-3 py-2 text-[11px] font-black text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition">
-              <Download className="h-3.5 w-3.5" />
-              Template
+
+            <button onClick={() => openUpload('round1')}
+              className="flex items-center gap-1.5 px-3 py-2 text-[11px] font-black text-white bg-teal-600 hover:bg-teal-700 rounded-lg shadow-sm transition">
+              <FileUp className="h-3.5 w-3.5" />
+              Import/Export Round 1
             </button>
-            <button onClick={openUpload}
+
+            <button onClick={() => openUpload('participant')}
               className="flex items-center gap-1.5 px-3 py-2 text-[11px] font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition">
               <Upload className="h-3.5 w-3.5" />
-              Upload Excel
+              Import/Export Participants
             </button>
             <button onClick={loadProjects} disabled={loading}
               className="flex items-center gap-1.5 px-3 py-2 text-[11px] font-black text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 transition">
@@ -302,6 +386,7 @@ export default function SetupPanel() {
                     <th className="text-left px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider min-w-[280px]">Round Breakdown</th>
                     <th className="text-center px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-[90px]">Pass %</th>
                     <th className="text-center px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-[120px]">Trainer Time</th>
+                    <th className="text-center px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-wider w-[100px]">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -341,6 +426,25 @@ export default function SetupPanel() {
                           {fmtHms(p.trainerTimeSecs)}
                         </span>
                       </td>
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => openEdit(p.id)}
+                            className="p-1.5 rounded-md text-blue-600 hover:bg-blue-50 transition"
+                            title="Edit project"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(p.id, p.projectName)}
+                            disabled={deletingId === p.id}
+                            className="p-1.5 rounded-md text-rose-600 hover:bg-rose-50 disabled:opacity-40 transition"
+                            title="Delete project"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -350,7 +454,7 @@ export default function SetupPanel() {
         </div>
       </main>
 
-      {/* ===== CREATE PROJECT POPUP ===== */}
+      {/* ===== CREATE / EDIT PROJECT POPUP ===== */}
       {showPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="mx-4 w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden">
@@ -360,8 +464,12 @@ export default function SetupPanel() {
                   <Plus className="h-5 w-5 text-white" strokeWidth={3} />
                 </div>
                 <div>
-                  <p className="text-[11px] font-bold text-blue-100 uppercase tracking-wider">NEW PROJECT</p>
-                  <h2 className="text-lg font-black text-white">Create Project</h2>
+                  <p className="text-[11px] font-bold text-blue-100 uppercase tracking-wider">
+                    {editingId ? 'EDIT PROJECT' : 'NEW PROJECT'}
+                  </p>
+                  <h2 className="text-lg font-black text-white">
+                    {editingId ? 'Edit Project' : 'Create Project'}
+                  </h2>
                 </div>
               </div>
               <button onClick={closePopup} className="text-white/70 hover:text-white transition">
@@ -481,25 +589,27 @@ export default function SetupPanel() {
               <button onClick={handleSave} disabled={saving}
                 className="flex items-center gap-1.5 px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-xs font-bold rounded-lg shadow-sm transition">
                 <Save className="h-3.5 w-3.5" />
-                {saving ? 'Saving…' : 'Create Project'}
+                {saving ? 'Saving…' : editingId ? 'Update Project' : 'Create Project'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ===== GLOBAL UPLOAD POPUP ===== */}
+      {/* ===== GLOBAL UPLOAD POPUP (REUSED FOR BOTH) ===== */}
       {showUpload && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="mx-4 w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden">
 
-            <div className="px-5 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-between">
+            <div className={`px-5 py-4 flex items-center justify-between ${uploadType === 'participant' ? 'bg-gradient-to-r from-indigo-600 to-purple-600' : 'bg-gradient-to-r from-teal-600 to-emerald-600'}`}>
               <div className="flex items-center gap-3">
                 <div className="shrink-0 h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center">
                   <Upload className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-[11px] font-bold text-indigo-100 uppercase tracking-wider">UPLOAD PARTICIPANTS</p>
+                  <p className="text-[11px] font-bold text-white/80 uppercase tracking-wider">
+                    {uploadType === 'participant' ? 'UPLOAD PARTICIPANTS' : 'UPLOAD ROUND 1'}
+                  </p>
                   <h2 className="text-lg font-black text-white">Excel Upload</h2>
                 </div>
               </div>
@@ -513,11 +623,11 @@ export default function SetupPanel() {
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-[11px] font-black text-slate-700 uppercase tracking-wide flex items-center gap-1.5">
-                    <FileSpreadsheet className="h-3.5 w-3.5 text-indigo-600" />
+                    <FileSpreadsheet className={`h-3.5 w-3.5 ${uploadType === 'participant' ? 'text-indigo-600' : 'text-teal-600'}`} />
                     Excel Format
                   </p>
                   <button onClick={handleDownloadTemplate}
-                    className="text-[10px] font-black text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-md transition flex items-center gap-1">
+                    className={`text-[10px] font-black px-2 py-1 rounded-md transition flex items-center gap-1 ${uploadType === 'participant' ? 'text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100' : 'text-teal-600 hover:text-teal-800 bg-teal-50 hover:bg-teal-100'}`}>
                     <Download className="h-3 w-3" />
                     Download Template
                   </button>
@@ -564,7 +674,7 @@ export default function SetupPanel() {
                 Cancel
               </button>
               <button onClick={handleUpload} disabled={!selectedFile || uploading}
-                className="flex items-center gap-1.5 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-sm transition">
+                className={`flex items-center gap-1.5 px-5 py-2 disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-sm transition ${uploadType === 'participant' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-teal-600 hover:bg-teal-700'}`}>
                 <Upload className="h-3.5 w-3.5" />
                 {uploading ? 'Uploading…' : 'Upload'}
               </button>
@@ -572,6 +682,7 @@ export default function SetupPanel() {
           </div>
         </div>
       )}
+
     </div>
   );
 }
@@ -591,10 +702,6 @@ function Field({ label, icon: Icon, required, children }) {
   );
 }
 
-/**
- * HH:MM:SS picker — three numeric inputs.
- * Avoids the "typing 20 becomes 20 hours" bug of a single text input.
- */
 function TimeField({ value, onChange }) {
   const { h, m, s } = secsToHms(value);
 
