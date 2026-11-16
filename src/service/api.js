@@ -56,6 +56,18 @@ export const uploadParticipants = (file) => {
   });
 };
 
+// ---- Trainers Excel ----
+export const downloadTrainerTemplate = () =>
+  api.get('/trainers/template', { responseType: 'blob' });
+
+export const uploadTrainers = (file) => {
+  const fd = new FormData();
+  fd.append('file', file);
+  return api.post('/trainers/upload', fd, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
+
 export const downloadRound1Template = () =>
   api.get('/download-template-round1', { responseType: 'blob' });
 

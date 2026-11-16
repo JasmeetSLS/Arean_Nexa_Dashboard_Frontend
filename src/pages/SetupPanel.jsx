@@ -4,7 +4,7 @@ import {
   Building2, Settings2, Clock, Percent,
   AlertCircle, Trophy, Layers, Hash,
   Upload, Download, FileSpreadsheet, FileUp,
-  Pencil, Trash2,
+  Pencil, Trash2, Users,                                  // <-- added Users
 } from 'lucide-react';
 import { useAuth } from '../service/auth.jsx';
 import {
@@ -12,6 +12,7 @@ import {
   getProjectById, updateProject, deleteProject,
   downloadParticipantTemplate, uploadParticipants,
   downloadRound1Template, importRound1,
+  downloadTrainerTemplate, uploadTrainers,                // <-- added
 } from '../service/api';
 
 const EMPTY_FORM = {
@@ -52,13 +53,13 @@ export default function SetupPanel() {
   const [errMsg, setErrMsg]       = useState('');
   const [okMsg, setOkMsg]         = useState('');
 
-  // ---- NEW: edit / delete state ----
-  const [editingId, setEditingId]   = useState(null);   // null = create, number = edit
-  const [deletingId, setDeletingId] = useState(null);   // row-level delete spinner
+  // ---- edit / delete state ----
+  const [editingId, setEditingId]   = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   // upload popup
   const [showUpload, setShowUpload] = useState(false);
-  const [uploadType, setUploadType] = useState('participant'); // 'participant' | 'round1'
+  const [uploadType, setUploadType] = useState('participant'); // 'participant' | 'round1' | 'trainer'
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading]       = useState(false);
   const [uploadErr, setUploadErr]       = useState('');
@@ -94,7 +95,7 @@ export default function SetupPanel() {
     setEditingId(null);
   };
 
-  // ---- NEW: open edit popup (prefills form) ----
+  // ---- open edit popup ----
   const openEdit = async (id) => {
     try {
       setErrMsg('');
@@ -121,7 +122,7 @@ export default function SetupPanel() {
     }
   };
 
-  // ---- NEW: delete project ----
+  // ---- delete project ----
   const handleDelete = async (id, name) => {
     if (!window.confirm(`Delete project "${name}"? This cannot be undone.`)) return;
     setDeletingId(id);
@@ -215,9 +216,10 @@ export default function SetupPanel() {
   // ---- template download ----
   const handleDownloadTemplate = async () => {
     try {
-      const res = uploadType === 'participant'
-        ? await downloadParticipantTemplate()
-        : await downloadRound1Template();
+      const res =
+        uploadType === 'participant' ? await downloadParticipantTemplate()
+      : uploadType === 'round1'      ? await downloadRound1Template()
+      :                                await downloadTrainerTemplate();
 
       const blob = new Blob([res.data], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -225,7 +227,10 @@ export default function SetupPanel() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = uploadType === 'participant' ? 'participants_template.xlsx' : 'Round_1_Template.xlsx';
+      a.download =
+        uploadType === 'participant' ? 'participants_template.xlsx'
+      : uploadType === 'round1'      ? 'Round_1_Template.xlsx'
+      :                                'trainers_template.xlsx';
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -270,21 +275,21 @@ export default function SetupPanel() {
     try {
       let data;
       if (uploadType === 'participant') {
-        const res = await uploadParticipants(selectedFile);
-        data = res.data;
+        data = (await uploadParticipants(selectedFile)).data;
+      } else if (uploadType === 'round1') {
+        data = (await importRound1(selectedFile)).data;
       } else {
-        const res = await importRound1(selectedFile);
-        data = res.data;
+        data = (await uploadTrainers(selectedFile)).data;
       }
 
       if (data?.success) {
         let msg = 'Upload successful';
-        if (uploadType === 'participant') {
+        if (uploadType === 'participant' || uploadType === 'trainer') {
           const parts = [];
           if (data.inserted) parts.push(`${data.inserted} inserted`);
           if (data.updated)  parts.push(`${data.updated} updated`);
           msg = `✅ ${parts.join(' · ') || `${data.total} processed`} (${data.total} total)`;
-          await loadProjects();
+          if (uploadType === 'participant') await loadProjects();
         } else {
           msg = `✅ ${data.message || 'Round 1 data imported successfully'}`;
         }
@@ -347,6 +352,14 @@ export default function SetupPanel() {
               <Upload className="h-3.5 w-3.5" />
               Import/Export Participants
             </button>
+
+            {/* <-- added trainer button */}
+            <button onClick={() => openUpload('trainer')}
+              className="flex items-center gap-1.5 px-3 py-2 text-[11px] font-black text-white bg-amber-600 hover:bg-amber-700 rounded-lg shadow-sm transition">
+              <Users className="h-3.5 w-3.5" />
+              Import/Export Trainers
+            </button>
+
             <button onClick={loadProjects} disabled={loading}
               className="flex items-center gap-1.5 px-3 py-2 text-[11px] font-black text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 transition">
               <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -596,19 +609,25 @@ export default function SetupPanel() {
         </div>
       )}
 
-      {/* ===== GLOBAL UPLOAD POPUP (REUSED FOR BOTH) ===== */}
+      {/* ===== GLOBAL UPLOAD POPUP (PARTICIPANTS / ROUND 1 / TRAINERS) ===== */}
       {showUpload && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="mx-4 w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden">
 
-            <div className={`px-5 py-4 flex items-center justify-between ${uploadType === 'participant' ? 'bg-gradient-to-r from-indigo-600 to-purple-600' : 'bg-gradient-to-r from-teal-600 to-emerald-600'}`}>
+            <div className={`px-5 py-4 flex items-center justify-between ${
+              uploadType === 'participant' ? 'bg-gradient-to-r from-indigo-600 to-purple-600'
+              : uploadType === 'round1'    ? 'bg-gradient-to-r from-teal-600 to-emerald-600'
+              :                              'bg-gradient-to-r from-amber-600 to-orange-600'
+            }`}>
               <div className="flex items-center gap-3">
                 <div className="shrink-0 h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center">
                   <Upload className="h-5 w-5 text-white" />
                 </div>
                 <div>
                   <p className="text-[11px] font-bold text-white/80 uppercase tracking-wider">
-                    {uploadType === 'participant' ? 'UPLOAD PARTICIPANTS' : 'UPLOAD ROUND 1'}
+                    {uploadType === 'participant' ? 'UPLOAD PARTICIPANTS'
+                    : uploadType === 'round1'    ? 'UPLOAD ROUND 1'
+                    :                              'UPLOAD TRAINERS'}
                   </p>
                   <h2 className="text-lg font-black text-white">Excel Upload</h2>
                 </div>
@@ -623,11 +642,19 @@ export default function SetupPanel() {
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-[11px] font-black text-slate-700 uppercase tracking-wide flex items-center gap-1.5">
-                    <FileSpreadsheet className={`h-3.5 w-3.5 ${uploadType === 'participant' ? 'text-indigo-600' : 'text-teal-600'}`} />
+                    <FileSpreadsheet className={`h-3.5 w-3.5 ${
+                      uploadType === 'participant' ? 'text-indigo-600'
+                      : uploadType === 'round1'    ? 'text-teal-600'
+                      :                              'text-amber-600'
+                    }`} />
                     Excel Format
                   </p>
                   <button onClick={handleDownloadTemplate}
-                    className={`text-[10px] font-black px-2 py-1 rounded-md transition flex items-center gap-1 ${uploadType === 'participant' ? 'text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100' : 'text-teal-600 hover:text-teal-800 bg-teal-50 hover:bg-teal-100'}`}>
+                    className={`text-[10px] font-black px-2 py-1 rounded-md transition flex items-center gap-1 ${
+                      uploadType === 'participant' ? 'text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100'
+                      : uploadType === 'round1'    ? 'text-teal-600 hover:text-teal-800 bg-teal-50 hover:bg-teal-100'
+                      :                              'text-amber-600 hover:text-amber-800 bg-amber-50 hover:bg-amber-100'
+                    }`}>
                     <Download className="h-3 w-3" />
                     Download Template
                   </button>
@@ -674,7 +701,11 @@ export default function SetupPanel() {
                 Cancel
               </button>
               <button onClick={handleUpload} disabled={!selectedFile || uploading}
-                className={`flex items-center gap-1.5 px-5 py-2 disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-sm transition ${uploadType === 'participant' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-teal-600 hover:bg-teal-700'}`}>
+                className={`flex items-center gap-1.5 px-5 py-2 disabled:opacity-50 text-white text-xs font-bold rounded-lg shadow-sm transition ${
+                  uploadType === 'participant' ? 'bg-indigo-600 hover:bg-indigo-700'
+                  : uploadType === 'round1'    ? 'bg-teal-600 hover:bg-teal-700'
+                  :                              'bg-amber-600 hover:bg-amber-700'
+                }`}>
                 <Upload className="h-3.5 w-3.5" />
                 {uploading ? 'Uploading…' : 'Upload'}
               </button>
