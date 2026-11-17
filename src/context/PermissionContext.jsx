@@ -22,7 +22,7 @@ export function PermissionProvider({ children }) {
       .catch(console.error)
       .finally(() => setLoading(false));
 
-  }, [user?.id]); 
+  }, [user?.userId]);   // ✅ was user?.id
 
   // 2. Simple function to refresh after saving in RolesPermissions page
   const refreshPermissions = async () => {

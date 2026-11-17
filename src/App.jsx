@@ -7,7 +7,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import ChatBotPage from './pages/ChatBot';    
-import ChatBotWithoutIframe  from './pages/ChatBotWithoutIframe'  // new public page
 import RolesPermissions from './pages/RolesPermissions';
 import SetupPanel from './pages/SetupPanel';
 import Layout from './components/Layout';
@@ -44,7 +43,6 @@ export default function App() {
             
             {/* Public chat route – full‑screen, token‑based */}
             <Route path="/chatbot" element={<ChatBotPage />} />
-              <Route path="/trainer/chatbot" element={< ChatBotWithoutIframe/>} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
