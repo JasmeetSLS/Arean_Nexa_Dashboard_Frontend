@@ -88,7 +88,7 @@ export default function Dashboard() {
   
   // ✅ AUTO-REFRESH EVERY 10 SECONDS
   useEffect(() => {
-    const id = setInterval(() => setRefreshTick(t => t + 1), 60_000);
+    const id = setInterval(() => setRefreshTick(t => t + 1), 120_000);
     return () => clearInterval(id);
   }, []);
 
