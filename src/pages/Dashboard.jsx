@@ -87,10 +87,10 @@ export default function Dashboard() {
   useEffect(() => { setTrainerPage(0); }, [searchTrainer, searchParticipant]);
   
   // ✅ AUTO-REFRESH EVERY 10 SECONDS
-  // useEffect(() => {
-  //   const id = setInterval(() => setRefreshTick(t => t + 1), 10_000);
-  //   return () => clearInterval(id);
-  // }, []);
+  useEffect(() => {
+    const id = setInterval(() => setRefreshTick(t => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   // 1. Fetch Filter Options
   useEffect(() => {
