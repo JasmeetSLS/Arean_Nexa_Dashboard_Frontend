@@ -446,7 +446,7 @@ export default function Dashboard() {
             )}
             {canSee('liveData', 'absentees') && (
               <div className="bg-rose-500 text-white p-3 shadow-sm">
-                <p className="text-[11px] font-bold uppercase tracking-wider mb-1">Absentees</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider mb-1">Not Attempted</p>
                 <p className="text-xl font-extrabold leading-tight">{dashData?.todayLive?.absentees ?? 0}</p>
                 <p className="text-[11px] font-medium mt-0.5">No round started</p>
               </div>
@@ -630,7 +630,7 @@ export default function Dashboard() {
             )}
             {canSee('contestTotals', 'totalAbsentees') && (
               <div className="bg-white shadow-sm border-2 border-rose-500 p-3">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-rose-600 mb-1">Total Absentees</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-rose-600 mb-1">Total Not Attempted</p>
                 <p className="text-base font-extrabold text-rose-700 leading-tight">{dashData?.contestTotals?.totalAbsentees ?? 0}</p>
                 <p className="text-[11px] text-black font-medium mt-0.5">No round started</p>
               </div>
