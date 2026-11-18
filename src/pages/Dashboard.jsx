@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  X, Bell, LogOut, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, Search, FileText, Download
+  X, Bell, LogOut, ArrowLeft, ArrowRight, ArrowUp, ArrowDown, Search, FileText, Download,Timer
 } from 'lucide-react';
 import { Toaster } from '../components/Toaster.jsx';
 import { FaBell, FaBellSlash } from 'react-icons/fa';
@@ -799,21 +799,27 @@ export default function Dashboard() {
                                   const isCompleted = p.roundsStatus === 'Completed';
                                   const statusColor = isCompleted ? 'text-emerald-500' : 'text-purple-600';
                                   const borderColor = isCompleted ? 'border-l-emerald-500' : 'border-l-purple-600';
-                                  return (
-                                    <div
-                                      key={p.mpin || pIdx}
-                                      className={`border border-gray-200 bg-white p-2 min-h-[56px] border-l-4 ${borderColor} hover:bg-gray-50 transition-all cursor-pointer`}
-                                      onClick={() => { setSelectedParticipant(p); setShowParticipantJourney(true); }}
-                                    >
-                                      <div className="text-xs font-bold text-gray-800 leading-tight truncate">{p.name || '—'}</div>
-                                      <div className="text-[11px] text-gray-500 font-medium leading-tight truncate">
-                                        {p.mpin || '—'} · {p.role || '—'}
-                                      </div>
-                                      <div className={`text-[11px] font-bold tracking-wider leading-tight ${statusColor}`}>
-                                        {p.roundsStatus || '—'}
-                                      </div>
-                                    </div>
-                                  );
+return (
+  <div
+    key={p.mpin || pIdx}
+    className={`relative border border-gray-200 bg-white p-2 min-h-[56px] border-l-4 ${borderColor} hover:bg-gray-50 transition-all cursor-pointer`}
+    onClick={() => { setSelectedParticipant(p); setShowParticipantJourney(true); }}
+  >
+    <div className="text-xs font-bold text-gray-800 leading-tight truncate">{p.name || '—'}</div>
+    <div className="text-[11px] text-gray-500 font-medium leading-tight truncate">
+      {p.mpin || '—'} · {p.role || '—'}
+    </div>
+    <div className={`text-[11px] font-bold tracking-wider leading-tight ${statusColor}`}>
+      {p.roundsStatus || '—'}
+    </div>
+    {p.delayStatus === 'Delay' && (
+      <div className="absolute bottom-1 right-1 flex items-center gap-1">
+        <span className="text-[10px] font-bold text-red-600">{p.totalTime || '00:00:00'}</span>
+        <Timer className="h-3 w-3 text-red-600" strokeWidth={2.5} />
+      </div>
+    )}
+  </div>
+);
                                 })
                               )}
                             </div>
