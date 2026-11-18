@@ -796,30 +796,48 @@ export default function Dashboard() {
                                 </div>
                               ) : (
                                 list.map((p, pIdx) => {
-                                  const isCompleted = p.roundsStatus === 'Completed';
-                                  const statusColor = isCompleted ? 'text-emerald-500' : 'text-purple-600';
-                                  const borderColor = isCompleted ? 'border-l-emerald-500' : 'border-l-purple-600';
-return (
-  <div
-    key={p.mpin || pIdx}
-    className={`relative border border-gray-200 bg-white p-2 min-h-[56px] border-l-4 ${borderColor} hover:bg-gray-50 transition-all cursor-pointer`}
-    onClick={() => { setSelectedParticipant(p); setShowParticipantJourney(true); }}
-  >
-    <div className="text-xs font-bold text-gray-800 leading-tight truncate">{p.name || '—'}</div>
-    <div className="text-[11px] text-gray-500 font-medium leading-tight truncate">
-      {p.mpin || '—'} · {p.role || '—'}
-    </div>
-    <div className={`text-[11px] font-bold tracking-wider leading-tight ${statusColor}`}>
-      {p.roundsStatus || '—'}
-    </div>
-    {p.delayStatus === 'Delay' && (
-      <div className="absolute bottom-1 right-1 flex items-center gap-1">
-        <span className="text-[10px] font-bold text-red-600">{p.totalTime || '00:00:00'}</span>
-        <Timer className="h-3 w-3 text-red-600" strokeWidth={2.5} />
-      </div>
-    )}
-  </div>
-);
+                                  const isCompleted    = p.roundsStatus === 'Completed';
+                                  const isInProgress   = p.roundsStatus === 'In Progress';
+
+                                  const statusColor = isCompleted
+                                    ? 'text-emerald-500'
+                                    : isInProgress
+                                      ? 'text-purple-600'
+                                      : 'text-gray-400';
+
+                                  const borderColor = isCompleted
+                                    ? 'border-l-emerald-500'
+                                    : isInProgress
+                                      ? 'border-l-purple-600'
+                                      : 'border-l-gray-300';
+
+                                  const statusLabel = isCompleted
+                                    ? 'Completed'
+                                    : isInProgress
+                                      ? 'In Progress'
+                                      : 'Not Attempted';
+
+                                  return (
+                                    <div
+                                      key={p.mpin || pIdx}
+                                      className={`relative border border-gray-200 bg-white p-2 min-h-[56px] border-l-4 ${borderColor} hover:bg-gray-50 transition-all cursor-pointer`}
+                                      onClick={() => { setSelectedParticipant(p); setShowParticipantJourney(true); }}
+                                    >
+                                      <div className="text-xs font-bold text-gray-800 leading-tight truncate">{p.name || '—'}</div>
+                                      <div className="text-[11px] text-gray-500 font-medium leading-tight truncate">
+                                        {p.mpin || '—'} · {p.role || '—'}
+                                      </div>
+                                      <div className={`text-[11px] font-bold tracking-wider leading-tight ${statusColor}`}>
+                                        {statusLabel}
+                                      </div>
+                                      {p.delayStatus === 'Delay' && (
+                                        <div className="absolute bottom-1 right-1 flex items-center gap-1">
+                                          <span className="text-[10px] font-bold text-red-600">{p.totalTime || '00:00:00'}</span>
+                                          <Timer className="h-3 w-3 text-red-600" strokeWidth={2.5} />
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
                                 })
                               )}
                             </div>
@@ -954,27 +972,35 @@ return (
                       <div className="text-center text-xs text-gray-400 py-2">No participants</div>
                     ) : (
                       (trainerParticipants[selectedTrainer.id] || []).map((p, idx) => {
-                        const isCompleted = p.roundsStatus === 'Completed';
+                        const isCompleted  = p.roundsStatus === 'Completed';
+                        const isInProgress = p.roundsStatus === 'In Progress';
                         const isPass = p.status === 'Pass';
                         const isFail = p.status === 'Fail';
 
+                        const label = isCompleted
+                          ? (p.status || '—')
+                          : isInProgress
+                            ? 'In Progress'
+                            : 'Not Attempted';
+
+                        const color = isCompleted
+                          ? (isPass ? 'text-teal-600' : isFail ? 'text-rose-600' : 'text-gray-500')
+                          : isInProgress
+                            ? 'text-purple-600'
+                            : 'text-gray-400';
+
                         return (
-                        <div 
-  key={p.mpin || idx} 
-  className="flex items-center justify-between text-xs py-1.5 px-2 rounded transition-colors"
->
+                          <div
+                            key={p.mpin || idx}
+                            className="flex items-center justify-between text-xs py-1.5 px-2 rounded transition-colors"
+                          >
                             <div className="flex items-center gap-2 min-w-0">
                               <span className="text-gray-500 font-medium w-20 truncate">{p.mpin || '—'}</span>
                               <span className="text-gray-800 font-semibold truncate flex-1">{p.name || '—'}</span>
                             </div>
-                            
-                            <span className={`text-[11px] font-bold tracking-wider ${
-                              !isCompleted ? 'text-purple-600' : 
-                              isPass ? 'text-teal-600' : 
-                              isFail ? 'text-rose-600' : 
-                              'text-gray-500'
-                            }`}>
-                              {!isCompleted ? 'In Progress' : (p.status || '—')}
+
+                            <span className={`text-[11px] font-bold tracking-wider ${color}`}>
+                              {label}
                             </span>
                           </div>
                         );
