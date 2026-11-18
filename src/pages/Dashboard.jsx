@@ -307,7 +307,7 @@ export default function Dashboard() {
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-200">
             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span className="text-xs font-bold text-gray-700">DATA · {dashData?.todayLive?.date || '—'}</span>
+            <span className="text-xs font-bold text-gray-700">DATE · {dashData?.todayLive?.date || '—'}</span>
           </div>    
           
           {/* ✅ NEW: Trainer Summary Download Button */}
