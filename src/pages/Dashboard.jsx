@@ -83,10 +83,18 @@ export default function Dashboard() {
     setFilters(prev => ({ ...prev, date: '', region: '', dealerName: '', dealerCode: '', trainer: '', role: '' }));
   }, [filters.project]);
 
-  // Reset trainer page when searching
-  useEffect(() => { setTrainerPage(0); }, [searchTrainer, searchParticipant]);
+  // ✅ Reset pages when searching
+  useEffect(() => { 
+    setTrainerPage(0); 
+    setParticipantPage(0); 
+  }, [searchTrainer, searchParticipant]);
+
+  // ✅ Reset participant page when trainer page changes
+  useEffect(() => {
+    setParticipantPage(0);
+  }, [trainerPage]);
   
-  // ✅ AUTO-REFRESH EVERY 10 SECONDS
+  // ✅ AUTO-REFRESH EVERY 2 MINUTES
   useEffect(() => {
     const id = setInterval(() => setRefreshTick(t => t + 1), 120_000);
     return () => clearInterval(id);
@@ -796,26 +804,13 @@ export default function Dashboard() {
                                 </div>
                               ) : (
                                 list.map((p, pIdx) => {
-                                  const isCompleted    = p.roundsStatus === 'Completed';
-                                  const isInProgress   = p.roundsStatus === 'In Progress';
+                                  const isCompleted  = p.roundsStatus === 'Completed';
+                                  const isInProgress = p.roundsStatus === 'In Progress';
 
-                                  const statusColor = isCompleted
-                                    ? 'text-emerald-500'
-                                    : isInProgress
-                                      ? 'text-purple-600'
-                                      : 'text-gray-400';
-
-                                  const borderColor = isCompleted
-                                    ? 'border-l-emerald-500'
-                                    : isInProgress
-                                      ? 'border-l-purple-600'
-                                      : 'border-l-gray-300';
-
-                                  const statusLabel = isCompleted
-                                    ? 'Completed'
-                                    : isInProgress
-                                      ? 'In Progress'
-                                      : 'Not Attempted';
+                                  // ✅ Removed "Not Attempted" because API only returns attempted participants
+                                  const statusColor = isCompleted ? 'text-emerald-500' : 'text-purple-600';
+                                  const borderColor = isCompleted ? 'border-l-emerald-500' : 'border-l-purple-600';
+                                  const statusLabel = isCompleted ? 'Completed' : 'In Progress';
 
                                   return (
                                     <div
@@ -972,22 +967,15 @@ export default function Dashboard() {
                       <div className="text-center text-xs text-gray-400 py-2">No participants</div>
                     ) : (
                       (trainerParticipants[selectedTrainer.id] || []).map((p, idx) => {
-                        const isCompleted  = p.roundsStatus === 'Completed';
-                        const isInProgress = p.roundsStatus === 'In Progress';
+                        const isCompleted = p.roundsStatus === 'Completed';
                         const isPass = p.status === 'Pass';
                         const isFail = p.status === 'Fail';
 
-                        const label = isCompleted
-                          ? (p.status || '—')
-                          : isInProgress
-                            ? 'In Progress'
-                            : 'Not Attempted';
-
+                        // ✅ Removed "Not Attempted"
+                        const label = isCompleted ? (p.status || '—') : 'In Progress';
                         const color = isCompleted
                           ? (isPass ? 'text-teal-600' : isFail ? 'text-rose-600' : 'text-gray-500')
-                          : isInProgress
-                            ? 'text-purple-600'
-                            : 'text-gray-400';
+                          : 'text-purple-600';
 
                         return (
                           <div
